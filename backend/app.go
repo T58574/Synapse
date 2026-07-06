@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 	"github.com/dhowden/tag"
 )
@@ -23,6 +24,8 @@ var (
 	osUserHomeDir = os.UserHomeDir
 	osMkdirAll    = os.MkdirAll
 	filepathWalk  = filepath.Walk
+	playlistMu    sync.Mutex
+	scanMu        sync.Mutex
 )
 
 type App struct {
@@ -240,6 +243,8 @@ type CacheEntry struct {
 }
 
 func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
+	scanMu.Lock()
+	defer scanMu.Unlock()
 	Log(LogInfo, "library", "ScanMusicDir start")
 	dir, err := a.GetMusicDir()
 	if err != nil {
@@ -383,7 +388,7 @@ func (a *App) getPlaylistsPath() (string, error) {
 	return filepath.Join(dir, "playlists.json"), nil
 }
 
-func (a *App) GetPlaylists() ([]Playlist, error) {
+func (a *App) getPlaylistsInternal() ([]Playlist, error) {
 	path, err := a.getPlaylistsPath()
 	if err != nil {
 		return nil, err
@@ -405,7 +410,7 @@ func (a *App) GetPlaylists() ([]Playlist, error) {
 	return playlists, nil
 }
 
-func (a *App) SavePlaylists(playlists []Playlist) error {
+func (a *App) savePlaylistsInternal(playlists []Playlist) error {
 	path, err := a.getPlaylistsPath()
 	if err != nil {
 		return err
@@ -417,8 +422,22 @@ func (a *App) SavePlaylists(playlists []Playlist) error {
 	return os.WriteFile(path, bytes, 0600)
 }
 
+func (a *App) GetPlaylists() ([]Playlist, error) {
+	playlistMu.Lock()
+	defer playlistMu.Unlock()
+	return a.getPlaylistsInternal()
+}
+
+func (a *App) SavePlaylists(playlists []Playlist) error {
+	playlistMu.Lock()
+	defer playlistMu.Unlock()
+	return a.savePlaylistsInternal(playlists)
+}
+
 func (a *App) CreatePlaylist(name string) error {
-	playlists, err := a.GetPlaylists()
+	playlistMu.Lock()
+	defer playlistMu.Unlock()
+	playlists, err := a.getPlaylistsInternal()
 	if err != nil {
 		return err
 	}
@@ -428,11 +447,13 @@ func (a *App) CreatePlaylist(name string) error {
 		}
 	}
 	playlists = append(playlists, Playlist{Name: name, TrackPaths: []string{}})
-	return a.SavePlaylists(playlists)
+	return a.savePlaylistsInternal(playlists)
 }
 
 func (a *App) DeletePlaylist(name string) error {
-	playlists, err := a.GetPlaylists()
+	playlistMu.Lock()
+	defer playlistMu.Unlock()
+	playlists, err := a.getPlaylistsInternal()
 	if err != nil {
 		return err
 	}
@@ -447,11 +468,13 @@ func (a *App) DeletePlaylist(name string) error {
 		return fmt.Errorf("playlist not found")
 	}
 	playlists = append(playlists[:index], playlists[index+1:]...)
-	return a.SavePlaylists(playlists)
+	return a.savePlaylistsInternal(playlists)
 }
 
 func (a *App) AddTrackToPlaylist(playlistName string, trackPath string) error {
-	playlists, err := a.GetPlaylists()
+	playlistMu.Lock()
+	defer playlistMu.Unlock()
+	playlists, err := a.getPlaylistsInternal()
 	if err != nil {
 		return err
 	}
@@ -463,14 +486,16 @@ func (a *App) AddTrackToPlaylist(playlistName string, trackPath string) error {
 				}
 			}
 			playlists[i].TrackPaths = append(playlists[i].TrackPaths, trackPath)
-			return a.SavePlaylists(playlists)
+			return a.savePlaylistsInternal(playlists)
 		}
 	}
 	return fmt.Errorf("playlist not found")
 }
 
 func (a *App) RemoveTrackFromPlaylist(playlistName string, trackPath string) error {
-	playlists, err := a.GetPlaylists()
+	playlistMu.Lock()
+	defer playlistMu.Unlock()
+	playlists, err := a.getPlaylistsInternal()
 	if err != nil {
 		return err
 	}
@@ -483,7 +508,7 @@ func (a *App) RemoveTrackFromPlaylist(playlistName string, trackPath string) err
 				}
 			}
 			playlists[i].TrackPaths = updatedPaths
-			return a.SavePlaylists(playlists)
+			return a.savePlaylistsInternal(playlists)
 		}
 	}
 	return fmt.Errorf("playlist not found")
