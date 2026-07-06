@@ -583,11 +583,13 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
         }
     }
 
-    std::vector<float> buf0(frameCount * channels);
-    std::vector<float> buf1(frameCount * channels);
+    std::vector<float> buf0(frameCount * 2);
+    std::vector<float> buf1(frameCount * 2);
     
-    get_audio_frames(g_tracks[0], buf0.data(), frameCount, channels, sample_rate);
-    get_audio_frames(g_tracks[1], buf1.data(), frameCount, channels, sample_rate);
+    get_audio_frames(g_tracks[0], buf0.data(), frameCount, 2, sample_rate);
+    get_audio_frames(g_tracks[1], buf1.data(), frameCount, 2, sample_rate);
+
+    std::vector<float> mixed_stereo(frameCount * 2, 0.0f);
 
     if (g_mixer_state == 1) {
         double t = g_crossfade_elapsed / g_actual_crossfade_duration;
@@ -597,8 +599,8 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
         float vol0 = (float)std::cos(t * M_PI * 0.5);
         float vol1 = (float)std::sin(t * M_PI * 0.5);
 
-        for (ma_uint32 i = 0; i < frameCount * channels; i++) {
-            out[i] = buf0[i] * vol0 + buf1[i] * vol1;
+        for (ma_uint32 i = 0; i < frameCount * 2; i++) {
+            mixed_stereo[i] = buf0[i] * vol0 + buf1[i] * vol1;
         }
 
         if (t >= 1.0) {
@@ -617,8 +619,8 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
         float vol1 = (float)std::cos(t * M_PI * 0.5);
         float vol0 = (float)std::sin(t * M_PI * 0.5);
 
-        for (ma_uint32 i = 0; i < frameCount * channels; i++) {
-            out[i] = buf0[i] * vol0 + buf1[i] * vol1;
+        for (ma_uint32 i = 0; i < frameCount * 2; i++) {
+            mixed_stereo[i] = buf0[i] * vol0 + buf1[i] * vol1;
         }
 
         if (t >= 1.0) {
@@ -630,7 +632,7 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
             g_mixer_state = 0;
         }
     } else if (g_mixer_state == 0) {
-        std::memcpy(out, buf0.data(), frameCount * channels * sizeof(float));
+        std::memcpy(mixed_stereo.data(), buf0.data(), frameCount * 2 * sizeof(float));
 
         if (g_automix_enabled && g_tracks[0].is_playing && g_tracks[1].has_decoder) {
             double pos0 = get_track_position(0);
@@ -655,7 +657,7 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
             }
         }
     } else if (g_mixer_state == 2) {
-        std::memcpy(out, buf1.data(), frameCount * channels * sizeof(float));
+        std::memcpy(mixed_stereo.data(), buf1.data(), frameCount * 2 * sizeof(float));
 
         if (g_automix_enabled && g_tracks[1].is_playing && g_tracks[0].has_decoder) {
             double pos1 = get_track_position(1);
@@ -677,6 +679,22 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
                 g_actual_crossfade_duration = actual_crossfade_dur;
                 g_tracks[0].is_playing = true;
                 g_tracks[0].pitch_semi = 0.0;
+            }
+        }
+    }
+
+    if (channels == 1) {
+        for (ma_uint32 i = 0; i < frameCount; i++) {
+            out[i] = (mixed_stereo[i * 2] + mixed_stereo[i * 2 + 1]) * 0.5f;
+        }
+    } else if (channels == 2) {
+        std::memcpy(out, mixed_stereo.data(), frameCount * 2 * sizeof(float));
+    } else {
+        for (ma_uint32 i = 0; i < frameCount; i++) {
+            out[i * channels] = mixed_stereo[i * 2];
+            out[i * channels + 1] = mixed_stereo[i * 2 + 1];
+            for (int c = 2; c < channels; c++) {
+                out[i * channels + c] = 0.0f;
             }
         }
     }

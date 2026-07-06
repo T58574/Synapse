@@ -59,7 +59,7 @@ const MOOD_TO_PALETTE: Record<string, string> = {
     peaceful: 'trust'
 };
 
-const getTrackPalette = (filePath: string): Palette => {
+const getTrackPalette = (filePath: string, isLight: boolean): Palette => {
     let hash = 0;
     for (let i = 0; i < filePath.length; i++) {
         hash = filePath.charCodeAt(i) + ((hash << 5) - hash);
@@ -93,10 +93,10 @@ const getTrackPalette = (filePath: string): Palette => {
         return [r, g, b];
     };
     return {
-        bg: hslToRgb(baseHue, 35, 4),
-        accent: hslToRgb(accentHue, 95, 55),
-        surface: hslToRgb(baseHue, 90, 45),
-        muted: hslToRgb(secondaryHue, 85, 40)
+        bg: isLight ? hslToRgb(baseHue, 15, 95) : hslToRgb(baseHue, 35, 4),
+        accent: isLight ? hslToRgb(accentHue, 85, 45) : hslToRgb(accentHue, 95, 55),
+        surface: isLight ? hslToRgb(baseHue, 30, 85) : hslToRgb(baseHue, 90, 45),
+        muted: isLight ? hslToRgb(secondaryHue, 25, 65) : hslToRgb(secondaryHue, 85, 40)
     };
 };
 
@@ -190,9 +190,10 @@ export const VisualizerContainer: React.FC<VisualizerContainerProps> = ({
             muted: [0, 0, 0] as [number, number, number],
         };
 
+        const isLightTheme = currentTheme === 'neutrals' || currentTheme === 'trust' || currentTheme === 'eco';
         const activeTrack = tracks[activeSlot];
         const initialPalette = (activeTrack?.filePath)
-            ? getTrackPalette(activeTrack.filePath)
+            ? getTrackPalette(activeTrack.filePath, isLightTheme)
             : (PALETTES[currentTheme] || PALETTES.saas);
 
         currentColors.bg = [...initialPalette.bg];
@@ -257,7 +258,7 @@ export const VisualizerContainer: React.FC<VisualizerContainerProps> = ({
 
             const currentActiveTrack = tracks[audioStateRef.current.activeSlot];
             const targetPalette = (currentActiveTrack?.filePath)
-                ? getTrackPalette(currentActiveTrack.filePath)
+                ? getTrackPalette(currentActiveTrack.filePath, isLightTheme)
                 : (PALETTES[currentTheme] || PALETTES.saas);
 
             const lerpSpeed = 0.04;

@@ -648,70 +648,79 @@ function App() {
             const st = stateRef.current;
             const updatedPlaying = [...st.playing] as [boolean, boolean];
             const updatedPos = [...st.positions] as [number, number];
-            
-            await Promise.all([
-                (async () => {
-                    if (st.tracks[0]) {
+            const promises: Promise<void>[] = [];
+
+            if (st.tracks[0]) {
+                const needsPoll = st.playing[0] || (st.autoMix && st.playing[1]);
+                if (needsPoll) {
+                    promises.push((async () => {
                         const isPlay = await IsPlaying(0);
                         updatedPlaying[0] = isPlay;
                         if (isPlay) {
                             const pos = await GetPosition(0);
                             updatedPos[0] = pos;
                         }
-                    }
-                })(),
-                (async () => {
-                    if (st.tracks[1]) {
+                    })());
+                }
+            }
+
+            if (st.tracks[1]) {
+                const needsPoll = st.playing[1] || (st.autoMix && st.playing[0]);
+                if (needsPoll) {
+                    promises.push((async () => {
                         const isPlay = await IsPlaying(1);
                         updatedPlaying[1] = isPlay;
                         if (isPlay) {
                             const pos = await GetPosition(1);
                             updatedPos[1] = pos;
                         }
-                    }
-                })()
-            ]);
-            
-            setPlaying(updatedPlaying);
-            setPositions(updatedPos);
-
-            const activeIsPlaying = updatedPlaying[st.activeSlot];
-            const activePos = updatedPos[st.activeSlot];
-            const activeTrack = st.tracks[st.activeSlot];
-            if (activeTrack && activeIsPlaying && activeTrack.durationSec > 0 && activePos >= activeTrack.durationSec - 0.5) {
-                if (!st.autoMix) {
-                    uiLog('INFO', `interval: трек закончен pos=${activePos.toFixed(2)} dur=${activeTrack.durationSec.toFixed(2)} -> next`);
-                    if (st.repeat) {
-                        handleSeekRef.current(st.activeSlot, 0);
-                    } else {
-                        handleNextRef.current();
-                    }
+                    })());
                 }
             }
 
-            if (st.autoMix && st.currentPlaylistTracks.length > 0) {
-                const otherSlot = st.activeSlot === 0 ? 1 : 0;
-                const currentTrack = st.tracks[st.activeSlot];
-                let playlistIndex = st.currentPlaylistTracks.findIndex(t => t.filePath === currentTrack?.filePath);
-                let nextPlaylistIndex = (playlistIndex + 1) % st.currentPlaylistTracks.length;
-                if (st.repeat) {
-                    nextPlaylistIndex = playlistIndex >= 0 ? playlistIndex : 0;
-                } else if (st.shuffle) {
-                    nextPlaylistIndex = Math.floor(Math.random() * st.currentPlaylistTracks.length);
-                }
-                const nextTrack = st.currentPlaylistTracks[nextPlaylistIndex];
-                const nextOriginalIndex = st.libraryTracks.findIndex(t => t.filePath === nextTrack.filePath);
-                
-                if (updatedPlaying[st.activeSlot] && activeTrack && !updatedPlaying[otherSlot]) {
-                    const otherTrack = st.tracks[otherSlot];
-                    if (!otherTrack || otherTrack.filePath !== nextTrack.filePath) {
-                        await handleLoadDeckRef.current(otherSlot, nextTrack.filePath);
+            if (promises.length > 0) {
+                await Promise.all(promises);
+                setPlaying(updatedPlaying);
+                setPositions(updatedPos);
+
+                const activeIsPlaying = updatedPlaying[st.activeSlot];
+                const activePos = updatedPos[st.activeSlot];
+                const activeTrack = st.tracks[st.activeSlot];
+                if (activeTrack && activeIsPlaying && activeTrack.durationSec > 0 && activePos >= activeTrack.durationSec - 0.5) {
+                    if (!st.autoMix) {
+                        uiLog('INFO', `interval: трек закончен pos=${activePos.toFixed(2)} dur=${activeTrack.durationSec.toFixed(2)} -> next`);
+                        if (st.repeat) {
+                            handleSeekRef.current(st.activeSlot, 0);
+                        } else {
+                            handleNextRef.current();
+                        }
                     }
                 }
 
-                if (updatedPlaying[otherSlot] && !st.playing[otherSlot]) {
-                    setActiveSlot(otherSlot as 0 | 1);
-                    setCurrentTrackIndex(nextOriginalIndex);
+                if (st.autoMix && st.currentPlaylistTracks.length > 0) {
+                    const otherSlot = st.activeSlot === 0 ? 1 : 0;
+                    const currentTrack = st.tracks[st.activeSlot];
+                    let playlistIndex = st.currentPlaylistTracks.findIndex(t => t.filePath === currentTrack?.filePath);
+                    let nextPlaylistIndex = (playlistIndex + 1) % st.currentPlaylistTracks.length;
+                    if (st.repeat) {
+                        nextPlaylistIndex = playlistIndex >= 0 ? playlistIndex : 0;
+                    } else if (st.shuffle) {
+                        nextPlaylistIndex = Math.floor(Math.random() * st.currentPlaylistTracks.length);
+                    }
+                    const nextTrack = st.currentPlaylistTracks[nextPlaylistIndex];
+                    const nextOriginalIndex = st.libraryTracks.findIndex(t => t.filePath === nextTrack.filePath);
+                    
+                    if (updatedPlaying[st.activeSlot] && activeTrack && !updatedPlaying[otherSlot]) {
+                        const otherTrack = st.tracks[otherSlot];
+                        if (!otherTrack || otherTrack.filePath !== nextTrack.filePath) {
+                            await handleLoadDeckRef.current(otherSlot, nextTrack.filePath);
+                        }
+                    }
+
+                    if (updatedPlaying[otherSlot] && !st.playing[otherSlot]) {
+                        setActiveSlot(otherSlot as 0 | 1);
+                        setCurrentTrackIndex(nextOriginalIndex);
+                    }
                 }
             }
         }, 100);
@@ -783,7 +792,7 @@ function App() {
 
             if (peakVal > 0.01) {
                 const peakY = h - peakVal * h * 0.9;
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = currentTheme === 'neutrals' || currentTheme === 'trust' || currentTheme === 'eco' ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.65)';
                 ctx.fillRect(x, peakY, barWidth, 1.5);
             }
         }
@@ -821,7 +830,7 @@ function App() {
             if (pct < playPct) {
                 ctx.fillStyle = accentColor;
             } else {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.fillStyle = theme.border;
             }
             ctx.fillRect(x, y, Math.max(1, barWidth - 1), Math.max(2, barHeight));
         }
