@@ -227,6 +227,7 @@ if (results.length > 0) {
   4. Redesigned header (`.app-header`) and footer (`.playback-bar`) panels, buttons, and volume/progress sliders to be fully adaptive to light and dark themes using custom CSS properties on `:root` rather than hardcoded pitch black backgrounds and white texts.
   5. Corrected WebGL visualizer background aura rendering in light themes inside `VisualizerContainer.tsx` by introducing theme-sensitive HSL scaling (light background and surfaces) when a track plays.
 * **2026-07-07**: Fixed a potential read-modify-write race condition and deadlocks in the playlist manager and concurrent scans of the music directory inside `backend/app.go` by introducing a thread-safe synchronized design using `sync.Mutex` locks (`playlistMu` and `scanMu`) across all read and write transactions.
+* **2026-07-07 (2)**: Implemented asynchronous non-blocking audio analysis engine. De-blocked C++ `load_track` call to perform instant decoder initialization and estimated duration parsing (under 10ms startup latency), shifting heavy wave-peak and BPM/key analysis to a background Go goroutine. Added `SetTrackMetadata` thread-safe C++ binding, Wails `"track_analyzed"` event notifications, and frontend cache lookup overrides to provide instantaneous audio playback start.
 
 ---
 

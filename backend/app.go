@@ -100,6 +100,18 @@ func (a *App) LoadTrack(slot int, filePath string) (TrackMetadata, error) {
 	meta.Artist = artist
 	meta.Genre = genre
 	meta.Mood = DetermineMood(meta.BPM, meta.KeySignature, genre)
+
+	go func(s int, path string, initialMeta TrackMetadata) {
+		analyzed := AnalyzeFile(path)
+		analyzed.Artist = initialMeta.Artist
+		analyzed.Genre = initialMeta.Genre
+		analyzed.Mood = DetermineMood(analyzed.BPM, analyzed.KeySignature, analyzed.Genre)
+		SetTrackMetadata(s, analyzed)
+		if a.ctx != nil {
+			wailsRuntime.EventsEmit(a.ctx, "track_analyzed", s, analyzed)
+		}
+	}(slot, filePath, meta)
+
 	Log(LogInfo, "app", "LoadTrack OK slot=%d duration=%.3fs bpm=%.1f key=%s waveform=%d mood=%s",
 		slot, meta.DurationSec, meta.BPM, meta.KeySignature, len(meta.Waveform), meta.Mood)
 	return meta, nil

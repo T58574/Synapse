@@ -343,13 +343,16 @@ function App() {
             try { await Pause(slot); } catch { /* ok */ }
 
             const meta = await LoadTrack(slot, path);
+            const cachedTrack = libraryTracks.find(t => t.filePath === path);
             const updated = [...tracks] as [TrackInfo | null, TrackInfo | null];
             updated[slot] = {
                 filePath: path,
-                durationSec: meta.durationSec,
-                bpm: meta.bpm,
-                keySignature: meta.keySignature,
-                waveform: meta.waveform || []
+                durationSec: cachedTrack ? cachedTrack.durationSec : meta.durationSec,
+                bpm: cachedTrack ? cachedTrack.bpm : meta.bpm,
+                keySignature: cachedTrack ? cachedTrack.keySignature : meta.keySignature,
+                waveform: (cachedTrack && cachedTrack.waveform && cachedTrack.waveform.length > 0)
+                    ? cachedTrack.waveform
+                    : (meta.waveform || [])
             };
             setTracks(updated);
 
@@ -369,7 +372,7 @@ function App() {
             updatedPitches[slot] = 0.0;
             setPitches(updatedPitches);
 
-            uiLog('INFO', `handleLoadDeck: OK slot=${slot} dur=${meta.durationSec.toFixed(2)}s bpm=${meta.bpm.toFixed(1)} key=${meta.keySignature}`);
+            uiLog('INFO', `handleLoadDeck: OK slot=${slot} dur=${updated[slot]?.durationSec.toFixed(2)}s bpm=${updated[slot]?.bpm.toFixed(1)} key=${updated[slot]?.keySignature}`);
         } catch (err) {
             uiLog('ERROR', `handleLoadDeck: ошибка slot=${slot} path=${path}: ${String(err)}`);
         } finally {
@@ -642,6 +645,24 @@ function App() {
             window.removeEventListener('touchend', handleGlobalRelease);
         };
     }, [dragPosition === null, activeSlot]);
+
+    useEffect(() => {
+        const cancel = EventsOn("track_analyzed", (slot: number, meta: any) => {
+            setTracks(prev => {
+                const updated = [...prev] as [TrackInfo | null, TrackInfo | null];
+                if (updated[slot] && updated[slot]?.filePath === meta.filePath) {
+                    updated[slot] = {
+                        ...updated[slot]!,
+                        bpm: meta.bpm,
+                        keySignature: meta.keySignature,
+                        waveform: meta.waveform || []
+                    };
+                }
+                return updated;
+            });
+        });
+        return cancel;
+    }, []);
 
     useEffect(() => {
         const interval = setInterval(async () => {

@@ -28,6 +28,7 @@ int is_track_playing(int slot);
 void set_automix_enabled(int enabled);
 void set_crossfade_duration(double duration_sec);
 void free_track_metadata(TrackMetadataC metadata);
+void set_track_metadata(int slot, double duration, double bpm, const char* key, const float* waveform, int waveform_size);
 TrackMetadataC analyze_file(const char* file_path);
 int get_track_spectrum(int slot, float* out_buffer, int max_size);
 const char* get_audio_devices_json();

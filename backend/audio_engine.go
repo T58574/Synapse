@@ -86,6 +86,16 @@ func GetTrackMetadata(slot int, filePath string) TrackMetadata {
 	}
 }
 
+func SetTrackMetadata(slot int, meta TrackMetadata) {
+	cKey := C.CString(meta.KeySignature)
+	defer C.free(unsafe.Pointer(cKey))
+	var cWaveform *C.float
+	if len(meta.Waveform) > 0 {
+		cWaveform = (*C.float)(&meta.Waveform[0])
+	}
+	C.set_track_metadata(C.int(slot), C.double(meta.DurationSec), C.double(meta.BPM), cKey, cWaveform, C.int(len(meta.Waveform)))
+}
+
 func PlayTrack(slot int) {
 	Log(LogInfo, "engine", "play_track slot=%d", slot)
 	C.play_track(C.int(slot))

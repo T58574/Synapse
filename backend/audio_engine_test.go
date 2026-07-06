@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -85,6 +86,14 @@ func TestAudioEngine(t *testing.T) {
 
 	if meta.DurationSec <= 0.0 {
 		t.Errorf("expected positive duration, got %f", meta.DurationSec)
+	}
+
+	for i := 0; i < 40; i++ {
+		meta = GetTrackMetadata(0, wavPath)
+		if len(meta.Waveform) > 0 {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	if meta.BPM <= 0.0 {

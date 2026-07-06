@@ -759,12 +759,6 @@ int load_track(int slot, const char* file_path) {
     engine_log_open();
     if (slot < 0 || slot > 1) return 0;
 
-    double dur = 0.0;
-    double bpm = 120.0;
-    const char* key = "8A";
-    std::vector<float> wf;
-    analyze_audio(file_path, &dur, &bpm, &key, wf);
-
     TrackState& ts = g_tracks[slot];
     std::lock_guard<std::mutex> lock(ts.mtx);
     if (ts.has_decoder) {
@@ -781,19 +775,22 @@ int load_track(int slot, const char* file_path) {
     ts.recent_samples.assign(1024, 0.0f);
     ts.recent_ptr = 0;
 
-    // Фиксированный формат вывода — см. init_decoder_fixed.
+    ts.duration = 0.0;
+    ts.bpm = 120.0;
+    ts.key = "8A";
+    ts.waveform.clear();
+
     if (init_decoder_fixed(file_path, &ts.decoder) != MA_SUCCESS) {
         ENGINE_LOGE("load_track: decoder init FAILED slot=%d path=%s", slot, file_path);
         return 0;
     }
     ts.has_decoder = true;
-    ENGINE_LOGI("load_track: decoder ready slot=%d sr=%u ch=%u",
-                slot, ts.decoder.outputSampleRate, ts.decoder.outputChannels);
 
-    ts.duration = dur;
-    ts.bpm = bpm;
-    ts.key = key;
-    ts.waveform = wf;
+    ma_uint64 total_frames = 0;
+    if (ma_decoder_get_length_in_pcm_frames(&ts.decoder, &total_frames) == MA_SUCCESS) {
+        ts.duration = (double)total_frames / ts.decoder.outputSampleRate;
+    }
+
     ENGINE_LOGI("load_track OK slot=%d duration=%.3fs bpm=%.1f key=%s waveform=%zu",
                 slot, ts.duration, ts.bpm, ts.key.c_str(), ts.waveform.size());
 
@@ -816,6 +813,22 @@ TrackMetadataC get_track_metadata(int slot) {
         memcpy(meta.waveformData, ts.waveform.data(), ts.waveform.size() * sizeof(float));
     }
     return meta;
+}
+
+void set_track_metadata(int slot, double duration, double bpm, const char* key, const float* waveform, int waveform_size) {
+    if (slot < 0 || slot > 1) return;
+    TrackState& ts = g_tracks[slot];
+    std::lock_guard<std::mutex> lock(ts.mtx);
+    ts.duration = duration;
+    ts.bpm = bpm;
+    if (key) {
+        ts.key = key;
+    }
+    if (waveform && waveform_size > 0) {
+        ts.waveform.assign(waveform, waveform + waveform_size);
+    }
+    ENGINE_LOGI("set_track_metadata OK slot=%d duration=%.3fs bpm=%.1f key=%s waveform=%zu",
+                slot, ts.duration, ts.bpm, ts.key.c_str(), ts.waveform.size());
 }
 
 int get_track_spectrum(int slot, float* out_buffer, int max_size) {
