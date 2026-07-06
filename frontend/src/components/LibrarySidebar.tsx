@@ -6,8 +6,8 @@ interface LibrarySidebarProps {
     playlists: PlaylistInfo[];
     selectedPlaylist: string | null;
     setSelectedPlaylist: (pl: string | null) => void;
-    activeTab: 'library' | 'decks' | 'settings' | 'search' | 'musicians';
-    setActiveTab: (tab: 'library' | 'decks' | 'settings' | 'search' | 'musicians') => void;
+    activeTab: 'library' | 'settings' | 'musicians';
+    setActiveTab: (tab: 'library' | 'settings' | 'musicians') => void;
     isCreatingPlaylist: boolean;
     setIsCreatingPlaylist: (creating: boolean) => void;
     newPlaylistName: string;

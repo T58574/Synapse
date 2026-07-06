@@ -7,9 +7,6 @@ import {
     Pause,
     Seek,
     SetVolume,
-    SetEQ,
-    SetTempo,
-    SetPitch,
     GetPosition,
     IsPlaying,
     ToggleAutoMix,
@@ -33,7 +30,6 @@ import { AppHeader } from './components/AppHeader';
 import { LibrarySidebar } from './components/LibrarySidebar';
 import { LibraryHero } from './components/LibraryHero';
 import { LibraryTable } from './components/LibraryTable';
-import { DeckView } from './components/DeckView';
 import { SettingsView } from './components/SettingsView';
 import { PlaybackBar } from './components/PlaybackBar';
 import { VisualizerContainer } from './features/visualizer/VisualizerContainer';
@@ -41,7 +37,7 @@ import { MusiciansView } from './components/MusiciansView';
 import { splitArtists } from './utils';
 
 function App() {
-    const [activeTab, setActiveTab] = useState<'library' | 'decks' | 'settings' | 'search' | 'musicians'>('library');
+    const [activeTab, setActiveTab] = useState<'library' | 'settings' | 'musicians'>('library');
     const [crossfadeDuration, setCrossfadeDurationState] = useState<number>(8.0);
     const [musicDir, setMusicDir] = useState<string>('');
     const [libraryTracks, setLibraryTracks] = useState<TrackInfo[]>([]);
@@ -173,22 +169,9 @@ function App() {
         }
         return [0.8, 0.8];
     });
-    const [tempos, setTempos] = useState<[number, number]>([1.0, 1.0]);
-    const [pitches, setPitches] = useState<[number, number]>([0.0, 0.0]);
-    const [eqs, setEqs] = useState<[[number, number, number], [number, number, number]]>([[0, 0, 0], [0, 0, 0]]);
     const [autoMix, setAutoMix] = useState<boolean>(false);
     const [shuffle, setShuffle] = useState<boolean>(false);
     const [repeat, setRepeat] = useState<boolean>(false);
-
-    const canvasRef0 = useRef<HTMLCanvasElement | null>(null);
-    const canvasRef1 = useRef<HTMLCanvasElement | null>(null);
-    const spectrumRef0 = useRef<HTMLCanvasElement | null>(null);
-    const spectrumRef1 = useRef<HTMLCanvasElement | null>(null);
-
-    const smoothedSpectrum0 = useRef<number[]>(new Array(64).fill(0));
-    const smoothedSpectrum1 = useRef<number[]>(new Array(64).fill(0));
-    const peakSpectrum0 = useRef<number[]>(new Array(64).fill(0));
-    const peakSpectrum1 = useRef<number[]>(new Array(64).fill(0));
     const currentThemeRef = useRef<string>(currentTheme);
 
     useEffect(() => {
@@ -366,18 +349,7 @@ function App() {
             updatedPos[slot] = 0;
             setPositions(updatedPos);
 
-            const updatedTempos = [...tempos] as [number, number];
-            updatedTempos[slot] = 1.0;
-            setTempos(updatedTempos);
 
-            const updatedPitches = [...pitches] as [number, number];
-            updatedPitches[slot] = 0.0;
-            setPitches(updatedPitches);
-
-            const updatedEqs = [...eqs] as [[number, number, number], [number, number, number]];
-            updatedEqs[slot] = [0, 0, 0];
-            setEqs(updatedEqs);
-            await SetEQ(slot, 0, 0, 0);
 
             uiLog('INFO', `handleLoadDeck: OK slot=${slot} dur=${updated[slot]?.durationSec.toFixed(2)}s bpm=${updated[slot]?.bpm.toFixed(1)} key=${updated[slot]?.keySignature}`);
         } catch (err) {
@@ -564,31 +536,6 @@ function App() {
         }
     };
 
-    const handleTempo = async (slot: number, val: number) => {
-        const updated = [...tempos] as [number, number];
-        updated[slot] = val;
-        setTempos(updated);
-        uiLog('INFO', `handleTempo slot=${slot} tempo=${val.toFixed(2)}`);
-        await SetTempo(slot, val);
-    };
-
-    const handlePitch = async (slot: number, val: number) => {
-        const updated = [...pitches] as [number, number];
-        updated[slot] = val;
-        setPitches(updated);
-        uiLog('INFO', `handlePitch slot=${slot} pitch=${val}`);
-        await SetPitch(slot, val);
-    };
-
-    const handleEq = async (slot: number, band: 'bass' | 'mid' | 'treble', val: number) => {
-        const updated = [...eqs] as [[number, number, number], [number, number, number]];
-        const idx = band === 'bass' ? 0 : (band === 'mid' ? 1 : 2);
-        updated[slot][idx] = val;
-        setEqs(updated);
-        uiLog('INFO', `handleEq slot=${slot} band=${band} val=${val}dB`);
-        await SetEQ(slot, updated[slot][0], updated[slot][1], updated[slot][2]);
-    };
-
     const handleSeek = async (slot: number, pct: number) => {
         const track = tracks[slot];
         if (!track) return;
@@ -601,14 +548,6 @@ function App() {
     };
 
     handleSeekRef.current = handleSeek;
-
-    const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>, slot: number) => {
-        const canvas = e.currentTarget;
-        const rect = canvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const pct = clickX / rect.width;
-        handleSeek(slot, pct);
-    };
 
     const handleToggleAutoMix = async () => {
         const val = !autoMix;
@@ -764,128 +703,7 @@ function App() {
         return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
-        const unsubscribe = EventsOn("spectrum", (data: { deck0: number[], deck1: number[] }) => {
-            if (spectrumRef0.current && data.deck0) {
-                drawSpectrum(spectrumRef0.current, data.deck0, 0);
-            }
-            if (spectrumRef1.current && data.deck1) {
-                drawSpectrum(spectrumRef1.current, data.deck1, 1);
-            }
-        });
-        return () => {
-            if (typeof unsubscribe === 'function') {
-                unsubscribe();
-            }
-        };
-    }, [currentTheme]);
 
-    const drawSpectrum = (canvas: HTMLCanvasElement, spectrum: number[], slot: number) => {
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        const w = canvas.width;
-        const h = canvas.height;
-        ctx.clearRect(0, 0, w, h);
-
-        const theme = themes[currentTheme as keyof typeof themes] || themes.saas;
-        const barGradient = ctx.createLinearGradient(0, h, 0, 0);
-        barGradient.addColorStop(0, theme.accent + '15');
-        barGradient.addColorStop(0.4, theme.accent + 'b3');
-        barGradient.addColorStop(1, theme.accent);
-
-        const smoothed = slot === 0 ? smoothedSpectrum0.current : smoothedSpectrum1.current;
-        const peaks = slot === 0 ? peakSpectrum0.current : peakSpectrum1.current;
-
-        for (let i = 0; i < spectrum.length; i++) {
-            const rawVal = spectrum[i] || 0;
-            const normalized = Math.min(1.0, rawVal / 128.0);
-            const target = Math.pow(normalized, 0.75);
-
-            if (target > smoothed[i]) {
-                smoothed[i] = target;
-            } else {
-                smoothed[i] = smoothed[i] * 0.82 + target * 0.18;
-            }
-
-            if (smoothed[i] > peaks[i]) {
-                peaks[i] = smoothed[i];
-            } else {
-                peaks[i] = Math.max(0, peaks[i] * 0.97 - 0.003);
-            }
-        }
-
-        const barWidth = Math.max(1, (w / spectrum.length) - 1.5);
-        for (let i = 0; i < spectrum.length; i++) {
-            const val = smoothed[i];
-            const peakVal = peaks[i];
-            const x = i * (w / spectrum.length);
-
-            if (val > 0.01) {
-                const barHeight = val * h * 0.9;
-                const y = h - barHeight;
-                ctx.fillStyle = barGradient;
-                ctx.fillRect(x, y, barWidth, barHeight);
-            }
-
-            if (peakVal > 0.01) {
-                const peakY = h - peakVal * h * 0.9;
-                ctx.fillStyle = currentTheme === 'neutrals' || currentTheme === 'trust' || currentTheme === 'eco' ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.65)';
-                ctx.fillRect(x, peakY, barWidth, 1.5);
-            }
-        }
-    };
-
-    const draw = (canvas: HTMLCanvasElement, peaks: number[], pos: number, dur: number) => {
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        const w = canvas.width;
-        const h = canvas.height;
-        ctx.clearRect(0, 0, w, h);
-
-        if (peaks.length === 0) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, h / 2);
-            ctx.lineTo(w, h / 2);
-            ctx.stroke();
-            return;
-        }
-
-        const playPct = dur > 0 ? pos / dur : 0;
-        const barWidth = w / peaks.length;
-        const theme = themes[currentTheme as keyof typeof themes] || themes.saas;
-        const accentColor = theme.accent;
-
-        for (let i = 0; i < peaks.length; i++) {
-            const pct = i / peaks.length;
-            const val = peaks[i];
-            const barHeight = val * h * 0.85;
-            const x = i * barWidth;
-            const y = (h - barHeight) / 2;
-
-            if (pct < playPct) {
-                ctx.fillStyle = accentColor;
-            } else {
-                ctx.fillStyle = theme.border;
-            }
-            ctx.fillRect(x, y, Math.max(1, barWidth - 1), Math.max(2, barHeight));
-        }
-    };
-
-    useEffect(() => {
-        if (canvasRef0.current) {
-            const t = tracks[0];
-            draw(canvasRef0.current, t ? t.waveform : [], positions[0], t ? t.durationSec : 0);
-        }
-    }, [tracks[0], positions[0], currentTheme]);
-
-    useEffect(() => {
-        if (canvasRef1.current) {
-            const t = tracks[1];
-            draw(canvasRef1.current, t ? t.waveform : [], positions[1], t ? t.durationSec : 0);
-        }
-    }, [tracks[1], positions[1], currentTheme]);
 
     const formatTime = (sec: number) => {
         const m = Math.floor(sec / 60);
@@ -975,28 +793,7 @@ function App() {
                             </div>
                         </div>
                     )}
-                    {activeTab === 'decks' && (
-                        <DeckView
-                            tracks={tracks}
-                            playing={playing}
-                            handleSelectAndLoad={handleSelectAndLoad}
-                            canvasRef0={canvasRef0}
-                            canvasRef1={canvasRef1}
-                            spectrumRef0={spectrumRef0}
-                            spectrumRef1={spectrumRef1}
-                            getFilename={getFilename}
-                            volumes={volumes}
-                            tempos={tempos}
-                            pitches={pitches}
-                            eqs={eqs}
-                            handleVolume={handleVolume}
-                            handleTempo={handleTempo}
-                            handlePitch={handlePitch}
-                            handleEq={handleEq}
-                            handleCanvasClick={handleCanvasClick}
-                            handlePlayPause={handlePlayPause}
-                        />
-                    )}
+
                     {activeTab === 'settings' && (
                         <SettingsView
                             themes={themes}
@@ -1044,7 +841,7 @@ function App() {
                 formatTime={formatTime}
                 getFilename={getFilename}
                 copyToClipboard={copyToClipboard}
-                onNavigateToDecks={() => setActiveTab('decks')}
+
             />
 
             {toastMessage && (

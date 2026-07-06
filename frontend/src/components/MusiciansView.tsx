@@ -6,7 +6,7 @@ import { splitArtists } from '../utils';
 
 interface MusiciansViewProps {
     libraryTracks: TrackInfo[];
-    setActiveTab: (tab: 'library' | 'decks' | 'settings' | 'search' | 'musicians') => void;
+    setActiveTab: (tab: 'library' | 'settings' | 'musicians') => void;
     setSelectedArtist: (artist: string | null) => void;
     setSelectedPlaylist: (playlist: string | null) => void;
     handlePlayLibraryTrack: (index: number) => Promise<void>;
