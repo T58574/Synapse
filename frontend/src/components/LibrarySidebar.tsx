@@ -43,6 +43,38 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
 }) => {
     return (
         <aside className="library-sidebar">
+            <button
+                className={`sidebar-playlist-item-btn home-library-sidebar-btn ${(!selectedPlaylist && !selectedArtist && !selectedGenre) ? 'active' : ''}`}
+                onClick={() => {
+                    setSelectedPlaylist(null);
+                    setSelectedArtist(null);
+                    setSelectedGenre(null);
+                    setActiveTab('library');
+                }}
+                style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-color)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    marginBottom: '16px',
+                    transition: 'all 0.2s ease',
+                }}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                <span>All Tracks</span>
+            </button>
+
             <div className="playlists-sidebar-section">
                 <div className="playlists-sidebar-header">
                     <span className="theme-section-title">PLAYLISTS</span>

@@ -24,6 +24,7 @@ interface PlaybackBarProps {
     formatTime: (sec: number) => string;
     getFilename: (path: string) => string;
     copyToClipboard?: (text: string, label: string) => void;
+    onNavigateToDecks?: () => void;
 }
 
 export const PlaybackBar: React.FC<PlaybackBarProps> = ({
@@ -47,7 +48,8 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
     handleToggleAutoMix,
     formatTime,
     getFilename,
-    copyToClipboard
+    copyToClipboard,
+    onNavigateToDecks
 }) => {
     const activeTrack = tracks[activeSlot];
     const duration = activeTrack?.durationSec ?? 0;
@@ -58,7 +60,14 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             <div className="playback-left">
                 {activeTrack ? (
                     <div className="playing-meta">
-                        <span className="playing-spark"><BoltIcon /></span>
+                        <span 
+                            className="playing-spark clickable-nav" 
+                            onClick={onNavigateToDecks}
+                            title="Open Deck View"
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <BoltIcon />
+                        </span>
                         <div className="meta-text">
                             <span 
                                 className="playing-title clickable-copy"

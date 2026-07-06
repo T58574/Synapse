@@ -1044,6 +1044,7 @@ function App() {
                 formatTime={formatTime}
                 getFilename={getFilename}
                 copyToClipboard={copyToClipboard}
+                onNavigateToDecks={() => setActiveTab('decks')}
             />
 
             {toastMessage && (
