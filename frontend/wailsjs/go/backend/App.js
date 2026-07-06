@@ -94,6 +94,10 @@ export function SetCrossfadeDuration(arg1) {
   return window['go']['backend']['App']['SetCrossfadeDuration'](arg1);
 }
 
+export function SetEQ(arg1, arg2, arg3, arg4) {
+  return window['go']['backend']['App']['SetEQ'](arg1, arg2, arg3, arg4);
+}
+
 export function SetPitch(arg1, arg2) {
   return window['go']['backend']['App']['SetPitch'](arg1, arg2);
 }

@@ -69,6 +69,29 @@ static void engine_log(const char* level, const char* fmt, ...) {
 #define ENGINE_LOGW(...) engine_log("WARN", __VA_ARGS__)
 #define ENGINE_LOGE(...) engine_log("ERROR", __VA_ARGS__)
 
+struct EqFilter {
+    float lp_state[2] = {0.0f, 0.0f};
+    float hp_state[2] = {0.0f, 0.0f};
+    float hp_prev_in[2] = {0.0f, 0.0f};
+    
+    float bass_gain = 1.0f;
+    float mid_gain = 1.0f;
+    float treble_gain = 1.0f;
+
+    void process(const float* in_frame, float* out_frame, float alpha_lp, float alpha_hp) {
+        for (int c = 0; c < 2; ++c) {
+            float in_val = in_frame[c];
+            lp_state[c] = lp_state[c] + (1.0f - alpha_lp) * (in_val - lp_state[c]);
+            float low_val = lp_state[c];
+            hp_state[c] = alpha_hp * (hp_state[c] + in_val - hp_prev_in[c]);
+            hp_prev_in[c] = in_val;
+            float high_val = hp_state[c];
+            float mid_val = in_val - low_val - high_val;
+            out_frame[c] = low_val * bass_gain + mid_val * mid_gain + high_val * treble_gain;
+        }
+    }
+};
+
 struct TrackState {
     ma_decoder decoder;
     bool has_decoder = false;
@@ -85,6 +108,7 @@ struct TrackState {
     std::vector<float> waveform;
     std::vector<float> recent_samples;
     int recent_ptr = 0;
+    EqFilter eq;
     std::mutex mtx;
 };
 
@@ -455,6 +479,20 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
         memset(out_buffer, 0, frame_count * channels * sizeof(float));
         return;
     }
+
+    auto apply_eq = [&](float* buf, int f_count) {
+        double cutoff_lp = 250.0;
+        double cutoff_hp = 4000.0;
+        float alpha_lp = (float)exp(-2.0 * M_PI * cutoff_lp / sample_rate);
+        float alpha_hp = (float)exp(-2.0 * M_PI * cutoff_hp / sample_rate);
+        for (int i = 0; i < f_count; i++) {
+            float in_frame[2] = { buf[i * channels], buf[i * channels + 1] };
+            float out_frame[2] = { 0.0f, 0.0f };
+            ts.eq.process(in_frame, out_frame, alpha_lp, alpha_hp);
+            buf[i * channels] = out_frame[0];
+            buf[i * channels + 1] = out_frame[1];
+        }
+    };
     
     if (ts.seek_position >= 0.0) {
         ma_uint64 target_frame = (ma_uint64)(ts.seek_position * ts.decoder.outputSampleRate);
@@ -485,6 +523,8 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
             ts.is_playing = false;
             ENGINE_LOGI("get_audio_frames: трек дошёл до конца (EOF) duration=%.3fs", ts.duration);
         }
+
+        apply_eq(out_buffer, frame_count);
 
         if (ts.recent_samples.empty()) {
             ts.recent_samples.assign(1024, 0.0f);
@@ -542,6 +582,8 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
         out_buffer[i * channels] = chan_out[0][i] * ts.volume;
         out_buffer[i * channels + 1] = chan_out[1][i] * ts.volume;
     }
+
+    apply_eq(out_buffer, frame_count);
 
     if (ts.recent_samples.empty()) {
         ts.recent_samples.assign(1024, 0.0f);
@@ -774,6 +816,9 @@ int load_track(int slot, const char* file_path) {
     ts.pitch_semi = 0.0;
     ts.recent_samples.assign(1024, 0.0f);
     ts.recent_ptr = 0;
+    ts.eq.lp_state[0] = ts.eq.lp_state[1] = 0.0f;
+    ts.eq.hp_state[0] = ts.eq.hp_state[1] = 0.0f;
+    ts.eq.hp_prev_in[0] = ts.eq.hp_prev_in[1] = 0.0f;
 
     ts.duration = 0.0;
     ts.bpm = 120.0;
@@ -829,6 +874,17 @@ void set_track_metadata(int slot, double duration, double bpm, const char* key, 
     }
     ENGINE_LOGI("set_track_metadata OK slot=%d duration=%.3fs bpm=%.1f key=%s waveform=%zu",
                 slot, ts.duration, ts.bpm, ts.key.c_str(), ts.waveform.size());
+}
+
+void set_track_eq(int slot, float bass, float mid, float treble) {
+    if (slot < 0 || slot > 1) return;
+    TrackState& ts = g_tracks[slot];
+    std::lock_guard<std::mutex> lock(ts.mtx);
+    ts.eq.bass_gain = powf(10.0f, bass / 20.0f);
+    ts.eq.mid_gain = powf(10.0f, mid / 20.0f);
+    ts.eq.treble_gain = powf(10.0f, treble / 20.0f);
+    ENGINE_LOGI("set_track_eq slot=%d bass=%.2fdB(%.2f) mid=%.2fdB(%.2f) treble=%.2fdB(%.2f)",
+                slot, bass, ts.eq.bass_gain, mid, ts.eq.mid_gain, treble, ts.eq.treble_gain);
 }
 
 int get_track_spectrum(int slot, float* out_buffer, int max_size) {

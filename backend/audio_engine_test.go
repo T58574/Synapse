@@ -114,6 +114,7 @@ func TestAudioEngine(t *testing.T) {
 	}
 
 	app.SetVolume(0, 0.5)
+	app.SetEQ(0, -2.0, 1.5, 3.0)
 	app.SetTempo(0, 1.1)
 	app.SetPitch(0, 1.0)
 	app.Seek(0, 0.2)

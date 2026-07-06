@@ -168,6 +168,11 @@ func (a *App) SetVolume(slot int, volume float64) {
 	SetTrackVolume(slot, float32(volume))
 }
 
+func (a *App) SetEQ(slot int, bass, mid, treble float64) {
+	Log(LogInfo, "app", "SetEQ slot=%d bass=%.1f mid=%.1f treble=%.1f", slot, bass, mid, treble)
+	SetTrackEQ(slot, float32(bass), float32(mid), float32(treble))
+}
+
 func (a *App) SetTempo(slot int, tempoRatio float64) {
 	Log(LogInfo, "app", "SetTempo slot=%d ratio=%.3f", slot, tempoRatio)
 	SetTrackTempo(slot, tempoRatio)

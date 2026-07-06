@@ -96,6 +96,11 @@ func SetTrackMetadata(slot int, meta TrackMetadata) {
 	C.set_track_metadata(C.int(slot), C.double(meta.DurationSec), C.double(meta.BPM), cKey, cWaveform, C.int(len(meta.Waveform)))
 }
 
+func SetTrackEQ(slot int, bass, mid, treble float32) {
+	Log(LogDebug, "engine", "set_track_eq slot=%d bass=%.2f mid=%.2f treble=%.2f", slot, bass, mid, treble)
+	C.set_track_eq(C.int(slot), C.float(bass), C.float(mid), C.float(treble))
+}
+
 func PlayTrack(slot int) {
 	Log(LogInfo, "engine", "play_track slot=%d", slot)
 	C.play_track(C.int(slot))

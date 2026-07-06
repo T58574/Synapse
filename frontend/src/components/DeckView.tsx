@@ -14,9 +14,11 @@ interface DeckViewProps {
     volumes: [number, number];
     tempos: [number, number];
     pitches: [number, number];
+    eqs: [[number, number, number], [number, number, number]];
     handleVolume: (slot: number, val: number) => void;
     handleTempo: (slot: number, val: number) => void;
     handlePitch: (slot: number, val: number) => void;
+    handleEq: (slot: number, band: 'bass' | 'mid' | 'treble', val: number) => void;
     handleCanvasClick: (e: React.MouseEvent<HTMLCanvasElement>, slot: number) => void;
     handlePlayPause: (slot: number) => void;
 }
@@ -33,9 +35,11 @@ export const DeckView: React.FC<DeckViewProps> = ({
     volumes,
     tempos,
     pitches,
+    eqs,
     handleVolume,
     handleTempo,
     handlePitch,
+    handleEq,
     handleCanvasClick,
     handlePlayPause
 }) => {
@@ -163,6 +167,68 @@ export const DeckView: React.FC<DeckViewProps> = ({
                                                     <ResetIcon />
                                                     <span>{pitches[slot] > 0 ? `+${pitches[slot]}` : pitches[slot]} st</span>
                                                 </span>
+                                            </div>
+
+                                            <div className="eq-section" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+                                                <div className="slider-group">
+                                                    <label>Bass</label>
+                                                    <input
+                                                        type="range"
+                                                        min="-12"
+                                                        max="12"
+                                                        step="1"
+                                                        value={eqs[slot][0]}
+                                                        onChange={(e) => handleEq(slot, 'bass', parseFloat(e.target.value))}
+                                                        className="slider"
+                                                        style={{
+                                                            background: `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${((eqs[slot][0] + 12) / 24) * 100}%, var(--border-color) ${((eqs[slot][0] + 12) / 24) * 100}%, var(--border-color) 100%)`
+                                                        }}
+                                                    />
+                                                    <span className="slider-badge resetable" onClick={() => handleEq(slot, 'bass', 0)}>
+                                                        <ResetIcon />
+                                                        <span>{eqs[slot][0] > 0 ? `+${eqs[slot][0]}` : eqs[slot][0]} dB</span>
+                                                    </span>
+                                                </div>
+
+                                                <div className="slider-group">
+                                                    <label>Mid</label>
+                                                    <input
+                                                        type="range"
+                                                        min="-12"
+                                                        max="12"
+                                                        step="1"
+                                                        value={eqs[slot][1]}
+                                                        onChange={(e) => handleEq(slot, 'mid', parseFloat(e.target.value))}
+                                                        className="slider"
+                                                        style={{
+                                                            background: `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${((eqs[slot][1] + 12) / 24) * 100}%, var(--border-color) ${((eqs[slot][1] + 12) / 24) * 100}%, var(--border-color) 100%)`
+                                                        }}
+                                                    />
+                                                    <span className="slider-badge resetable" onClick={() => handleEq(slot, 'mid', 0)}>
+                                                        <ResetIcon />
+                                                        <span>{eqs[slot][1] > 0 ? `+${eqs[slot][1]}` : eqs[slot][1]} dB</span>
+                                                    </span>
+                                                </div>
+
+                                                <div className="slider-group">
+                                                    <label>Treble</label>
+                                                    <input
+                                                        type="range"
+                                                        min="-12"
+                                                        max="12"
+                                                        step="1"
+                                                        value={eqs[slot][2]}
+                                                        onChange={(e) => handleEq(slot, 'treble', parseFloat(e.target.value))}
+                                                        className="slider"
+                                                        style={{
+                                                            background: `linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) ${((eqs[slot][2] + 12) / 24) * 100}%, var(--border-color) ${((eqs[slot][2] + 12) / 24) * 100}%, var(--border-color) 100%)`
+                                                        }}
+                                                    />
+                                                    <span className="slider-badge resetable" onClick={() => handleEq(slot, 'treble', 0)}>
+                                                        <ResetIcon />
+                                                        <span>{eqs[slot][2] > 0 ? `+${eqs[slot][2]}` : eqs[slot][2]} dB</span>
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

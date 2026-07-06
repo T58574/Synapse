@@ -48,6 +48,8 @@ export function SetAudioDevice(arg1:string):Promise<boolean>;
 
 export function SetCrossfadeDuration(arg1:number):Promise<void>;
 
+export function SetEQ(arg1:number,arg2:number,arg3:number,arg4:number):Promise<void>;
+
 export function SetPitch(arg1:number,arg2:number):Promise<void>;
 
 export function SetTempo(arg1:number,arg2:number):Promise<void>;

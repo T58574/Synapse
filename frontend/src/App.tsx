@@ -7,6 +7,7 @@ import {
     Pause,
     Seek,
     SetVolume,
+    SetEQ,
     SetTempo,
     SetPitch,
     GetPosition,
@@ -174,6 +175,7 @@ function App() {
     });
     const [tempos, setTempos] = useState<[number, number]>([1.0, 1.0]);
     const [pitches, setPitches] = useState<[number, number]>([0.0, 0.0]);
+    const [eqs, setEqs] = useState<[[number, number, number], [number, number, number]]>([[0, 0, 0], [0, 0, 0]]);
     const [autoMix, setAutoMix] = useState<boolean>(false);
     const [shuffle, setShuffle] = useState<boolean>(false);
     const [repeat, setRepeat] = useState<boolean>(false);
@@ -371,6 +373,11 @@ function App() {
             const updatedPitches = [...pitches] as [number, number];
             updatedPitches[slot] = 0.0;
             setPitches(updatedPitches);
+
+            const updatedEqs = [...eqs] as [[number, number, number], [number, number, number]];
+            updatedEqs[slot] = [0, 0, 0];
+            setEqs(updatedEqs);
+            await SetEQ(slot, 0, 0, 0);
 
             uiLog('INFO', `handleLoadDeck: OK slot=${slot} dur=${updated[slot]?.durationSec.toFixed(2)}s bpm=${updated[slot]?.bpm.toFixed(1)} key=${updated[slot]?.keySignature}`);
         } catch (err) {
@@ -571,6 +578,15 @@ function App() {
         setPitches(updated);
         uiLog('INFO', `handlePitch slot=${slot} pitch=${val}`);
         await SetPitch(slot, val);
+    };
+
+    const handleEq = async (slot: number, band: 'bass' | 'mid' | 'treble', val: number) => {
+        const updated = [...eqs] as [[number, number, number], [number, number, number]];
+        const idx = band === 'bass' ? 0 : (band === 'mid' ? 1 : 2);
+        updated[slot][idx] = val;
+        setEqs(updated);
+        uiLog('INFO', `handleEq slot=${slot} band=${band} val=${val}dB`);
+        await SetEQ(slot, updated[slot][0], updated[slot][1], updated[slot][2]);
     };
 
     const handleSeek = async (slot: number, pct: number) => {
@@ -972,9 +988,11 @@ function App() {
                             volumes={volumes}
                             tempos={tempos}
                             pitches={pitches}
+                            eqs={eqs}
                             handleVolume={handleVolume}
                             handleTempo={handleTempo}
                             handlePitch={handlePitch}
+                            handleEq={handleEq}
                             handleCanvasClick={handleCanvasClick}
                             handlePlayPause={handlePlayPause}
                         />
