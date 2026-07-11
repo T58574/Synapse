@@ -1,9 +1,7 @@
 name: Automated Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_tag: ${{ steps.create_tag.outputs.new_tag }}
+      changelog: ${{ steps.create_tag.outputs.changelog }}
     steps:
       - uses: actions/checkout@v4
         with:

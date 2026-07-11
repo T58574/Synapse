@@ -231,6 +231,7 @@ if (results.length > 0) {
 * **2026-07-07 (3)**: Implemented 3-Band Parametric Equalizer (Bass, Mid, Treble) for each deck. Designed a low-latency crossover-summation filter structure in C++ ([audio_engine.cpp](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/backend/audio_engine.cpp)) using first-order low-pass and high-pass IIR filters with dynamic coefficients calculated from the active sample rate. Bound the EQ parameters through Go ([app.go](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/backend/app.go)) to dynamic range sliders (-12dB to +12dB) with interactive Reset badges on the frontend ([DeckView.tsx](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/frontend/src/components/DeckView.tsx)).
 * **2026-07-07 (4)**: Improved UI navigation and usability. Added "All Tracks" button at the top of the sidebar ([LibrarySidebar.tsx](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/frontend/src/components/LibrarySidebar.tsx)) to instantly reset all active filters (playlists, artists, genres).
 * **2026-07-07 (5)**: **[BREAKING]** Removed DJ Decks UI entirely per user directive — this is a music player, not a DJ station. Deleted [DeckView.tsx](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/frontend/src/components/DeckView.tsx) component. Removed from [App.tsx](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/frontend/src/App.tsx): DeckView import, `activeTab === 'decks'` rendering block, `handleTempo`, `handlePitch`, `handleEq`, `handleCanvasClick`, `drawSpectrum`, `draw`, all canvas/spectrum refs and useEffects, `tempos`/`pitches`/`eqs` state, `SetEQ`/`SetTempo`/`SetPitch` imports. Cleaned `activeTab` union type across [AppHeader.tsx](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/frontend/src/components/AppHeader.tsx), [LibrarySidebar.tsx](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/frontend/src/components/LibrarySidebar.tsx), [MusiciansView.tsx](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/frontend/src/components/MusiciansView.tsx), [PlaybackBar.tsx](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/frontend/src/components/PlaybackBar.tsx). JS bundle reduced ~10KB. Backend C++ engine left intact (EQ, tempo, pitch APIs still exist for potential future use). All tests pass.
+* **2026-07-11**: Fixed CI/CD release pipeline by exposing `changelog` output from the tagging job to the release description. Changed release workflow trigger to `workflow_dispatch` to prevent automatic builds on push and save Action minutes/storage. Documented GitHub Actions CI/CD release management procedures in Section 8.
 
 ---
 
@@ -283,3 +284,29 @@ The fragment shader draws a localized liquid blob entity on the right half of th
 *   Main Blob: Centered at `vec2(aspect * 0.4, -0.05)`, warped dynamically by trigonometric space warping using phase variables.
 *   Satellite Blob: Orbits the main body dynamically via `orbit = vec2(0.45 * sin(u_time * 0.5 + u_phaseMid * 0.3), 0.35 * cos(u_time * 0.4 + u_phaseHigh * 0.2))`.
 *   Blend & Glow: Both fields are joined via a smooth union ($glow + satelliteGlow$), blending them organically when they touch. Swirling internal patterns mix the generated track colors to form rich multi-color gradients inside the matter. Capped at 30 FPS and downsampled 3x for maximum system efficiency and near-zero GPU load.
+
+---
+
+## 8. GitHub Actions CI/CD Release Management
+
+Automated releases are generated via the workflow [.github/workflows/release.yml](file:///c:/Users/user/Documents/projects/0xSoundPlayerv2/.github/workflows/release.yml).
+
+### 8.1 Workflow Process Flow
+1. **Trigger**: Manually executed via the GitHub Actions tab (`workflow_dispatch`).
+2. **Tag Generation (`tag` job)**:
+   * Uses `mathieudutour/github-tag-action` to calculate the next version.
+   * Scans commit messages in the pushed changes.
+   * Generates and pushes the new Git tag to GitHub.
+3. **Drafting and Build (`release` job)**:
+   * Triggered only when a new tag is successfully generated.
+   * Runs on a Windows environment (`windows-latest`).
+   * Configures MSYS2, Go, Node, and installs the Wails CLI.
+   * Runs production build: `wails build -platform windows/amd64`.
+   * Archives the binary to `soundplayer-windows-amd64.zip`.
+   * Creates a GitHub Release, uploading the ZIP artifact and inserting the automatic changelog body.
+
+### 8.2 Controlling Semantic Version Bumps
+Version numbers are incremented based on tags in your commit messages. The default increment is `patch`.
+* **Major Bump** (`vX.0.0`): Add `#major` or write a commit with `BREAKING CHANGE:`.
+* **Minor Bump** (`v0.X.0`): Add `#minor` or write a commit starting with `feat:`.
+* **Patch Bump** (`v0.0.X`): Add `#patch`, write a commit starting with `fix:`, or write standard commit messages without specific prefixes.
