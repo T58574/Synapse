@@ -22,7 +22,8 @@ import {
     AddTrackToPlaylist,
     RemoveTrackFromPlaylist,
     GetAudioDevices,
-    SetAudioDevice
+    SetAudioDevice,
+    SetEQ
 } from "../wailsjs/go/backend/App";
 
 import { TrackInfo, PlaylistInfo } from './types';
@@ -172,6 +173,58 @@ function App() {
     const [autoMix, setAutoMix] = useState<boolean>(false);
     const [shuffle, setShuffle] = useState<boolean>(false);
     const [repeat, setRepeat] = useState<boolean>(false);
+    const [isMyWave, setIsMyWave] = useState<boolean>(false);
+    const [showEqualizer, setShowEqualizer] = useState<boolean>(false);
+    const [eqValues, setEQValues] = useState<[number, number, number]>(() => {
+        try {
+            const val = localStorage.getItem('soundplayer_eq');
+            if (val) {
+                const parsed = JSON.parse(val);
+                if (Array.isArray(parsed) && parsed.length === 3) {
+                    return [Number(parsed[0]), Number(parsed[1]), Number(parsed[2])];
+                }
+            }
+        } catch {}
+        return [0.0, 0.0, 0.0];
+    });
+
+    const setEQValue = async (bandIndex: number, val: number) => {
+        const newEq = [...eqValues] as [number, number, number];
+        newEq[bandIndex] = val;
+        setEQValues(newEq);
+        uiLog('INFO', `EQ change band=${bandIndex} val=${val.toFixed(1)}`);
+        try {
+            await SetEQ(0, newEq[0], newEq[1], newEq[2]);
+            await SetEQ(1, newEq[0], newEq[1], newEq[2]);
+        } catch (err) {
+            uiLog('ERROR', `Failed to SetEQ: ${String(err)}`);
+        }
+        try {
+            localStorage.setItem('soundplayer_eq', JSON.stringify(newEq));
+        } catch {}
+    };
+
+    const handleToggleMyWave = async () => {
+        if (libraryTracks.length === 0) {
+            uiLog('WARN', 'handleToggleMyWave: библиотека пуста');
+            return;
+        }
+        const val = !isMyWave;
+        setIsMyWave(val);
+        uiLog('INFO', `handleToggleMyWave -> ${val ? 'ON' : 'OFF'}`);
+        if (val) {
+            setAutoMix(true);
+            await ToggleAutoMix(true);
+            const randIdx = Math.floor(Math.random() * libraryTracks.length);
+            setCurrentTrackIndex(randIdx);
+            const track = libraryTracks[randIdx];
+            await handleLoadDeck(activeSlot, track.filePath);
+            await Play(activeSlot);
+            const updated = [...playing] as [boolean, boolean];
+            updated[activeSlot] = true;
+            setPlaying(updated);
+        }
+    };
     const currentThemeRef = useRef<string>(currentTheme);
 
     useEffect(() => {
@@ -203,7 +256,8 @@ function App() {
         libraryTracks: [] as TrackInfo[],
         shuffle: false,
         repeat: false,
-        currentPlaylistTracks: [] as TrackInfo[]
+        currentPlaylistTracks: [] as TrackInfo[],
+        isMyWave: false
     });
 
     const getFilename = (path: string) => {
@@ -328,6 +382,7 @@ function App() {
             try { await Pause(slot); } catch { /* ok */ }
 
             const meta = await LoadTrack(slot, path);
+            try { await SetEQ(slot, eqValues[0], eqValues[1], eqValues[2]); } catch { /* ok */ }
             const cachedTrack = libraryTracks.find(t => t.filePath === path);
             const updated = [...tracks] as [TrackInfo | null, TrackInfo | null];
             updated[slot] = {
@@ -366,7 +421,7 @@ function App() {
         }
     };
 
-    const handlePlayLibraryTrack = async (index: number) => {
+    const handlePlayLibraryTrack = async (index: number, keepMyWave = false) => {
         if (libraryTracks.length === 0) {
             uiLog('WARN', 'handlePlayLibraryTrack: библиотека пуста');
             return;
@@ -383,6 +438,9 @@ function App() {
         switchingRef.current = true;
         uiLog('INFO', `handlePlayLibraryTrack: переключение на index=${index} slot=${activeSlot}`);
         try {
+            if (!keepMyWave) {
+                setIsMyWave(false);
+            }
             setCurrentTrackIndex(index);
             const track = libraryTracks[index];
             await handleLoadDeck(activeSlot, track.filePath);
@@ -458,13 +516,17 @@ function App() {
         const currentTrack = libraryTracks[currentTrackIndex];
         let playlistIndex = currentPlaylistTracks.findIndex(t => t.filePath === currentTrack?.filePath);
         let nextPlaylistIndex = (playlistIndex + 1) % currentPlaylistTracks.length;
-        if (shuffle) {
+        let nextTrack = currentPlaylistTracks[nextPlaylistIndex];
+        if (isMyWave) {
+            const randIdx = Math.floor(Math.random() * libraryTracks.length);
+            nextTrack = libraryTracks[randIdx];
+        } else if (shuffle) {
             nextPlaylistIndex = Math.floor(Math.random() * currentPlaylistTracks.length);
+            nextTrack = currentPlaylistTracks[nextPlaylistIndex];
         }
-        const nextTrack = currentPlaylistTracks[nextPlaylistIndex];
         const nextOriginalIndex = libraryTracks.findIndex(t => t.filePath === nextTrack.filePath);
         uiLog('INFO', `handleNext: ${currentTrackIndex} -> ${nextOriginalIndex}`);
-        await handlePlayLibraryTrack(nextOriginalIndex);
+        await handlePlayLibraryTrack(nextOriginalIndex, isMyWave);
     };
 
     const handlePrev = async () => {
@@ -476,13 +538,17 @@ function App() {
         const currentTrack = libraryTracks[currentTrackIndex];
         let playlistIndex = currentPlaylistTracks.findIndex(t => t.filePath === currentTrack?.filePath);
         let prevPlaylistIndex = (playlistIndex - 1 + currentPlaylistTracks.length) % currentPlaylistTracks.length;
-        if (shuffle) {
+        let prevTrack = currentPlaylistTracks[prevPlaylistIndex];
+        if (isMyWave) {
+            const randIdx = Math.floor(Math.random() * libraryTracks.length);
+            prevTrack = libraryTracks[randIdx];
+        } else if (shuffle) {
             prevPlaylistIndex = Math.floor(Math.random() * currentPlaylistTracks.length);
+            prevTrack = currentPlaylistTracks[prevPlaylistIndex];
         }
-        const prevTrack = currentPlaylistTracks[prevPlaylistIndex];
         const prevOriginalIndex = libraryTracks.findIndex(t => t.filePath === prevTrack.filePath);
         uiLog('INFO', `handlePrev: ${currentTrackIndex} -> ${prevOriginalIndex}`);
-        await handlePlayLibraryTrack(prevOriginalIndex);
+        await handlePlayLibraryTrack(prevOriginalIndex, isMyWave);
     };
 
     handleNextRef.current = handleNext;
@@ -561,6 +627,8 @@ function App() {
         loadPlaylists();
         SetVolume(0, volumes[0]).catch(() => {});
         SetVolume(1, volumes[1]).catch(() => {});
+        SetEQ(0, eqValues[0], eqValues[1], eqValues[2]).catch(() => {});
+        SetEQ(1, eqValues[0], eqValues[1], eqValues[2]).catch(() => {});
         GetAudioDevices().then((list) => {
             setAudioDevices(list || []);
         }).catch((err) => {
@@ -574,7 +642,7 @@ function App() {
     }, []);
 
     useEffect(() => {
-        stateRef.current = { tracks, playing, positions, activeSlot, currentTrackIndex, autoMix, libraryTracks, shuffle, repeat, currentPlaylistTracks };
+        stateRef.current = { tracks, playing, positions, activeSlot, currentTrackIndex, autoMix, libraryTracks, shuffle, repeat, currentPlaylistTracks, isMyWave };
     });
 
     useEffect(() => {
@@ -673,17 +741,23 @@ function App() {
                     }
                 }
 
-                if (st.autoMix && st.currentPlaylistTracks.length > 0) {
+                if (st.autoMix && (st.currentPlaylistTracks.length > 0 || (st.isMyWave && st.libraryTracks.length > 0))) {
                     const otherSlot = st.activeSlot === 0 ? 1 : 0;
                     const currentTrack = st.tracks[st.activeSlot];
-                    let playlistIndex = st.currentPlaylistTracks.findIndex(t => t.filePath === currentTrack?.filePath);
-                    let nextPlaylistIndex = (playlistIndex + 1) % st.currentPlaylistTracks.length;
-                    if (st.repeat) {
-                        nextPlaylistIndex = playlistIndex >= 0 ? playlistIndex : 0;
-                    } else if (st.shuffle) {
-                        nextPlaylistIndex = Math.floor(Math.random() * st.currentPlaylistTracks.length);
+                    let nextTrack: TrackInfo;
+                    if (st.isMyWave && st.libraryTracks.length > 0) {
+                        const randIndex = Math.floor(Math.random() * st.libraryTracks.length);
+                        nextTrack = st.libraryTracks[randIndex];
+                    } else {
+                        let playlistIndex = st.currentPlaylistTracks.findIndex(t => t.filePath === currentTrack?.filePath);
+                        let nextPlaylistIndex = (playlistIndex + 1) % st.currentPlaylistTracks.length;
+                        if (st.repeat) {
+                            nextPlaylistIndex = playlistIndex >= 0 ? playlistIndex : 0;
+                        } else if (st.shuffle) {
+                            nextPlaylistIndex = Math.floor(Math.random() * st.currentPlaylistTracks.length);
+                        }
+                        nextTrack = st.currentPlaylistTracks[nextPlaylistIndex];
                     }
-                    const nextTrack = st.currentPlaylistTracks[nextPlaylistIndex];
                     const nextOriginalIndex = st.libraryTracks.findIndex(t => t.filePath === nextTrack.filePath);
                     
                     if (updatedPlaying[st.activeSlot] && activeTrack && !updatedPlaying[otherSlot]) {
@@ -731,6 +805,10 @@ function App() {
                 handleScan={loadLibrary}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
+                showEqualizer={showEqualizer}
+                setShowEqualizer={setShowEqualizer}
+                eqValues={eqValues}
+                setEQValue={setEQValue}
             />
 
             <div className="app-main-layout">
@@ -789,6 +867,8 @@ function App() {
                                         setActiveTab('library');
                                     }}
                                     copyToClipboard={copyToClipboard}
+                                    isMyWave={isMyWave}
+                                    onToggleMyWave={handleToggleMyWave}
                                 />
                             </div>
                         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BoltIcon, FolderIcon, LoadIcon, SettingsIcon } from './Icons';
+import { BoltIcon, FolderIcon, LoadIcon, SettingsIcon, SlidersIcon } from './Icons';
 
 interface AppHeaderProps {
     activeTab: 'library' | 'settings' | 'musicians';
@@ -8,6 +8,10 @@ interface AppHeaderProps {
     handleScan: () => void;
     searchQuery: string;
     setSearchQuery: (query: string) => void;
+    showEqualizer: boolean;
+    setShowEqualizer: (show: boolean) => void;
+    eqValues: [number, number, number];
+    setEQValue: (bandIndex: number, val: number) => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -16,8 +20,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     handleSelectDirectory,
     handleScan,
     searchQuery,
-    setSearchQuery
+    setSearchQuery,
+    showEqualizer,
+    setShowEqualizer,
+    eqValues,
+    setEQValue
 }) => {
+    const handleEQReset = () => {
+        setEQValue(0, 0.0);
+        setEQValue(1, 0.0);
+        setEQValue(2, 0.0);
+    };
+
     return (
         <header className="app-header">
             <div className="header-left">
@@ -64,14 +78,83 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </div>
             </div>
 
-            <div className="header-right">
+            <div className="header-right" style={{ position: 'relative' }}>
+                <button
+                    className={`settings-toggle-btn ${showEqualizer ? 'active' : ''}`}
+                    onClick={() => {
+                        setShowEqualizer(!showEqualizer);
+                        if (activeTab === 'settings') setActiveTab('library');
+                    }}
+                    title="Equalizer"
+                >
+                    <SlidersIcon />
+                </button>
                 <button
                     className={`settings-toggle-btn ${activeTab === 'settings' ? 'active' : ''}`}
-                    onClick={() => setActiveTab(activeTab === 'settings' ? 'library' : 'settings')}
+                    onClick={() => {
+                        setActiveTab(activeTab === 'settings' ? 'library' : 'settings');
+                        setShowEqualizer(false);
+                    }}
                     title="Settings"
                 >
                     <SettingsIcon />
                 </button>
+
+                {showEqualizer && (
+                    <div className="equalizer-popover">
+                        <div className="eq-popover-header">
+                            <span>EQUALIZER</span>
+                            <button className="eq-reset-btn" onClick={handleEQReset}>Reset</button>
+                        </div>
+                        <div className="eq-popover-sliders">
+                            <div className="eq-slider-col">
+                                <span className="eq-band-label">BASS</span>
+                                <div className="eq-slider-wrapper">
+                                    <input
+                                        type="range"
+                                        min="-12"
+                                        max="12"
+                                        step="0.5"
+                                        value={eqValues[0]}
+                                        onChange={(e) => setEQValue(0, parseFloat(e.target.value))}
+                                        className="eq-slider"
+                                    />
+                                </div>
+                                <span className="eq-val-label">{eqValues[0] > 0 ? `+${eqValues[0].toFixed(1)}` : eqValues[0].toFixed(1)} dB</span>
+                            </div>
+                            <div className="eq-slider-col">
+                                <span className="eq-band-label">MID</span>
+                                <div className="eq-slider-wrapper">
+                                    <input
+                                        type="range"
+                                        min="-12"
+                                        max="12"
+                                        step="0.5"
+                                        value={eqValues[1]}
+                                        onChange={(e) => setEQValue(1, parseFloat(e.target.value))}
+                                        className="eq-slider"
+                                    />
+                                </div>
+                                <span className="eq-val-label">{eqValues[1] > 0 ? `+${eqValues[1].toFixed(1)}` : eqValues[1].toFixed(1)} dB</span>
+                            </div>
+                            <div className="eq-slider-col">
+                                <span className="eq-band-label">TREBLE</span>
+                                <div className="eq-slider-wrapper">
+                                    <input
+                                        type="range"
+                                        min="-12"
+                                        max="12"
+                                        step="0.5"
+                                        value={eqValues[2]}
+                                        onChange={(e) => setEQValue(2, parseFloat(e.target.value))}
+                                        className="eq-slider"
+                                    />
+                                </div>
+                                <span className="eq-val-label">{eqValues[2] > 0 ? `+${eqValues[2].toFixed(1)}` : eqValues[2].toFixed(1)} dB</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </header>
     );

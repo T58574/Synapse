@@ -2002,3 +2002,190 @@ body {
         transform: translate(-50%, 0);
     }
 }
+
+/* Equalizer Popover Panel */
+.equalizer-popover {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    width: 280px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 1px var(--border-color);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(20px);
+}
+
+.eq-popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.eq-popover-header span {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-color);
+}
+
+.eq-reset-btn {
+    background: transparent;
+    border: none;
+    color: var(--accent-color);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.eq-reset-btn:hover {
+    color: var(--accent-color-hover);
+    opacity: 0.8;
+}
+
+.eq-popover-sliders {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 12px;
+}
+
+.eq-slider-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.eq-band-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--muted-text-color);
+    letter-spacing: 1px;
+}
+
+.eq-slider-wrapper {
+    height: 140px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Vertical slider */
+.eq-slider {
+    -webkit-appearance: slider-vertical;
+    appearance: slider-vertical;
+    width: 12px;
+    height: 120px;
+    background: var(--border-color);
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+}
+
+.eq-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-bg-glow);
+    cursor: pointer;
+    border: 3px solid var(--surface-color);
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.eq-slider::-webkit-slider-thumb:hover {
+    background: var(--accent-color-hover);
+    transform: scale(1.15);
+}
+
+.eq-val-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* My Wave Button Styling */
+.my-wave-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #FF3366 0%, #FF00CC 50%, #9900FF 100%);
+    background-size: 200% 200%;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 0, 204, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: waveGradient 6s ease infinite;
+}
+
+@keyframes waveGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.my-wave-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 25px rgba(255, 0, 204, 0.5);
+}
+
+.my-wave-btn.active {
+    box-shadow: 0 0 20px rgba(255, 0, 204, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    animation: waveGradientActive 3s ease infinite, pulseActive 2s infinite alternate;
+}
+
+@keyframes waveGradientActive {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseActive {
+    0% {
+        box-shadow: 0 0 15px rgba(255, 0, 204, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 25px rgba(255, 0, 204, 0.7);
+    }
+}
+
+.my-wave-icon {
+    stroke-dasharray: 40;
+    stroke-dashoffset: 0;
+    transition: all 0.3s ease;
+}
+
+.my-wave-btn.active .my-wave-icon {
+    animation: waveStroke 1.5s linear infinite;
+}
+
+@keyframes waveStroke {
+    0% {
+        stroke-dashoffset: 80;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}

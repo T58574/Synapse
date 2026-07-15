@@ -11,7 +11,7 @@ interface LibraryTableProps {
     filteredTracks: TrackInfo[];
     libraryTracks: TrackInfo[];
     currentTrackIndex: number;
-    handlePlayLibraryTrack: (idx: number) => void;
+    handlePlayLibraryTrack: (idx: number, keepMyWave?: boolean) => void;
     activePlaylistMenuTrack: string | null;
     setActivePlaylistMenuTrack: (trackPath: string | null) => void;
     playlists: PlaylistInfo[];
@@ -24,6 +24,8 @@ interface LibraryTableProps {
     handleSelectAndLoad: (slot: 0 | 1) => void;
     onSelectArtist?: (artistName: string) => void;
     copyToClipboard?: (text: string, label: string) => void;
+    isMyWave: boolean;
+    onToggleMyWave: () => void;
 }
 
 export const LibraryTable: React.FC<LibraryTableProps> = ({
@@ -46,7 +48,9 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
     OpenMusicDir,
     handleSelectAndLoad,
     onSelectArtist,
-    copyToClipboard
+    copyToClipboard,
+    isMyWave,
+    onToggleMyWave
 }) => {
     const sortedTracks = filteredTracks;
 
@@ -57,6 +61,20 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                     {playing[activeSlot] && tracks[activeSlot] ? <PauseIcon /> : <PlayIcon />}
                 </button>
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <button 
+                        className={`my-wave-btn ${isMyWave ? 'active' : ''}`}
+                        onClick={onToggleMyWave}
+                        title="Start Randomized My Wave playback with AutoMix"
+                    >
+                        <svg className="my-wave-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                            <line x1="4" y1="9" x2="4" y2="15" />
+                            <line x1="8" y1="6" x2="8" y2="18" />
+                            <line x1="12" y1="3" x2="12" y2="21" />
+                            <line x1="16" y1="6" x2="16" y2="18" />
+                            <line x1="20" y1="9" x2="20" y2="15" />
+                        </svg>
+                        <span>{isMyWave ? 'My Wave: ON' : 'My Wave'}</span>
+                    </button>
                     <button className="sidebar-btn" onClick={OpenMusicDir}>
                         <FolderIcon />
                         <span>Open Music Dir</span>

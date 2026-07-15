@@ -35,6 +35,7 @@ vi.mock('../wailsjs/go/backend/App', () => ({
     DownloadFromSoundCloud: vi.fn().mockResolvedValue(undefined),
     GetAudioDevices: vi.fn().mockResolvedValue([]),
     SetAudioDevice: vi.fn().mockResolvedValue(true),
+    SetEQ: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('App Component', () => {

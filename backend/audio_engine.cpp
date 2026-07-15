@@ -520,8 +520,10 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
         }
         if (read_frames < (ma_uint64)frame_count) {
             memset(out_buffer + read_frames * channels, 0, (frame_count - read_frames) * channels * sizeof(float));
-            ts.is_playing = false;
-            ENGINE_LOGI("get_audio_frames: трек дошёл до конца (EOF) duration=%.3fs", ts.duration);
+            if (read_frames == 0) {
+                ts.is_playing = false;
+                ENGINE_LOGI("get_audio_frames: трек дошёл до конца (EOF) duration=%.3fs", ts.duration);
+            }
         }
 
         apply_eq(out_buffer, frame_count);
