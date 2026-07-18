@@ -737,7 +737,7 @@ function App() {
                         updatedPlaying[0] = isPlay;
                         if (isPlay) {
                             const pos = await GetPosition(0);
-                            const isDragging = st.dragPosition !== null;
+                            const isDragging = dragPositionRef.current !== null;
                             const isIgnored = Date.now() < ignorePositionUntilRef.current;
                             if (!isDragging && !isIgnored) {
                                 updatedPos[0] = pos;
@@ -755,7 +755,7 @@ function App() {
                         updatedPlaying[1] = isPlay;
                         if (isPlay) {
                             const pos = await GetPosition(1);
-                            const isDragging = st.dragPosition !== null;
+                            const isDragging = dragPositionRef.current !== null;
                             const isIgnored = Date.now() < ignorePositionUntilRef.current;
                             if (!isDragging && !isIgnored) {
                                 updatedPos[1] = pos;
