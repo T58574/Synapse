@@ -94,8 +94,16 @@ export function SetCrossfadeDuration(arg1) {
   return window['go']['backend']['App']['SetCrossfadeDuration'](arg1);
 }
 
+export function SetDSP(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['backend']['App']['SetDSP'](arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
 export function SetEQ(arg1, arg2, arg3, arg4) {
   return window['go']['backend']['App']['SetEQ'](arg1, arg2, arg3, arg4);
+}
+
+export function SetEQ10(arg1, arg2) {
+  return window['go']['backend']['App']['SetEQ10'](arg1, arg2);
 }
 
 export function SetPitch(arg1, arg2) {

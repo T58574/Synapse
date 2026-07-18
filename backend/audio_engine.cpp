@@ -69,6 +69,8 @@ static void engine_log(const char* level, const char* fmt, ...) {
 #define ENGINE_LOGW(...) engine_log("WARN", __VA_ARGS__)
 #define ENGINE_LOGE(...) engine_log("ERROR", __VA_ARGS__)
 
+static const float EQ_FREQS[10] = { 31.25f, 62.5f, 125.0f, 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f, 8000.0f, 16000.0f };
+
 struct EqFilter {
     float lp_state[2] = {0.0f, 0.0f};
     float hp_state[2] = {0.0f, 0.0f};
@@ -92,6 +94,190 @@ struct EqFilter {
     }
 };
 
+struct BiquadFilter {
+    float b0 = 1.0f, b1 = 0.0f, b2 = 0.0f, a1 = 0.0f, a2 = 0.0f;
+    float x1[2] = {0.0f, 0.0f};
+    float x2[2] = {0.0f, 0.0f};
+    float y1[2] = {0.0f, 0.0f};
+    float y2[2] = {0.0f, 0.0f};
+
+    void reset() {
+        x1[0] = x1[1] = x2[0] = x2[1] = 0.0f;
+        y1[0] = y1[1] = y2[0] = y2[1] = 0.0f;
+    }
+
+    void init_peaking(float sample_rate, float frequency, float q, float db_gain) {
+        float w0 = 2.0f * 3.14159265358979323846f * frequency / sample_rate;
+        float alpha = sinf(w0) / (2.0f * q);
+        float A = powf(10.0f, db_gain / 40.0f);
+        float cos_w0 = cosf(w0);
+        float a0 = 1.0f + alpha / A;
+        b0 = (1.0f + alpha * A) / a0;
+        b1 = (-2.0f * cos_w0) / a0;
+        b2 = (1.0f - alpha * A) / a0;
+        a1 = (-2.0f * cos_w0) / a0;
+        a2 = (1.0f - alpha / A) / a0;
+    }
+
+    void process(const float* in, float* out) {
+        for (int c = 0; c < 2; ++c) {
+            float x = in[c];
+            float y = b0 * x + b1 * x1[c] + b2 * x2[c] - a1 * y1[c] - a2 * y2[c];
+            if (std::isnan(y) || std::isinf(y)) {
+                y = 0.0f;
+            }
+            x2[c] = x1[c];
+            x1[c] = x;
+            y2[c] = y1[c];
+            y1[c] = y;
+            out[c] = y;
+        }
+    }
+};
+
+struct Limiter {
+    float envelope = 0.0f;
+    float threshold = 0.95f; 
+    float attack = 0.9999f;
+    float release = 0.992f;
+    float boost_db = 0.0f;
+
+    void reset() {
+        envelope = 0.0f;
+    }
+
+    void process(float* frame) {
+        float boost_gain = powf(10.0f, boost_db / 20.0f);
+        float l = frame[0] * boost_gain;
+        float r = frame[1] * boost_gain;
+        float peak = std::max(fabsf(l), fabsf(r));
+        if (peak > envelope) {
+            envelope = envelope + (1.0f - attack) * (peak - envelope);
+        } else {
+            envelope = envelope + (1.0f - release) * (peak - envelope);
+        }
+        float gain = 1.0f;
+        if (envelope > threshold) {
+            gain = threshold / envelope;
+        }
+        frame[0] = l * gain;
+        frame[1] = r * gain;
+    }
+};
+
+struct DelayLine {
+    std::vector<float> buffer;
+    size_t write_ptr = 0;
+    void init(int size) {
+        buffer.assign(size, 0.0f);
+        write_ptr = 0;
+    }
+    void reset() {
+        if (!buffer.empty()) {
+            std::fill(buffer.begin(), buffer.end(), 0.0f);
+        }
+        write_ptr = 0;
+    }
+    float read(int delay_samples) {
+        if (buffer.empty()) return 0.0f;
+        int read_ptr = (int)write_ptr - delay_samples;
+        while (read_ptr < 0) read_ptr += buffer.size();
+        return buffer[read_ptr % buffer.size()];
+    }
+    void write(float val) {
+        if (buffer.empty()) return;
+        buffer[write_ptr] = val;
+        write_ptr = (write_ptr + 1) % buffer.size();
+    }
+};
+
+struct Reverb {
+    DelayLine delay_l;
+    DelayLine delay_r;
+    float room_size = 0.6f;
+    float mix = 0.0f;
+    float wet_l_prev = 0.0f;
+    float wet_r_prev = 0.0f;
+    bool initialized = false;
+
+    void init(int sample_rate) {
+        delay_l.init((int)(sample_rate * 0.25f));
+        delay_r.init((int)(sample_rate * 0.28f));
+        wet_l_prev = 0.0f;
+        wet_r_prev = 0.0f;
+        initialized = true;
+    }
+
+    void reset() {
+        delay_l.reset();
+        delay_r.reset();
+        wet_l_prev = 0.0f;
+        wet_r_prev = 0.0f;
+    }
+
+    void process(float* frame, int sample_rate) {
+        if (!initialized) init(sample_rate);
+        if (mix <= 0.0f) return;
+        
+        float wet_l = delay_l.read((int)(sample_rate * 0.045f)) + 0.35f * delay_r.read((int)(sample_rate * 0.085f));
+        float wet_r = delay_r.read((int)(sample_rate * 0.055f)) + 0.35f * delay_l.read((int)(sample_rate * 0.095f));
+
+        wet_l_prev = wet_l_prev + 0.25f * (wet_l - wet_l_prev);
+        wet_r_prev = wet_r_prev + 0.25f * (wet_r - wet_r_prev);
+
+        float dry_l = frame[0];
+        float dry_r = frame[1];
+
+        delay_l.write(dry_l + wet_l_prev * room_size);
+        delay_r.write(dry_r + wet_r_prev * room_size);
+
+        frame[0] = dry_l * (1.0f - mix) + wet_l_prev * mix;
+        frame[1] = dry_r * (1.0f - mix) + wet_r_prev * mix;
+    }
+};
+
+struct BassEnhancer {
+    float lp_state[2] = {0.0f, 0.0f};
+    float amount = 0.0f;
+
+    void reset() {
+        lp_state[0] = lp_state[1] = 0.0f;
+    }
+
+    void process(float* frame, float sample_rate) {
+        if (amount <= 0.0f) return;
+        float alpha = (float)exp(-2.0 * 3.14159265358979323846 * 120.0 / sample_rate);
+        for (int c = 0; c < 2; ++c) {
+            float in = frame[c];
+            lp_state[c] = lp_state[c] + (1.0f - alpha) * (in - lp_state[c]);
+            float bass = lp_state[c];
+            float harmonics = sinf(bass * 1.6f);
+            frame[c] = in + harmonics * amount * 0.3f;
+        }
+    }
+};
+
+struct Exciter {
+    float hp_state[2] = {0.0f, 0.0f};
+    float amount = 0.0f;
+
+    void reset() {
+        hp_state[0] = hp_state[1] = 0.0f;
+    }
+
+    void process(float* frame, float sample_rate) {
+        if (amount <= 0.0f) return;
+        float alpha = (float)exp(-2.0 * 3.14159265358979323846 * 5500.0 / sample_rate);
+        for (int c = 0; c < 2; ++c) {
+            float in = frame[c];
+            float hp = in - (hp_state[c] + (1.0f - alpha) * (in - hp_state[c]));
+            hp_state[c] = hp_state[c] + (1.0f - alpha) * (in - hp_state[c]);
+            float saturated = tanhf(hp * 2.5f);
+            frame[c] = in + saturated * amount * 0.25f;
+        }
+    }
+};
+
 struct TrackState {
     ma_decoder decoder;
     bool has_decoder = false;
@@ -109,6 +295,13 @@ struct TrackState {
     std::vector<float> recent_samples;
     int recent_ptr = 0;
     EqFilter eq;
+    BiquadFilter eq10[10];
+    float eq10_gains[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    Limiter limiter;
+    Reverb reverb;
+    BassEnhancer bass_enhancer;
+    Exciter exciter;
+    float stereo_width = 1.0f;
     std::mutex mtx;
 };
 
@@ -493,6 +686,59 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
             buf[i * channels + 1] = out_frame[1];
         }
     };
+
+    auto apply_dsp = [&](float* buf, int f_count) {
+        // 1. 10-band EQ
+        for (int i = 0; i < f_count; i++) {
+            float out_frame[2] = { buf[i * channels], buf[i * channels + 1] };
+            for (int b = 0; b < 10; b++) {
+                float tmp[2];
+                ts.eq10[b].process(out_frame, tmp);
+                out_frame[0] = tmp[0];
+                out_frame[1] = tmp[1];
+            }
+            buf[i * channels] = out_frame[0];
+            buf[i * channels + 1] = out_frame[1];
+        }
+
+        // 2. Enhancers (Bass, Exciter)
+        for (int i = 0; i < f_count; i++) {
+            float frame[2] = { buf[i * channels], buf[i * channels + 1] };
+            ts.bass_enhancer.process(frame, (float)sample_rate);
+            ts.exciter.process(frame, (float)sample_rate);
+            buf[i * channels] = frame[0];
+            buf[i * channels + 1] = frame[1];
+        }
+
+        // 3. Stereo Widener
+        if (ts.stereo_width != 1.0f) {
+            for (int i = 0; i < f_count; i++) {
+                float l = buf[i * channels];
+                float r = buf[i * channels + 1];
+                float mid = (l + r) * 0.5f;
+                float side = (l - r) * 0.5f;
+                side *= ts.stereo_width;
+                buf[i * channels] = mid + side;
+                buf[i * channels + 1] = mid - side;
+            }
+        }
+
+        // 4. Reverb
+        for (int i = 0; i < f_count; i++) {
+            float frame[2] = { buf[i * channels], buf[i * channels + 1] };
+            ts.reverb.process(frame, sample_rate);
+            buf[i * channels] = frame[0];
+            buf[i * channels + 1] = frame[1];
+        }
+
+        // 5. Limiter / Maximizer
+        for (int i = 0; i < f_count; i++) {
+            float frame[2] = { buf[i * channels], buf[i * channels + 1] };
+            ts.limiter.process(frame);
+            buf[i * channels] = frame[0];
+            buf[i * channels + 1] = frame[1];
+        }
+    };
     
     if (ts.seek_position >= 0.0) {
         ma_uint64 target_frame = (ma_uint64)(ts.seek_position * ts.decoder.outputSampleRate);
@@ -527,6 +773,7 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
         }
 
         apply_eq(out_buffer, frame_count);
+        apply_dsp(out_buffer, frame_count);
 
         if (ts.recent_samples.empty()) {
             ts.recent_samples.assign(1024, 0.0f);
@@ -586,6 +833,7 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
     }
 
     apply_eq(out_buffer, frame_count);
+    apply_dsp(out_buffer, frame_count);
 
     if (ts.recent_samples.empty()) {
         ts.recent_samples.assign(1024, 0.0f);
@@ -821,6 +1069,14 @@ int load_track(int slot, const char* file_path) {
     ts.eq.lp_state[0] = ts.eq.lp_state[1] = 0.0f;
     ts.eq.hp_state[0] = ts.eq.hp_state[1] = 0.0f;
     ts.eq.hp_prev_in[0] = ts.eq.hp_prev_in[1] = 0.0f;
+    for (int b = 0; b < 10; b++) {
+        ts.eq10[b].reset();
+        ts.eq10[b].init_peaking((float)g_sample_rate, EQ_FREQS[b], 1.414f, ts.eq10_gains[b]);
+    }
+    ts.limiter.reset();
+    ts.reverb.reset();
+    ts.bass_enhancer.reset();
+    ts.exciter.reset();
 
     ts.duration = 0.0;
     ts.bpm = 120.0;
@@ -887,6 +1143,30 @@ void set_track_eq(int slot, float bass, float mid, float treble) {
     ts.eq.treble_gain = powf(10.0f, treble / 20.0f);
     ENGINE_LOGI("set_track_eq slot=%d bass=%.2fdB(%.2f) mid=%.2fdB(%.2f) treble=%.2fdB(%.2f)",
                 slot, bass, ts.eq.bass_gain, mid, ts.eq.mid_gain, treble, ts.eq.treble_gain);
+}
+
+void set_track_eq10(int slot, const float* bands) {
+    if (slot < 0 || slot > 1) return;
+    TrackState& ts = g_tracks[slot];
+    std::lock_guard<std::mutex> lock(ts.mtx);
+    for (int b = 0; b < 10; b++) {
+        ts.eq10_gains[b] = bands[b];
+        ts.eq10[b].init_peaking((float)g_sample_rate, EQ_FREQS[b], 1.414f, bands[b]);
+    }
+    ENGINE_LOGI("set_track_eq10 slot=%d", slot);
+}
+
+void set_track_dsp(int slot, float limiter_boost, float stereo_width, float reverb_mix, float bass_boost, float treble_exciter) {
+    if (slot < 0 || slot > 1) return;
+    TrackState& ts = g_tracks[slot];
+    std::lock_guard<std::mutex> lock(ts.mtx);
+    ts.limiter.boost_db = limiter_boost;
+    ts.stereo_width = stereo_width;
+    ts.reverb.mix = reverb_mix;
+    ts.bass_enhancer.amount = bass_boost;
+    ts.exciter.amount = treble_exciter;
+    ENGINE_LOGI("set_track_dsp slot=%d limiter=%.1fdB width=%.2f reverb=%.2f bass=%.2f exciter=%.2f",
+                slot, limiter_boost, stereo_width, reverb_mix, bass_boost, treble_exciter);
 }
 
 int get_track_spectrum(int slot, float* out_buffer, int max_size) {

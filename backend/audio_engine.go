@@ -101,6 +101,20 @@ func SetTrackEQ(slot int, bass, mid, treble float32) {
 	C.set_track_eq(C.int(slot), C.float(bass), C.float(mid), C.float(treble))
 }
 
+func SetTrackEQ10(slot int, bands []float32) {
+	if len(bands) < 10 {
+		return
+	}
+	Log(LogDebug, "engine", "set_track_eq10 slot=%d", slot)
+	C.set_track_eq10(C.int(slot), (*C.float)(&bands[0]))
+}
+
+func SetTrackDSP(slot int, limiterBoost, stereoWidth, reverbMix, bassBoost, trebleExciter float32) {
+	Log(LogDebug, "engine", "set_track_dsp slot=%d limiter=%.2f width=%.2f reverb=%.2f bass=%.2f exciter=%.2f",
+		slot, limiterBoost, stereoWidth, reverbMix, bassBoost, trebleExciter)
+	C.set_track_dsp(C.int(slot), C.float(limiterBoost), C.float(stereoWidth), C.float(reverbMix), C.float(bassBoost), C.float(trebleExciter))
+}
+
 func PlayTrack(slot int) {
 	Log(LogInfo, "engine", "play_track slot=%d", slot)
 	C.play_track(C.int(slot))

@@ -187,6 +187,21 @@ func (a *App) SetEQ(slot int, bass, mid, treble float64) {
 	SetTrackEQ(slot, float32(bass), float32(mid), float32(treble))
 }
 
+func (a *App) SetEQ10(slot int, bands []float64) {
+	Log(LogInfo, "app", "SetEQ10 slot=%d count=%d", slot, len(bands))
+	bandsF32 := make([]float32, len(bands))
+	for i, v := range bands {
+		bandsF32[i] = float32(v)
+	}
+	SetTrackEQ10(slot, bandsF32)
+}
+
+func (a *App) SetDSP(slot int, limiterBoost, stereoWidth, reverbMix, bassBoost, trebleExciter float64) {
+	Log(LogInfo, "app", "SetDSP slot=%d limiterBoost=%.2f stereoWidth=%.2f reverbMix=%.2f bassBoost=%.2f trebleExciter=%.2f",
+		slot, limiterBoost, stereoWidth, reverbMix, bassBoost, trebleExciter)
+	SetTrackDSP(slot, float32(limiterBoost), float32(stereoWidth), float32(reverbMix), float32(bassBoost), float32(trebleExciter))
+}
+
 func (a *App) SetTempo(slot int, tempoRatio float64) {
 	Log(LogInfo, "app", "SetTempo slot=%d ratio=%.3f", slot, tempoRatio)
 	SetTrackTempo(slot, tempoRatio)

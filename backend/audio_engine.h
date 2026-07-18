@@ -22,6 +22,8 @@ void pause_track(int slot);
 void seek_track(int slot, double position_sec);
 void set_track_volume(int slot, float volume);
 void set_track_eq(int slot, float bass, float mid, float treble);
+void set_track_eq10(int slot, const float* bands);
+void set_track_dsp(int slot, float limiter_boost, float stereo_width, float reverb_mix, float bass_boost, float treble_exciter);
 void set_track_tempo(int slot, double tempo_ratio);
 void set_track_pitch(int slot, double pitch_semi);
 double get_track_position(int slot);

@@ -85,6 +85,17 @@ export const translations = {
         audioRouted: "Audio output routed to: {name}",
         copyFailed: "Failed to copy: {err}",
         routeFailed: "Failed to route audio output to {device}",
+        soundEnhancement: "Sound FX & Mastering",
+        limiterMaximizer: "Brickwall Limiter / Maximizer",
+        stereoWidener: "Stereo Widener",
+        reverb: "Reverb (Ambient)",
+        bassBoost: "Psychoacoustic Bass Boost",
+        exciter: "Exciter (Treble Air)",
+        presets: "EQ Presets",
+        customPresets: "Custom Presets",
+        savePreset: "Save Preset",
+        presetName: "Preset Name",
+        eq10: "10-Band Graphic EQ",
     },
     ru: {
         // AppHeader
@@ -170,6 +181,17 @@ export const translations = {
         audioRouted: "Звук перенаправлен на: {name}",
         copyFailed: "Не удалось скопировать: {err}",
         routeFailed: "Не удалось перенаправить звук на {device}",
+        soundEnhancement: "Обработка и Мастеринг",
+        limiterMaximizer: "Brickwall Лимитер / Максимайзер",
+        stereoWidener: "Расширитель стереобазы",
+        reverb: "Реверберация (Окружение)",
+        bassBoost: "Усиление басов (Sub-Bass)",
+        exciter: "Эксайтер (Четкость ВЧ)",
+        presets: "Пресеты EQ",
+        customPresets: "Пользовательские",
+        savePreset: "Сохранить пресет",
+        presetName: "Название пресета",
+        eq10: "10-полосный эквалайзер",
     }
 };
 

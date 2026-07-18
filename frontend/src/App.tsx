@@ -23,7 +23,9 @@ import {
     RemoveTrackFromPlaylist,
     GetAudioDevices,
     SetAudioDevice,
-    SetEQ
+    SetEQ,
+    SetEQ10,
+    SetDSP
 } from "../wailsjs/go/backend/App";
 
 import { TrackInfo, PlaylistInfo } from './types';
@@ -37,6 +39,7 @@ import { VisualizerContainer } from './features/visualizer/VisualizerContainer';
 import { MusiciansView } from './components/MusiciansView';
 import { splitArtists } from './utils';
 import { Language, useTranslation } from './localization';
+import { AudioEffectsModal } from './components/AudioEffectsModal';
 
 function App() {
     const [language, setLanguage] = useState<Language>(() => {
@@ -224,6 +227,123 @@ function App() {
         } catch {}
     };
 
+    const [eq10Values, setEQ10Values] = useState<[number, number, number, number, number, number, number, number, number, number]>(() => {
+        try {
+            const val = localStorage.getItem('soundplayer_eq10');
+            if (val) {
+                const parsed = JSON.parse(val);
+                if (Array.isArray(parsed) && parsed.length === 10) {
+                    return parsed as any;
+                }
+            }
+        } catch {}
+        return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    });
+
+    const [dspParams, setDSPParams] = useState({
+        limiterBoost: 0.0,
+        stereoWidth: 1.0,
+        reverbMix: 0.0,
+        bassBoost: 0.0,
+        trebleExciter: 0.0
+    });
+
+    useEffect(() => {
+        try {
+            const val = localStorage.getItem('soundplayer_dsp');
+            if (val) {
+                const parsed = JSON.parse(val);
+                if (parsed && typeof parsed === 'object') {
+                    setDSPParams({
+                        limiterBoost: Number(parsed.limiterBoost ?? 0.0),
+                        stereoWidth: Number(parsed.stereoWidth ?? 1.0),
+                        reverbMix: Number(parsed.reverbMix ?? 0.0),
+                        bassBoost: Number(parsed.bassBoost ?? 0.0),
+                        trebleExciter: Number(parsed.trebleExciter ?? 0.0)
+                    });
+                }
+            }
+        } catch {}
+    }, []);
+
+    const [customPresets, setCustomPresets] = useState<Record<string, number[]>>(() => {
+        try {
+            const val = localStorage.getItem('soundplayer_custom_presets');
+            if (val) {
+                return JSON.parse(val);
+            }
+        } catch {}
+        return {};
+    });
+
+    const setEQ10Value = async (bandIndex: number, val: number) => {
+        const newEq = [...eq10Values] as [number, number, number, number, number, number, number, number, number, number];
+        newEq[bandIndex] = val;
+        setEQ10Values(newEq);
+        uiLog('INFO', `EQ10 change band=${bandIndex} val=${val.toFixed(1)}`);
+        try {
+            await SetEQ10(0, newEq);
+            await SetEQ10(1, newEq);
+        } catch (err) {
+            uiLog('ERROR', `Failed to SetEQ10: ${String(err)}`);
+        }
+        try {
+            localStorage.setItem('soundplayer_eq10', JSON.stringify(newEq));
+        } catch {}
+    };
+
+    const setEQ10Whole = async (bands: number[]) => {
+        if (bands.length !== 10) return;
+        const newEq = [...bands] as [number, number, number, number, number, number, number, number, number, number];
+        setEQ10Values(newEq);
+        uiLog('INFO', `EQ10 preset apply`);
+        try {
+            await SetEQ10(0, newEq);
+            await SetEQ10(1, newEq);
+        } catch (err) {
+            uiLog('ERROR', `Failed to SetEQ10 whole: ${String(err)}`);
+        }
+        try {
+            localStorage.setItem('soundplayer_eq10', JSON.stringify(newEq));
+        } catch {}
+    };
+
+    const setDSPParam = async (param: string, val: number) => {
+        setDSPParams(prev => {
+            const updated = { ...prev, [param]: val };
+            uiLog('INFO', `DSP change param=${param} val=${val.toFixed(2)}`);
+            SetDSP(0, updated.limiterBoost, updated.stereoWidth, updated.reverbMix, updated.bassBoost, updated.trebleExciter).catch(err => {
+                uiLog('ERROR', `Failed to SetDSP deck0: ${String(err)}`);
+            });
+            SetDSP(1, updated.limiterBoost, updated.stereoWidth, updated.reverbMix, updated.bassBoost, updated.trebleExciter).catch(err => {
+                uiLog('ERROR', `Failed to SetDSP deck1: ${String(err)}`);
+            });
+            try {
+                localStorage.setItem('soundplayer_dsp', JSON.stringify(updated));
+            } catch {}
+            return updated;
+        });
+    };
+
+    const handleSavePreset = (name: string, bands: number[]) => {
+        const updated = { ...customPresets, [name]: bands };
+        setCustomPresets(updated);
+        try {
+            localStorage.setItem('soundplayer_custom_presets', JSON.stringify(updated));
+        } catch {}
+        uiLog('INFO', `Saved custom preset: ${name}`);
+    };
+
+    const handleDeletePreset = (name: string) => {
+        const updated = { ...customPresets };
+        delete updated[name];
+        setCustomPresets(updated);
+        try {
+            localStorage.setItem('soundplayer_custom_presets', JSON.stringify(updated));
+        } catch {}
+        uiLog('INFO', `Deleted custom preset: ${name}`);
+    };
+
     const handleToggleMyWave = async () => {
         if (libraryTracks.length === 0) {
             uiLog('WARN', 'handleToggleMyWave: библиотека пуста');
@@ -405,6 +525,8 @@ function App() {
 
             const meta = await LoadTrack(slot, path);
             try { await SetEQ(slot, eqValues[0], eqValues[1], eqValues[2]); } catch { /* ok */ }
+            try { await SetEQ10(slot, eq10Values); } catch { /* ok */ }
+            try { await SetDSP(slot, dspParams.limiterBoost, dspParams.stereoWidth, dspParams.reverbMix, dspParams.bassBoost, dspParams.trebleExciter); } catch { /* ok */ }
             const cachedTrack = libraryTracks.find(t => t.filePath === path);
             setTracks(prev => {
                 const updated = [...prev] as [TrackInfo | null, TrackInfo | null];
@@ -670,6 +792,10 @@ function App() {
         SetVolume(1, volumes[1]).catch(() => {});
         SetEQ(0, eqValues[0], eqValues[1], eqValues[2]).catch(() => {});
         SetEQ(1, eqValues[0], eqValues[1], eqValues[2]).catch(() => {});
+        SetEQ10(0, eq10Values).catch(() => {});
+        SetEQ10(1, eq10Values).catch(() => {});
+        SetDSP(0, dspParams.limiterBoost, dspParams.stereoWidth, dspParams.reverbMix, dspParams.bassBoost, dspParams.trebleExciter).catch(() => {});
+        SetDSP(1, dspParams.limiterBoost, dspParams.stereoWidth, dspParams.reverbMix, dspParams.bassBoost, dspParams.trebleExciter).catch(() => {});
         GetAudioDevices().then((list) => {
             setAudioDevices(list || []);
         }).catch((err) => {
@@ -870,8 +996,6 @@ function App() {
                 setSearchQuery={setSearchQuery}
                 showEqualizer={showEqualizer}
                 setShowEqualizer={setShowEqualizer}
-                eqValues={eqValues}
-                setEQValue={setEQValue}
                 language={language}
             />
 
@@ -993,6 +1117,21 @@ function App() {
                 getFilename={getFilename}
                 copyToClipboard={copyToClipboard}
                 language={language}
+            />
+
+            <AudioEffectsModal
+                isOpen={showEqualizer}
+                onClose={() => setShowEqualizer(false)}
+                eq10Values={eq10Values}
+                setEQ10Value={setEQ10Value}
+                setEQ10Whole={setEQ10Whole}
+                dspParams={dspParams}
+                setDSPParam={setDSPParam}
+                language={language}
+                activeSlot={activeSlot}
+                customPresets={customPresets}
+                onSavePreset={handleSavePreset}
+                onDeletePreset={handleDeletePreset}
             />
 
             {toastMessage && (

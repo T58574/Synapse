@@ -11,8 +11,6 @@ interface AppHeaderProps {
     setSearchQuery: (query: string) => void;
     showEqualizer: boolean;
     setShowEqualizer: (show: boolean) => void;
-    eqValues: [number, number, number];
-    setEQValue: (bandIndex: number, val: number) => void;
     language: Language;
 }
 
@@ -25,17 +23,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     setSearchQuery,
     showEqualizer,
     setShowEqualizer,
-    eqValues,
-    setEQValue,
     language
 }) => {
     const { t } = useTranslation(language);
-
-    const handleEQReset = () => {
-        setEQValue(0, 0.0);
-        setEQValue(1, 0.0);
-        setEQValue(2, 0.0);
-    };
 
     return (
         <header className="app-header">
@@ -104,62 +94,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 >
                     <SettingsIcon />
                 </button>
-
-                {showEqualizer && (
-                    <div className="equalizer-popover">
-                        <div className="eq-popover-header">
-                            <span>{t('equalizer')}</span>
-                            <button className="eq-reset-btn" onClick={handleEQReset}>{t('reset')}</button>
-                        </div>
-                        <div className="eq-popover-sliders">
-                            <div className="eq-slider-col">
-                                <span className="eq-band-label">{t('bass')}</span>
-                                <div className="eq-slider-wrapper">
-                                    <input
-                                        type="range"
-                                        min="-12"
-                                        max="12"
-                                        step="0.5"
-                                        value={eqValues[0]}
-                                        onChange={(e) => setEQValue(0, parseFloat(e.target.value))}
-                                        className="eq-slider"
-                                    />
-                                </div>
-                                <span className="eq-val-label">{eqValues[0] > 0 ? `+${eqValues[0].toFixed(1)}` : eqValues[0].toFixed(1)} dB</span>
-                            </div>
-                            <div className="eq-slider-col">
-                                <span className="eq-band-label">{t('mid')}</span>
-                                <div className="eq-slider-wrapper">
-                                    <input
-                                        type="range"
-                                        min="-12"
-                                        max="12"
-                                        step="0.5"
-                                        value={eqValues[1]}
-                                        onChange={(e) => setEQValue(1, parseFloat(e.target.value))}
-                                        className="eq-slider"
-                                    />
-                                </div>
-                                <span className="eq-val-label">{eqValues[1] > 0 ? `+${eqValues[1].toFixed(1)}` : eqValues[1].toFixed(1)} dB</span>
-                            </div>
-                            <div className="eq-slider-col">
-                                <span className="eq-band-label">{t('treble')}</span>
-                                <div className="eq-slider-wrapper">
-                                    <input
-                                        type="range"
-                                        min="-12"
-                                        max="12"
-                                        step="0.5"
-                                        value={eqValues[2]}
-                                        onChange={(e) => setEQValue(2, parseFloat(e.target.value))}
-                                        className="eq-slider"
-                                    />
-                                </div>
-                                <span className="eq-val-label">{eqValues[2] > 0 ? `+${eqValues[2].toFixed(1)}` : eqValues[2].toFixed(1)} dB</span>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
         </header>
     );
