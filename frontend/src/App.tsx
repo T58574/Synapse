@@ -406,29 +406,33 @@ function App() {
             const meta = await LoadTrack(slot, path);
             try { await SetEQ(slot, eqValues[0], eqValues[1], eqValues[2]); } catch { /* ok */ }
             const cachedTrack = libraryTracks.find(t => t.filePath === path);
-            const updated = [...tracks] as [TrackInfo | null, TrackInfo | null];
-            updated[slot] = {
-                filePath: path,
-                durationSec: cachedTrack ? cachedTrack.durationSec : meta.durationSec,
-                bpm: cachedTrack ? cachedTrack.bpm : meta.bpm,
-                keySignature: cachedTrack ? cachedTrack.keySignature : meta.keySignature,
-                waveform: (cachedTrack && cachedTrack.waveform && cachedTrack.waveform.length > 0)
-                    ? cachedTrack.waveform
-                    : (meta.waveform || [])
-            };
-            setTracks(updated);
+            setTracks(prev => {
+                const updated = [...prev] as [TrackInfo | null, TrackInfo | null];
+                updated[slot] = {
+                    filePath: path,
+                    durationSec: cachedTrack ? cachedTrack.durationSec : meta.durationSec,
+                    bpm: cachedTrack ? cachedTrack.bpm : meta.bpm,
+                    keySignature: cachedTrack ? cachedTrack.keySignature : meta.keySignature,
+                    waveform: (cachedTrack && cachedTrack.waveform && cachedTrack.waveform.length > 0)
+                        ? cachedTrack.waveform
+                        : (meta.waveform || [])
+                };
+                return updated;
+            });
 
-            const updatedPlaying = [...playing] as [boolean, boolean];
-            updatedPlaying[slot] = false;
-            setPlaying(updatedPlaying);
+            setPlaying(prev => {
+                const updated = [...prev] as [boolean, boolean];
+                updated[slot] = false;
+                return updated;
+            });
 
-            const updatedPos = [...positions] as [number, number];
-            updatedPos[slot] = 0;
-            setPositions(updatedPos);
+            setPositions(prev => {
+                const updated = [...prev] as [number, number];
+                updated[slot] = 0;
+                return updated;
+            });
 
-
-
-            uiLog('INFO', `handleLoadDeck: OK slot=${slot} dur=${updated[slot]?.durationSec.toFixed(2)}s bpm=${updated[slot]?.bpm.toFixed(1)} key=${updated[slot]?.keySignature}`);
+            uiLog('INFO', `handleLoadDeck: OK slot=${slot} dur=${(cachedTrack ? cachedTrack.durationSec : meta.durationSec).toFixed(2)}s bpm=${(cachedTrack ? cachedTrack.bpm : meta.bpm).toFixed(1)} key=${cachedTrack ? cachedTrack.keySignature : meta.keySignature}`);
         } catch (err) {
             uiLog('ERROR', `handleLoadDeck: ошибка slot=${slot} path=${path}: ${String(err)}`);
         } finally {
@@ -637,9 +641,11 @@ function App() {
         
         ignorePositionUntilRef.current = Date.now() + 600;
 
-        const updated = [...positions] as [number, number];
-        updated[slot] = newPos;
-        setPositions(updated);
+        setPositions(prev => {
+            const updated = [...prev] as [number, number];
+            updated[slot] = newPos;
+            return updated;
+        });
 
         try {
             await Seek(slot, newPos);
