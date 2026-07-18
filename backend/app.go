@@ -29,7 +29,9 @@ var (
 )
 
 type App struct {
-	ctx context.Context
+	ctx            context.Context
+	currentPaths   [2]string
+	currentPathsMu sync.Mutex
 }
 
 func NewApp() *App {
@@ -90,6 +92,11 @@ func (a *App) Shutdown(ctx context.Context) {
 
 func (a *App) LoadTrack(slot int, filePath string) (TrackMetadata, error) {
 	Log(LogInfo, "app", "LoadTrack slot=%d path=%q", slot, filePath)
+	
+	a.currentPathsMu.Lock()
+	a.currentPaths[slot] = filePath
+	a.currentPathsMu.Unlock()
+
 	ok := LoadTrack(slot, filePath)
 	if !ok {
 		Log(LogError, "app", "LoadTrack: движок не смог загрузить slot=%d path=%q", slot, filePath)
@@ -106,9 +113,16 @@ func (a *App) LoadTrack(slot int, filePath string) (TrackMetadata, error) {
 		analyzed.Artist = initialMeta.Artist
 		analyzed.Genre = initialMeta.Genre
 		analyzed.Mood = DetermineMood(analyzed.BPM, analyzed.KeySignature, analyzed.Genre)
-		SetTrackMetadata(s, analyzed)
-		if a.ctx != nil {
-			wailsRuntime.EventsEmit(a.ctx, "track_analyzed", s, analyzed)
+		
+		a.currentPathsMu.Lock()
+		stillSame := a.currentPaths[s] == path
+		a.currentPathsMu.Unlock()
+
+		if stillSame {
+			SetTrackMetadata(s, analyzed)
+			if a.ctx != nil {
+				wailsRuntime.EventsEmit(a.ctx, "track_analyzed", s, analyzed)
+			}
 		}
 	}(slot, filePath, meta)
 
@@ -552,7 +566,7 @@ func extractTagsOrFilename(path string) (string, string) {
 	}
 	if artist == "" {
 		filename := filepath.Base(path)
-		filenameNoExt := filename[:len(filename)-len(filepath.Ext(filename))]
+		filenameNoExt := strings.TrimSuffix(filename, filepath.Ext(path))
 		parts := strings.SplitN(filenameNoExt, " - ", 2)
 		if len(parts) == 2 {
 			artist = strings.TrimSpace(parts[0])
