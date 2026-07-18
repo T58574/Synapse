@@ -3,6 +3,7 @@ import { TrackInfo } from '../types';
 import { ArtistShape } from './ArtistShape';
 import { PlayIcon } from './Icons';
 import { splitArtists } from '../utils';
+import { Language, useTranslation, getPluralTracks, getPluralArtists } from '../localization';
 
 interface MusiciansViewProps {
     libraryTracks: TrackInfo[];
@@ -10,6 +11,7 @@ interface MusiciansViewProps {
     setSelectedArtist: (artist: string | null) => void;
     setSelectedPlaylist: (playlist: string | null) => void;
     handlePlayLibraryTrack: (index: number) => Promise<void>;
+    language: Language;
 }
 
 export const MusiciansView: React.FC<MusiciansViewProps> = ({
@@ -17,8 +19,10 @@ export const MusiciansView: React.FC<MusiciansViewProps> = ({
     setActiveTab,
     setSelectedArtist,
     setSelectedPlaylist,
-    handlePlayLibraryTrack
+    handlePlayLibraryTrack,
+    language
 }) => {
+    const { t } = useTranslation(language);
     const [searchQuery, setSearchQuery] = useState('');
 
     // Extract unique artists and their tracks
@@ -71,10 +75,10 @@ export const MusiciansView: React.FC<MusiciansViewProps> = ({
         <div className="musicians-view">
             <div className="musicians-header-row">
                 <div>
-                    <span className="hero-tag">DISCOVER</span>
-                    <h1 className="hero-title">Musicians</h1>
+                    <span className="hero-tag">{t('discover')}</span>
+                    <h1 className="hero-title">{t('musicians')}</h1>
                     <p className="hero-stats" style={{ marginTop: '4px' }}>
-                        {sortedArtists.length} unique artists found in your library
+                        {getPluralArtists(sortedArtists.length, language)}
                     </p>
                 </div>
                 <div className="search-bar-container">
@@ -84,7 +88,7 @@ export const MusiciansView: React.FC<MusiciansViewProps> = ({
                     </svg>
                     <input 
                         type="text" 
-                        placeholder="Search artists..." 
+                        placeholder={t('searchArtistsPlaceholder')} 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="search-input"
@@ -98,10 +102,10 @@ export const MusiciansView: React.FC<MusiciansViewProps> = ({
             {filteredArtists.length === 0 ? (
                 <div className="empty-library">
                     <div className="empty-card">
-                        <h3>No artists found</h3>
-                        <p>No artists match your search query: "{searchQuery}"</p>
+                        <h3>{t('noArtistsFound')}</h3>
+                        <p>{t('noArtistsMatch', { query: searchQuery })}</p>
                         <button className="btn-secondary" onClick={() => setSearchQuery('')}>
-                            Clear Search
+                            {t('clearSearch')}
                         </button>
                     </div>
                 </div>
@@ -118,7 +122,7 @@ export const MusiciansView: React.FC<MusiciansViewProps> = ({
                                 <button 
                                     className="artist-play-btn" 
                                     onClick={(e) => handlePlayArtist(e, artist.name, artist.tracks)}
-                                    title={`Play ${artist.name}`}
+                                    title={`${language === 'ru' ? 'Играть' : 'Play'} ${artist.name}`}
                                 >
                                     <PlayIcon />
                                 </button>
@@ -126,7 +130,7 @@ export const MusiciansView: React.FC<MusiciansViewProps> = ({
                             <div className="artist-info">
                                 <h3 className="artist-name">{artist.name}</h3>
                                 <span className="artist-count">
-                                    {artist.tracks.length} {artist.tracks.length === 1 ? 'track' : 'tracks'}
+                                    {getPluralTracks(artist.tracks.length, language)}
                                 </span>
                             </div>
                         </div>

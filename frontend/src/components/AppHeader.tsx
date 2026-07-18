@@ -1,5 +1,6 @@
 import React from 'react';
 import { BoltIcon, FolderIcon, LoadIcon, SettingsIcon, SlidersIcon } from './Icons';
+import { Language, useTranslation } from '../localization';
 
 interface AppHeaderProps {
     activeTab: 'library' | 'settings' | 'musicians';
@@ -12,6 +13,7 @@ interface AppHeaderProps {
     setShowEqualizer: (show: boolean) => void;
     eqValues: [number, number, number];
     setEQValue: (bandIndex: number, val: number) => void;
+    language: Language;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -24,8 +26,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     showEqualizer,
     setShowEqualizer,
     eqValues,
-    setEQValue
+    setEQValue,
+    language
 }) => {
+    const { t } = useTranslation(language);
+
     const handleEQReset = () => {
         setEQValue(0, 0.0);
         setEQValue(1, 0.0);
@@ -39,7 +44,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <BoltIcon />
                 </button>
                 <button className={`header-btn ${activeTab === 'library' ? 'active' : ''}`} onClick={() => setActiveTab('library')}>
-                    <span>Library</span>
+                    <span>{t('library')}</span>
                 </button>
                 <button className={`header-btn ${activeTab === 'musicians' ? 'active' : ''}`} onClick={() => setActiveTab('musicians')}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
@@ -47,15 +52,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         <circle cx="6" cy="18" r="3" />
                         <circle cx="18" cy="16" r="3" />
                     </svg>
-                    <span>Musicians</span>
+                    <span>{t('musicians')}</span>
                 </button>
                 <button className="header-btn" onClick={handleSelectDirectory}>
                     <FolderIcon />
-                    <span>Open Folder</span>
+                    <span>{t('openFolder')}</span>
                 </button>
                 <button className="header-btn" onClick={handleScan}>
                     <LoadIcon />
-                    <span>Scan Folder</span>
+                    <span>{t('scanFolder')}</span>
                 </button>
             </div>
 
@@ -67,7 +72,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     </svg>
                     <input 
                         type="text" 
-                        placeholder="Search in library..." 
+                        placeholder={t('searchPlaceholder')} 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="search-input"
@@ -85,7 +90,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         setShowEqualizer(!showEqualizer);
                         if (activeTab === 'settings') setActiveTab('library');
                     }}
-                    title="Equalizer"
+                    title={t('equalizer')}
                 >
                     <SlidersIcon />
                 </button>
@@ -103,12 +108,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 {showEqualizer && (
                     <div className="equalizer-popover">
                         <div className="eq-popover-header">
-                            <span>EQUALIZER</span>
-                            <button className="eq-reset-btn" onClick={handleEQReset}>Reset</button>
+                            <span>{t('equalizer')}</span>
+                            <button className="eq-reset-btn" onClick={handleEQReset}>{t('reset')}</button>
                         </div>
                         <div className="eq-popover-sliders">
                             <div className="eq-slider-col">
-                                <span className="eq-band-label">BASS</span>
+                                <span className="eq-band-label">{t('bass')}</span>
                                 <div className="eq-slider-wrapper">
                                     <input
                                         type="range"
@@ -123,7 +128,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                                 <span className="eq-val-label">{eqValues[0] > 0 ? `+${eqValues[0].toFixed(1)}` : eqValues[0].toFixed(1)} dB</span>
                             </div>
                             <div className="eq-slider-col">
-                                <span className="eq-band-label">MID</span>
+                                <span className="eq-band-label">{t('mid')}</span>
                                 <div className="eq-slider-wrapper">
                                     <input
                                         type="range"
@@ -138,7 +143,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                                 <span className="eq-val-label">{eqValues[1] > 0 ? `+${eqValues[1].toFixed(1)}` : eqValues[1].toFixed(1)} dB</span>
                             </div>
                             <div className="eq-slider-col">
-                                <span className="eq-band-label">TREBLE</span>
+                                <span className="eq-band-label">{t('treble')}</span>
                                 <div className="eq-slider-wrapper">
                                     <input
                                         type="range"

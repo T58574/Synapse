@@ -1,6 +1,7 @@
 import React from 'react';
 import { PlusIcon, MusicIconSmall, TrashIcon } from './Icons';
 import { PlaylistInfo } from '../types';
+import { Language, useTranslation } from '../localization';
 
 interface LibrarySidebarProps {
     playlists: PlaylistInfo[];
@@ -20,6 +21,7 @@ interface LibrarySidebarProps {
     selectedGenre: string | null;
     setSelectedGenre: (genre: string | null) => void;
     availableGenres: string[];
+    language: Language;
 }
 
 export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
@@ -39,8 +41,11 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
     availableArtists,
     selectedGenre,
     setSelectedGenre,
-    availableGenres
+    availableGenres,
+    language
 }) => {
+    const { t } = useTranslation(language);
+
     return (
         <aside className="library-sidebar">
             <button
@@ -72,16 +77,16 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
                 </svg>
-                <span>All Tracks</span>
+                <span>{t('allTracks')}</span>
             </button>
 
             <div className="playlists-sidebar-section">
                 <div className="playlists-sidebar-header">
-                    <span className="theme-section-title">PLAYLISTS</span>
+                    <span className="theme-section-title">{t('playlists')}</span>
                     <button 
                         className="create-playlist-sidebar-btn" 
                         onClick={() => setIsCreatingPlaylist(!isCreatingPlaylist)}
-                        title="Create Playlist"
+                        title={t('addToPlaylist')}
                     >
                         <PlusIcon />
                     </button>
@@ -90,7 +95,7 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
                     <div className="sidebar-playlist-input-container">
                         <input
                             type="text"
-                            placeholder="New playlist name..."
+                            placeholder={t('newPlaylistPlaceholder')}
                             value={newPlaylistName}
                             onChange={(e) => setNewPlaylistName(e.target.value)}
                             onKeyDown={(e) => {
@@ -133,9 +138,9 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
 
             <div className="categories-sidebar-section">
                 <div className="categories-sidebar-header">
-                    <span className="theme-section-title">ARTISTS</span>
+                    <span className="theme-section-title">{t('artists')}</span>
                     {selectedArtist && (
-                        <button className="clear-filter-btn" onClick={() => setSelectedArtist(null)}>Clear</button>
+                        <button className="clear-filter-btn" onClick={() => setSelectedArtist(null)}>{t('clearFilter')}</button>
                     )}
                 </div>
                 <div className="sidebar-categories-list">
@@ -157,9 +162,9 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
 
             <div className="categories-sidebar-section">
                 <div className="categories-sidebar-header">
-                    <span className="theme-section-title">GENRES</span>
+                    <span className="theme-section-title">{t('genres')}</span>
                     {selectedGenre && (
-                        <button className="clear-filter-btn" onClick={() => setSelectedGenre(null)}>Clear</button>
+                        <button className="clear-filter-btn" onClick={() => setSelectedGenre(null)}>{t('clearFilter')}</button>
                     )}
                 </div>
                 <div className="sidebar-categories-list">

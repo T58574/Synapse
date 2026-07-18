@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShuffleIcon, PrevIcon, PauseIcon, PlayIcon, NextIcon, RepeatIcon, BoltIcon, LightningIcon, VolumeIcon } from './Icons';
 import { TrackInfo } from '../types';
+import { Language, useTranslation } from '../localization';
 
 interface PlaybackBarProps {
     tracks: [TrackInfo | null, TrackInfo | null];
@@ -24,6 +25,7 @@ interface PlaybackBarProps {
     formatTime: (sec: number) => string;
     getFilename: (path: string) => string;
     copyToClipboard?: (text: string, label: string) => void;
+    language: Language;
 }
 
 export const PlaybackBar: React.FC<PlaybackBarProps> = ({
@@ -47,8 +49,10 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
     handleToggleAutoMix,
     formatTime,
     getFilename,
-    copyToClipboard
+    copyToClipboard,
+    language
 }) => {
+    const { t } = useTranslation(language);
     const activeTrack = tracks[activeSlot];
     const duration = activeTrack?.durationSec ?? 0;
     const progress = dragPosition !== null ? dragPosition : (activeTrack && duration > 0 ? positions[activeSlot] / duration : 0);
@@ -70,7 +74,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
                                         navigator.clipboard.writeText(title);
                                     }
                                 }}
-                                title="Click to copy title"
+                                title={t('clickToCopyTitle')}
                             >
                                 {getFilename(activeTrack.filePath)}
                             </span>
@@ -86,18 +90,18 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
                                                 navigator.clipboard.writeText(art);
                                             }
                                         }}
-                                        title="Click to copy artist"
+                                        title={t('clickToCopyArtist')}
                                         style={{ marginRight: '8px', color: 'var(--accent-color)', fontWeight: 'bold' }}
                                     >
                                         {activeTrack.artist}
                                     </span>
                                 )}
-                                BPM: {activeTrack.bpm.toFixed(0)} | KEY: {activeTrack.keySignature}
+                                BPM: {activeTrack.bpm.toFixed(0)} | {t('keyCol')}: {activeTrack.keySignature}
                             </span>
                         </div>
                     </div>
                 ) : (
-                    <span className="no-playing">No Track Playing</span>
+                    <span className="no-playing">{t('noTrackPlaying')}</span>
                 )}
             </div>
 
@@ -148,13 +152,13 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
 
             <div className="playback-right">
                 <div className="bar-automix">
-                    <span className="bar-automix-label">AUTO-MIX</span>
+                    <span className="bar-automix-label">{t('automixLabel')}</span>
                     <button 
                         className={`bar-automix-toggle ${autoMix ? 'active' : ''}`}
                         onClick={handleToggleAutoMix}
                     >
                         <LightningIcon />
-                        <span>{autoMix ? 'ON' : 'OFF'}</span>
+                        <span>{autoMix ? (language === 'ru' ? 'ВКЛ' : 'ON') : (language === 'ru' ? 'ВЫКЛ' : 'OFF')}</span>
                     </button>
                 </div>
 

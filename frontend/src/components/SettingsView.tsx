@@ -1,5 +1,6 @@
 import React from 'react';
 import { ThemeConfig } from '../types';
+import { Language, useTranslation } from '../localization';
 
 interface AudioDevice {
     name: string;
@@ -17,6 +18,9 @@ interface SettingsViewProps {
     audioDevices: AudioDevice[];
     selectedDevice: string;
     handleDeviceChange: (id: string) => Promise<void>;
+    language: Language;
+    setLanguage: (lang: Language) => void;
+    handleOpenDir: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -28,17 +32,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     musicDir,
     audioDevices,
     selectedDevice,
-    handleDeviceChange
+    handleDeviceChange,
+    language,
+    setLanguage,
+    handleOpenDir
 }) => {
+    const { t } = useTranslation(language);
+
     return (
         <div className="settings-view">
             <header className="settings-header">
-                <h1>App Settings</h1>
-                <p>Customize your 0xSoundPlayer experience and theme styles</p>
+                <h1>{t('appSettings')}</h1>
+                <p>{t('appSettingsDesc')}</p>
             </header>
 
             <section className="settings-section">
-                <h3 className="settings-section-title">Color Palette Theme</h3>
+                <h3 className="settings-section-title">{t('colorPaletteTheme')}</h3>
                 <div className="themes-grid-large">
                     {Object.keys(themes).map((tKey) => {
                         const th = themes[tKey];
@@ -57,11 +66,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                                     </div>
                                 </div>
                                 <span className="theme-card-desc">
-                                    {tKey === 'saas' ? 'Modern SaaS & Dark Dashboard' : 
-                                     tKey === 'neutrals' ? 'Elevated Neutrals (Light Mode)' : 
-                                     tKey === 'fintech' ? 'Fintech & AI Innovation' : 
-                                     tKey === 'trust' ? 'Classic Trust (Light Mode)' : 
-                                     'Eco-Digital & Wellness'}
+                                    {tKey === 'saas' ? t('themeSaas') : 
+                                     tKey === 'neutrals' ? t('themeNeutrals') : 
+                                     tKey === 'fintech' ? t('themeFintech') : 
+                                     tKey === 'trust' ? t('themeTrust') : 
+                                     t('themeEco')}
                                 </span>
                             </div>
                         );
@@ -70,11 +79,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </section>
 
             <section className="settings-section">
-                <h3 className="settings-section-title">Audio & Transitions</h3>
+                <h3 className="settings-section-title">{t('appLanguage')}</h3>
                 <div className="settings-item">
                     <div className="settings-item-info">
-                        <span className="settings-item-label">Auto-Mix Crossfade Duration</span>
-                        <span className="settings-item-desc">Adjust the crossfade time between tracks when Auto-Mix is active.</span>
+                        <span className="settings-item-label">{t('appLanguage')}</span>
+                        <span className="settings-item-desc">{t('appLanguageDesc')}</span>
+                    </div>
+                    <div className="settings-item-control">
+                        <select
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value as Language)}
+                            className="settings-device-select"
+                        >
+                            <option value="en">English (EN)</option>
+                            <option value="ru">Русский (RU)</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section className="settings-section">
+                <h3 className="settings-section-title">{t('audioTransitions')}</h3>
+                <div className="settings-item">
+                    <div className="settings-item-info">
+                        <span className="settings-item-label">{t('automixCrossfade')}</span>
+                        <span className="settings-item-desc">{t('automixCrossfadeDesc')}</span>
                     </div>
                     <div className="settings-item-control">
                         <input
@@ -95,8 +124,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <div className="settings-item" style={{ marginTop: '24px' }}>
                     <div className="settings-item-info">
-                        <span className="settings-item-label">Audio Output Device</span>
-                        <span className="settings-item-desc">Route playback audio stream to a custom hardware device.</span>
+                        <span className="settings-item-label">{t('audioOutputDevice')}</span>
+                        <span className="settings-item-desc">{t('audioOutputDeviceDesc')}</span>
                     </div>
                     <div className="settings-item-control">
                         <select
@@ -106,7 +135,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         >
                             {audioDevices.map((d) => (
                                 <option key={d.id} value={d.id}>
-                                    {d.name}
+                                    {d.id === 'default' && language === 'ru' ? 'Устройство по умолчанию' : d.name}
                                 </option>
                             ))}
                         </select>
@@ -115,19 +144,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </section>
 
             <section className="settings-section">
-                <h3 className="settings-section-title">System & Storage</h3>
+                <h3 className="settings-section-title">{t('systemStorage')}</h3>
                 <div className="settings-info-grid">
                     <div className="info-item">
-                        <span className="info-label">Audio Sample Rate</span>
+                        <span className="info-label">{t('audioSampleRate')}</span>
                         <span className="info-value">44100 Hz</span>
                     </div>
                     <div className="info-item">
-                        <span className="info-label">Playback Channels</span>
-                        <span className="info-value">2 (Stereo)</span>
+                        <span className="info-label">{t('playbackChannels')}</span>
+                        <span className="info-value">{language === 'ru' ? '2 (Стерео)' : '2 (Stereo)'}</span>
                     </div>
-                    <div className="info-item" style={{ gridColumn: 'span 2' }}>
-                        <span className="info-label">Library Directory Path</span>
-                        <span className="info-value" style={{ fontSize: '11px', wordBreak: 'break-all' }}>{musicDir}</span>
+                    <div className="info-item" style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <span className="info-label">{t('libraryDirPath')}</span>
+                            <span className="info-value" style={{ fontSize: '11px', wordBreak: 'break-all' }}>{musicDir}</span>
+                        </div>
+                        <button 
+                            className="sidebar-btn" 
+                            onClick={handleOpenDir}
+                            style={{ margin: 0, padding: '8px 16px', fontSize: '12px', height: 'fit-content' }}
+                        >
+                            {language === 'ru' ? 'Открыть логи и файлы' : 'Open Logs & Files'}
+                        </button>
                     </div>
                 </div>
             </section>

@@ -32,10 +32,36 @@ const (
 	LogError LogLevel = "ERROR"
 )
 
+// RotateAndCleanupLogs checks ~/.0xplayer/player.log and engine.log files.
+// It deletes files older than 7 days, or larger than 5 MB, to save disk space.
+func RotateAndCleanupLogs() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	dir := filepath.Join(home, ".0xplayer")
+	maxAge := 7 * 24 * time.Hour
+	maxSize := int64(5 * 1024 * 1024) // 5 MB
+
+	logFiles := []string{"player.log", "engine.log"}
+	for _, fName := range logFiles {
+		path := filepath.Join(dir, fName)
+		info, err := os.Stat(path)
+		if err != nil {
+			continue // file does not exist, safe to skip
+		}
+		if time.Since(info.ModTime()) > maxAge || info.Size() > maxSize {
+			_ = os.Remove(path)
+		}
+	}
+}
+
 // InitLogger инициализирует глобальный логгер. Безопасно вызывать несколько
 // раз — повторные вызовы ничего не делают.
 func InitLogger() {
 	appLoggerOnce.Do(func() {
+		RotateAndCleanupLogs()
+
 		appLogger = log.New(os.Stdout, "", 0)
 
 		home, err := os.UserHomeDir()

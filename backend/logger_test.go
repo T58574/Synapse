@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestLogger(t *testing.T) {
@@ -259,3 +260,53 @@ func TestInitLogger_MultipleCalls(t *testing.T) {
 
 	CloseLogger()
 }
+
+func TestRotateAndCleanupLogs(t *testing.T) {
+	tempHome, err := os.MkdirTemp("", "logger_rotate_test_home_*")
+	if err != nil {
+		t.Fatalf("Failed to create temp home: %v", err)
+	}
+	defer os.RemoveAll(tempHome)
+
+	origHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", origHome)
+	os.Setenv("HOME", tempHome)
+	origUserProfile := os.Getenv("USERPROFILE")
+	defer os.Setenv("USERPROFILE", origUserProfile)
+	os.Setenv("USERPROFILE", tempHome)
+
+	dir := filepath.Join(tempHome, ".0xplayer")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatalf("Failed to create dir: %v", err)
+	}
+
+	playerLogPath := filepath.Join(dir, "player.log")
+	engineLogPath := filepath.Join(dir, "engine.log")
+
+	// 1. Create a large player.log file (6 MB)
+	largeData := make([]byte, 6*1024*1024)
+	if err := os.WriteFile(playerLogPath, largeData, 0644); err != nil {
+		t.Fatalf("Failed to write player.log: %v", err)
+	}
+
+	// 2. Create an old engine.log file
+	if err := os.WriteFile(engineLogPath, []byte("some old logs"), 0644); err != nil {
+		t.Fatalf("Failed to write engine.log: %v", err)
+	}
+	oldTime := time.Now().Add(-8 * 24 * time.Hour)
+	if err := os.Chtimes(engineLogPath, oldTime, oldTime); err != nil {
+		t.Fatalf("Failed to set old modification time on engine.log: %v", err)
+	}
+
+	// Run cleanup
+	RotateAndCleanupLogs()
+
+	// Both should be deleted
+	if _, err := os.Stat(playerLogPath); !os.IsNotExist(err) {
+		t.Error("Oversized player.log was not deleted")
+	}
+	if _, err := os.Stat(engineLogPath); !os.IsNotExist(err) {
+		t.Error("Outdated engine.log was not deleted")
+	}
+}
+

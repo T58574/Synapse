@@ -36,8 +36,28 @@ import { PlaybackBar } from './components/PlaybackBar';
 import { VisualizerContainer } from './features/visualizer/VisualizerContainer';
 import { MusiciansView } from './components/MusiciansView';
 import { splitArtists } from './utils';
+import { Language, useTranslation } from './localization';
 
 function App() {
+    const [language, setLanguage] = useState<Language>(() => {
+        try {
+            return (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('soundplayer_lang') as Language) || 'en';
+        } catch {
+            return 'en';
+        }
+    });
+    const { t } = useTranslation(language);
+
+    useEffect(() => {
+        try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+                localStorage.setItem('soundplayer_lang', language);
+            }
+        } catch {
+            // Ignore
+        }
+    }, [language]);
+
     const [activeTab, setActiveTab] = useState<'library' | 'settings' | 'musicians'>('library');
     const [crossfadeDuration, setCrossfadeDurationState] = useState<number>(8.0);
     const [musicDir, setMusicDir] = useState<string>('');
@@ -556,7 +576,11 @@ function App() {
 
     const copyToClipboard = (text: string, label: string) => {
         navigator.clipboard.writeText(text).then(() => {
-            setToastMessage(`Copied ${label}: "${text}"`);
+            if (label === 'title') {
+                setToastMessage(t('copiedTitle', { text }));
+            } else {
+                setToastMessage(t('copiedArtist', { text }));
+            }
             if (toastTimeoutRef.current) {
                 clearTimeout(toastTimeoutRef.current);
             }
@@ -577,8 +601,9 @@ function App() {
                 localStorage.setItem('soundplayer_device', deviceId);
             } catch {
             }
-            const name = audioDevices.find(d => d.id === deviceId)?.name || 'Default Device';
-            setToastMessage(`Audio output routed to: ${name}`);
+            const defaultDevName = language === 'ru' ? 'Устройство по умолчанию' : 'Default Device';
+            const name = audioDevices.find(d => d.id === deviceId)?.name || defaultDevName;
+            setToastMessage(t('audioRouted', { name }));
             if (toastTimeoutRef.current) {
                 clearTimeout(toastTimeoutRef.current);
             }
@@ -727,15 +752,29 @@ function App() {
                 setPlaying(updatedPlaying);
                 setPositions(updatedPos);
 
+                const activeWasPlaying = st.playing[st.activeSlot];
                 const activeIsPlaying = updatedPlaying[st.activeSlot];
                 const activePos = updatedPos[st.activeSlot];
                 const activeTrack = st.tracks[st.activeSlot];
-                if (activeTrack && activeIsPlaying && activeTrack.durationSec > 0 && activePos >= activeTrack.durationSec - 0.5) {
+                const otherSlot = st.activeSlot === 0 ? 1 : 0;
+                const otherIsPlaying = updatedPlaying[otherSlot];
+
+                const reachedEnd = activeTrack && activeTrack.durationSec > 0 && (
+                    (activeIsPlaying && activePos >= activeTrack.durationSec - 0.5) ||
+                    (activeWasPlaying && !activeIsPlaying && activePos >= activeTrack.durationSec - 2.0)
+                );
+
+                if (reachedEnd) {
                     if (!st.autoMix) {
                         uiLog('INFO', `interval: трек закончен pos=${activePos.toFixed(2)} dur=${activeTrack.durationSec.toFixed(2)} -> next`);
                         if (st.repeat) {
                             handleSeekRef.current(st.activeSlot, 0);
                         } else {
+                            handleNextRef.current();
+                        }
+                    } else {
+                        if (!activeIsPlaying && !otherIsPlaying) {
+                            uiLog('WARN', `interval: automix failed/skipped, both decks stopped. Transitioning to next track.`);
                             handleNextRef.current();
                         }
                     }
@@ -809,6 +848,7 @@ function App() {
                 setShowEqualizer={setShowEqualizer}
                 eqValues={eqValues}
                 setEQValue={setEQValue}
+                language={language}
             />
 
             <div className="app-main-layout">
@@ -833,6 +873,7 @@ function App() {
                                 selectedGenre={selectedGenre}
                                 setSelectedGenre={setSelectedGenre}
                                 availableGenres={availableGenres}
+                                language={language}
                             />
                             <div className="library-main-content">
                                 <LibraryHero
@@ -841,6 +882,7 @@ function App() {
                                     currentPlaylistTracks={currentPlaylistTracks}
                                     totalDurationStr={totalDurationStr}
                                     musicDir={musicDir}
+                                    language={language}
                                 />
                                 <LibraryTable
                                     playing={playing}
@@ -869,6 +911,7 @@ function App() {
                                     copyToClipboard={copyToClipboard}
                                     isMyWave={isMyWave}
                                     onToggleMyWave={handleToggleMyWave}
+                                    language={language}
                                 />
                             </div>
                         </div>
@@ -885,6 +928,9 @@ function App() {
                             audioDevices={audioDevices}
                             selectedDevice={selectedDevice}
                             handleDeviceChange={handleDeviceChange}
+                            language={language}
+                            setLanguage={setLanguage}
+                            handleOpenDir={OpenMusicDir}
                         />
                     )}
                     {activeTab === 'musicians' && (
@@ -894,6 +940,7 @@ function App() {
                             setSelectedArtist={setSelectedArtist}
                             setSelectedPlaylist={setSelectedPlaylist}
                             handlePlayLibraryTrack={handlePlayLibraryTrack}
+                            language={language}
                         />
                     )}
                 </main>
@@ -921,7 +968,7 @@ function App() {
                 formatTime={formatTime}
                 getFilename={getFilename}
                 copyToClipboard={copyToClipboard}
-
+                language={language}
             />
 
             {toastMessage && (

@@ -2,6 +2,7 @@ import React from 'react';
 import { PlayIcon, PauseIcon, RowPlayIcon, RowPauseIcon, PlusIcon, MusicIcon, FolderIcon, LoadIcon } from './Icons';
 import { TrackInfo, PlaylistInfo } from '../types';
 import { splitArtists } from '../utils';
+import { Language, useTranslation } from '../localization';
 
 interface LibraryTableProps {
     playing: [boolean, boolean];
@@ -26,6 +27,7 @@ interface LibraryTableProps {
     copyToClipboard?: (text: string, label: string) => void;
     isMyWave: boolean;
     onToggleMyWave: () => void;
+    language: Language;
 }
 
 export const LibraryTable: React.FC<LibraryTableProps> = ({
@@ -50,8 +52,10 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
     onSelectArtist,
     copyToClipboard,
     isMyWave,
-    onToggleMyWave
+    onToggleMyWave,
+    language
 }) => {
+    const { t } = useTranslation(language);
     const sortedTracks = filteredTracks;
 
     return (
@@ -64,7 +68,7 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                     <button 
                         className={`my-wave-btn ${isMyWave ? 'active' : ''}`}
                         onClick={onToggleMyWave}
-                        title="Start Randomized My Wave playback with AutoMix"
+                        title={isMyWave ? t('myWaveOn') : t('myWave')}
                     >
                         <svg className="my-wave-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
                             <line x1="4" y1="9" x2="4" y2="15" />
@@ -73,11 +77,11 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                             <line x1="16" y1="6" x2="16" y2="18" />
                             <line x1="20" y1="9" x2="20" y2="15" />
                         </svg>
-                        <span>{isMyWave ? 'My Wave: ON' : 'My Wave'}</span>
+                        <span>{isMyWave ? t('myWaveOn') : t('myWave')}</span>
                     </button>
                     <button className="sidebar-btn" onClick={OpenMusicDir}>
                         <FolderIcon />
-                        <span>Open Music Dir</span>
+                        <span>{t('openMusicDir')}</span>
                     </button>
                 </div>
             </div>
@@ -88,10 +92,10 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                         <thead>
                             <tr>
                                 <th style={{ width: '50px' }}>#</th>
-                                <th>TITLE</th>
-                                <th style={{ width: '120px' }}>BPM</th>
-                                <th style={{ width: '120px' }}>KEY</th>
-                                <th style={{ width: '100px' }}>DURATION</th>
+                                <th>{t('titleCol')}</th>
+                                <th style={{ width: '120px' }}>{t('bpmCol')}</th>
+                                <th style={{ width: '120px' }}>{t('keyCol')}</th>
+                                <th style={{ width: '100px' }}>{t('durationCol')}</th>
                                 <th style={{ width: '80px', textAlign: 'center' }}></th>
                             </tr>
                         </thead>
@@ -123,7 +127,7 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                                                         navigator.clipboard.writeText(filename);
                                                     }
                                                 }}
-                                                title="Click to copy title"
+                                                title={t('clickToCopyTitle')}
                                             >
                                                 {filename}
                                             </div>
@@ -149,10 +153,10 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                                                             className="clickable-artist"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                if (onSelectArtist) onSelectArtist('Unknown Artist');
+                                                                if (onSelectArtist) onSelectArtist(t('unknownArtist'));
                                                             }}
                                                         >
-                                                            Unknown Artist
+                                                            {t('unknownArtist')}
                                                         </span>
                                                     )}
                                                     {track.genre && ` • ${track.genre}`}
@@ -167,7 +171,7 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                                                 <button 
                                                     className="track-action-btn add-btn"
                                                     onClick={() => setActivePlaylistMenuTrack(activePlaylistMenuTrack === track.filePath ? null : track.filePath)}
-                                                    title="Add to Playlist"
+                                                    title={t('addToPlaylist')}
                                                 >
                                                     <PlusIcon />
                                                 </button>
@@ -175,7 +179,7 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                                                     <button 
                                                         className="track-action-btn remove-btn"
                                                         onClick={() => handleRemoveTrackFromPlaylist(selectedPlaylist, track.filePath)}
-                                                        title="Remove from Playlist"
+                                                        title={t('removeFromPlaylist')}
                                                     >
                                                         ✕
                                                     </button>
@@ -184,9 +188,9 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                                                     <>
                                                         <div className="playlist-dropdown-backdrop" onClick={() => setActivePlaylistMenuTrack(null)} />
                                                         <div className="playlist-dropdown-menu">
-                                                            <span className="dropdown-menu-title">Add to Playlist</span>
+                                                            <span className="dropdown-menu-title">{t('addToPlaylist')}</span>
                                                             {playlists.length === 0 ? (
-                                                                <span className="dropdown-no-playlists">No playlists created</span>
+                                                                <span className="dropdown-no-playlists">{t('noPlaylistsCreated')}</span>
                                                             ) : (
                                                                 playlists.map((pl) => {
                                                                     const alreadyHas = pl.trackPaths?.includes(track.filePath);
@@ -222,16 +226,16 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                 <div className="empty-library">
                     <div className="empty-card">
                         <MusicIcon />
-                        <h3>Your library is empty</h3>
-                        <p>Drop audio files into `.0xplayer` directory under your home folder.</p>
+                        <h3>{t('libraryEmptyTitle')}</h3>
+                        <p>{t('libraryEmptyDesc')}</p>
                         <div className="empty-actions">
                             <button className="btn-primary" onClick={OpenMusicDir}>
                                 <FolderIcon />
-                                <span>Open Directory</span>
+                                <span>{t('openDirectory')}</span>
                             </button>
                             <button className="btn-secondary" onClick={() => handleSelectAndLoad(activeSlot)}>
                                 <LoadIcon />
-                                <span>Select File Directly</span>
+                                <span>{t('selectFileDirectly')}</span>
                             </button>
                         </div>
                     </div>

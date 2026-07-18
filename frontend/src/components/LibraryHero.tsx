@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrackInfo } from '../types';
 import { ArtistShape } from './ArtistShape';
+import { Language, useTranslation, getPluralTracks } from '../localization';
 
 interface LibraryHeroProps {
     selectedPlaylist: string | null;
@@ -8,6 +9,7 @@ interface LibraryHeroProps {
     currentPlaylistTracks: TrackInfo[];
     totalDurationStr: string;
     musicDir: string;
+    language: Language;
 }
 
 export const LibraryHero: React.FC<LibraryHeroProps> = ({
@@ -15,12 +17,14 @@ export const LibraryHero: React.FC<LibraryHeroProps> = ({
     selectedArtist,
     currentPlaylistTracks,
     totalDurationStr,
-    musicDir
+    musicDir,
+    language
 }) => {
+    const { t } = useTranslation(language);
     const isArtist = !!selectedArtist;
-    const tagText = isArtist ? 'ARTIST' : (selectedPlaylist ? 'CUSTOM PLAYLIST' : 'LOCAL PLAYLIST');
-    const titleText = selectedArtist || selectedPlaylist || 'Home Library';
-    const pathText = selectedArtist ? `Artist Library: ${selectedArtist}` : (selectedPlaylist ? `Custom Playlist: ${selectedPlaylist}` : musicDir);
+    const tagText = isArtist ? t('artistTag') : (selectedPlaylist ? t('customPlaylistTag') : t('localPlaylistTag'));
+    const titleText = selectedArtist || selectedPlaylist || t('homeLibrary');
+    const pathText = selectedArtist ? `${t('artistTag')}: ${selectedArtist}` : (selectedPlaylist ? `${t('customPlaylistTag')}: ${selectedPlaylist}` : musicDir);
 
     return (
         <header className="library-hero">
@@ -35,7 +39,7 @@ export const LibraryHero: React.FC<LibraryHeroProps> = ({
                 <div className="hero-stats">
                     <span className="hero-author">0xPlayer</span>
                     <span className="hero-dot">•</span>
-                    <span>{currentPlaylistTracks.length} tracks</span>
+                    <span>{getPluralTracks(currentPlaylistTracks.length, language)}</span>
                     <span className="hero-dot">•</span>
                     <span>{totalDurationStr}</span>
                 </div>
