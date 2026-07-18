@@ -265,6 +265,8 @@ function App() {
     const handleNextRef = useRef<() => void>(() => {});
     const handleLoadDeckRef = useRef<(slot: number, path: string) => Promise<void>>(async () => {});
     const handleSeekRef = useRef<(slot: number, pct: number) => Promise<void>>(async () => {});
+    const lastSeekTimeRef = useRef<number | null>(null);
+    const lastSeekTimestampRef = useRef<number>(0);
 
     const stateRef = useRef({
         tracks: [null, null] as [TrackInfo | null, TrackInfo | null],
@@ -680,6 +682,12 @@ function App() {
         const handleGlobalRelease = () => {
             const currentPos = dragPositionRef.current;
             if (currentPos !== null) {
+                const track = tracks[activeSlot];
+                const duration = track ? track.durationSec : 0;
+                if (duration > 0) {
+                    lastSeekTimeRef.current = currentPos * duration;
+                    lastSeekTimestampRef.current = Date.now();
+                }
                 handleSeek(activeSlot, currentPos);
                 dragPositionRef.current = null;
                 setDragPosition(null);
@@ -720,13 +728,22 @@ function App() {
             const promises: Promise<void>[] = [];
 
             if (st.tracks[0]) {
-                const needsPoll = st.playing[0] || (st.autoMix && st.playing[1]);
+                const needsPoll = st.playing[0] || (st.autoMix && st.playing[1]) || (st.activeSlot === 0 && lastSeekTimeRef.current !== null);
                 if (needsPoll) {
                     promises.push((async () => {
                         const isPlay = await IsPlaying(0);
                         updatedPlaying[0] = isPlay;
-                        if (isPlay) {
-                            const pos = await GetPosition(0);
+                        const pos = await GetPosition(0);
+                        const lastSeekTime = lastSeekTimeRef.current;
+                        if (st.activeSlot === 0 && lastSeekTime !== null) {
+                            const timeSinceSeek = Date.now() - lastSeekTimestampRef.current;
+                            if (Math.abs(pos - lastSeekTime) < 1.0 || timeSinceSeek > 800) {
+                                lastSeekTimeRef.current = null;
+                                updatedPos[0] = pos;
+                            } else {
+                                updatedPos[0] = lastSeekTime;
+                            }
+                        } else if (isPlay) {
                             updatedPos[0] = pos;
                         }
                     })());
@@ -734,13 +751,22 @@ function App() {
             }
 
             if (st.tracks[1]) {
-                const needsPoll = st.playing[1] || (st.autoMix && st.playing[0]);
+                const needsPoll = st.playing[1] || (st.autoMix && st.playing[0]) || (st.activeSlot === 1 && lastSeekTimeRef.current !== null);
                 if (needsPoll) {
                     promises.push((async () => {
                         const isPlay = await IsPlaying(1);
                         updatedPlaying[1] = isPlay;
-                        if (isPlay) {
-                            const pos = await GetPosition(1);
+                        const pos = await GetPosition(1);
+                        const lastSeekTime = lastSeekTimeRef.current;
+                        if (st.activeSlot === 1 && lastSeekTime !== null) {
+                            const timeSinceSeek = Date.now() - lastSeekTimestampRef.current;
+                            if (Math.abs(pos - lastSeekTime) < 1.0 || timeSinceSeek > 800) {
+                                lastSeekTimeRef.current = null;
+                                updatedPos[1] = pos;
+                            } else {
+                                updatedPos[1] = lastSeekTime;
+                            }
+                        } else if (isPlay) {
                             updatedPos[1] = pos;
                         }
                     })());
