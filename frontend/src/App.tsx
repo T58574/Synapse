@@ -679,7 +679,7 @@ function App() {
     useEffect(() => {
         if (dragPosition === null) return;
 
-        const handleGlobalRelease = () => {
+        const handleGlobalRelease = async () => {
             const currentPos = dragPositionRef.current;
             if (currentPos !== null) {
                 const track = tracks[activeSlot];
@@ -688,7 +688,7 @@ function App() {
                     lastSeekTimeRef.current = currentPos * duration;
                     lastSeekTimestampRef.current = Date.now();
                 }
-                handleSeek(activeSlot, currentPos);
+                await handleSeek(activeSlot, currentPos);
                 dragPositionRef.current = null;
                 setDragPosition(null);
             }
@@ -735,16 +735,21 @@ function App() {
                         updatedPlaying[0] = isPlay;
                         const pos = await GetPosition(0);
                         const lastSeekTime = lastSeekTimeRef.current;
+                        const isDraggingActive = st.activeSlot === 0 && dragPositionRef.current !== null;
                         if (st.activeSlot === 0 && lastSeekTime !== null) {
                             const timeSinceSeek = Date.now() - lastSeekTimestampRef.current;
                             if (Math.abs(pos - lastSeekTime) < 1.0 || timeSinceSeek > 800) {
                                 lastSeekTimeRef.current = null;
-                                updatedPos[0] = pos;
+                                if (!isDraggingActive) {
+                                    updatedPos[0] = pos;
+                                }
                             } else {
                                 updatedPos[0] = lastSeekTime;
                             }
                         } else if (isPlay) {
-                            updatedPos[0] = pos;
+                            if (!isDraggingActive) {
+                                updatedPos[0] = pos;
+                            }
                         }
                     })());
                 }
@@ -758,16 +763,21 @@ function App() {
                         updatedPlaying[1] = isPlay;
                         const pos = await GetPosition(1);
                         const lastSeekTime = lastSeekTimeRef.current;
+                        const isDraggingActive = st.activeSlot === 1 && dragPositionRef.current !== null;
                         if (st.activeSlot === 1 && lastSeekTime !== null) {
                             const timeSinceSeek = Date.now() - lastSeekTimestampRef.current;
                             if (Math.abs(pos - lastSeekTime) < 1.0 || timeSinceSeek > 800) {
                                 lastSeekTimeRef.current = null;
-                                updatedPos[1] = pos;
+                                if (!isDraggingActive) {
+                                    updatedPos[1] = pos;
+                                }
                             } else {
                                 updatedPos[1] = lastSeekTime;
                             }
                         } else if (isPlay) {
-                            updatedPos[1] = pos;
+                            if (!isDraggingActive) {
+                                updatedPos[1] = pos;
+                            }
                         }
                     })());
                 }

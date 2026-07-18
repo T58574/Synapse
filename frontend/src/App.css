@@ -917,6 +917,11 @@ body {
     background: var(--text-color);
 }
 
+.progress-slider:active::-webkit-slider-thumb {
+    opacity: 1 !important;
+    background: var(--text-color) !important;
+}
+
 .slider::-webkit-slider-runnable-track,
 .progress-slider::-webkit-slider-runnable-track,
 .volume-slider::-webkit-slider-runnable-track {
