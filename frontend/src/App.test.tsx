@@ -31,8 +31,6 @@ vi.mock('../wailsjs/go/backend/App', () => ({
     DeletePlaylist: vi.fn().mockResolvedValue(undefined),
     AddTrackToPlaylist: vi.fn().mockResolvedValue(undefined),
     RemoveTrackFromPlaylist: vi.fn().mockResolvedValue(undefined),
-    SearchSoundCloud: vi.fn().mockResolvedValue([]),
-    DownloadFromSoundCloud: vi.fn().mockResolvedValue(undefined),
     GetAudioDevices: vi.fn().mockResolvedValue([]),
     SetAudioDevice: vi.fn().mockResolvedValue(true),
     SetEQ: vi.fn().mockResolvedValue(undefined),

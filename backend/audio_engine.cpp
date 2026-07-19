@@ -437,7 +437,7 @@ static void fft(std::vector<std::complex<double>>& a) {
 // Xing/LAME-заголовка часто возвращает 0 — отсюда баг "0:00".
 static ma_result init_decoder_fixed(const char* file_path, ma_decoder* dec) {
     ma_decoder_config cfg = ma_decoder_config_init(
-        ma_format_f32, g_channels, g_sample_rate);
+        ma_format_f32, 2, g_sample_rate);
 #ifdef _WIN32
     std::wstring wpath = utf8_to_wstring(file_path);
     return ma_decoder_init_file_w(wpath.c_str(), &cfg, dec);
@@ -1051,6 +1051,18 @@ int load_track(int slot, const char* file_path) {
     engine_log_open();
     if (slot < 0 || slot > 1) return 0;
 
+    ma_decoder temp_decoder;
+    if (init_decoder_fixed(file_path, &temp_decoder) != MA_SUCCESS) {
+        ENGINE_LOGE("load_track: decoder init FAILED slot=%d path=%s", slot, file_path);
+        return 0;
+    }
+
+    double duration = 0.0;
+    ma_uint64 total_frames = 0;
+    if (ma_decoder_get_length_in_pcm_frames(&temp_decoder, &total_frames) == MA_SUCCESS) {
+        duration = (double)total_frames / temp_decoder.outputSampleRate;
+    }
+
     TrackState& ts = g_tracks[slot];
     std::lock_guard<std::mutex> lock(ts.mtx);
     if (ts.has_decoder) {
@@ -1058,7 +1070,11 @@ int load_track(int slot, const char* file_path) {
         ts.has_decoder = false;
     }
 
-    ts.stretch.presetDefault(g_channels, g_sample_rate);
+    ts.decoder = temp_decoder;
+    ts.has_decoder = true;
+    ts.duration = duration;
+
+    ts.stretch.presetDefault(2, g_sample_rate);
     ts.stretch_initialized = true;
     ts.is_playing = false;
     ts.seek_position = -1.0;
@@ -1078,21 +1094,9 @@ int load_track(int slot, const char* file_path) {
     ts.bass_enhancer.reset();
     ts.exciter.reset();
 
-    ts.duration = 0.0;
     ts.bpm = 120.0;
     ts.key = "8A";
     ts.waveform.clear();
-
-    if (init_decoder_fixed(file_path, &ts.decoder) != MA_SUCCESS) {
-        ENGINE_LOGE("load_track: decoder init FAILED slot=%d path=%s", slot, file_path);
-        return 0;
-    }
-    ts.has_decoder = true;
-
-    ma_uint64 total_frames = 0;
-    if (ma_decoder_get_length_in_pcm_frames(&ts.decoder, &total_frames) == MA_SUCCESS) {
-        ts.duration = (double)total_frames / ts.decoder.outputSampleRate;
-    }
 
     ENGINE_LOGI("load_track OK slot=%d duration=%.3fs bpm=%.1f key=%s waveform=%zu",
                 slot, ts.duration, ts.bpm, ts.key.c_str(), ts.waveform.size());

@@ -560,13 +560,6 @@ func (a *App) RemoveTrackFromPlaylist(playlistName string, trackPath string) err
 	return fmt.Errorf("playlist not found")
 }
 
-type SoundCloudResult struct {
-	Title    string  `json:"title"`
-	Uploader string  `json:"uploader"`
-	URL      string  `json:"url"`
-	Duration float64 `json:"duration"`
-}
-
 func extractTagsOrFilename(path string) (string, string) {
 	artist := ""
 	genre := ""
@@ -595,54 +588,3 @@ func extractTagsOrFilename(path string) (string, string) {
 	return artist, genre
 }
 
-var execCommand = exec.Command
-
-func (a *App) SearchSoundCloud(query string) ([]SoundCloudResult, error) {
-	cmd := execCommand("yt-dlp", "--flat-playlist", "--dump-json", "scsearch10:"+query)
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-	lines := strings.Split(string(output), "\n")
-	var results []SoundCloudResult
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		var item struct {
-			Title    string  `json:"title"`
-			Uploader string  `json:"uploader"`
-			URL      string  `json:"url"`
-			Webpage  string  `json:"webpage_url"`
-			Duration float64 `json:"duration"`
-		}
-		if err := json.Unmarshal([]byte(line), &item); err == nil {
-			targetURL := item.URL
-			if targetURL == "" {
-				targetURL = item.Webpage
-			}
-			results = append(results, SoundCloudResult{
-				Title:    item.Title,
-				Uploader: item.Uploader,
-				URL:      targetURL,
-				Duration: item.Duration,
-			})
-		}
-	}
-	return results, nil
-}
-
-func (a *App) DownloadFromSoundCloud(trackURL string) error {
-	musicDir, err := a.GetMusicDir()
-	if err != nil {
-		return err
-	}
-	soundcloudDir := filepath.Join(musicDir, "soundcloud")
-	if err := os.MkdirAll(soundcloudDir, 0755); err != nil {
-		return err
-	}
-	outputPath := filepath.Join(soundcloudDir, "%(uploader)s - %(title)s.%(ext)s")
-	cmd := execCommand("yt-dlp", "-x", "--audio-format", "mp3", "--embed-metadata", "-o", outputPath, trackURL)
-	return cmd.Run()
-}

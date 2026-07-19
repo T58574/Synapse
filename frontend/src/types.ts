@@ -9,13 +9,6 @@ export interface TrackInfo {
     mood?: string;
 }
 
-export interface SoundCloudResult {
-    title: string;
-    uploader: string;
-    url: string;
-    duration: number;
-}
-
 export interface PlaylistInfo {
     name: string;
     trackPaths: string[];
