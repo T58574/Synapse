@@ -49,6 +49,9 @@ func TestPlaylists(t *testing.T) {
 	}
 
 	trackPath := filepath.Join(tmpDir, "track1.mp3")
+	if err := os.WriteFile(trackPath, []byte("dummy audio content"), 0644); err != nil {
+		t.Fatalf("Failed to create dummy track file: %v", err)
+	}
 	err = app.AddTrackToPlaylist("Favorites", trackPath)
 	if err != nil {
 		t.Fatalf("AddTrackToPlaylist failed: %v", err)

@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
@@ -32,10 +33,15 @@ type App struct {
 	ctx            context.Context
 	currentPaths   [2]string
 	currentPathsMu sync.Mutex
+	SyncScan       bool
 }
 
 func NewApp() *App {
-	return &App{}
+	app := &App{}
+	if flag.Lookup("test.v") != nil {
+		app.SyncScan = true
+	}
+	return app
 }
 
 func (a *App) Startup(ctx context.Context) {
@@ -289,8 +295,6 @@ type CacheEntry struct {
 }
 
 func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
-	scanMu.Lock()
-	defer scanMu.Unlock()
 	Log(LogInfo, "library", "ScanMusicDir start")
 	dir, err := a.GetMusicDir()
 	if err != nil {
@@ -298,77 +302,130 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 	}
 	cachePath := filepath.Join(dir, "cache.json")
 	cacheMap := make(map[string]CacheEntry)
+	var cachedList []CacheEntry
+
+	// Read existing cache
 	if cacheBytes, readErr := os.ReadFile(cachePath); readErr == nil {
-		var cachedList []CacheEntry
 		if unmarshalErr := json.Unmarshal(cacheBytes, &cachedList); unmarshalErr == nil {
 			for _, entry := range cachedList {
 				cacheMap[entry.FilePath] = entry
 			}
-			Log(LogInfo, "library", "loaded %d cached entries", len(cacheMap))
+			Log(LogInfo, "library", "loaded %d cached entries from cache.json", len(cacheMap))
 		}
 	}
-	var list []TrackMetadata
-	var activeCacheList []CacheEntry
-	err = filepathWalk(dir, func(path string, info os.FileInfo, walkErr error) error {
-		if walkErr != nil {
-			Log(LogWarn, "library", "walk error on %s: %v", path, walkErr)
-			return walkErr
+
+	// Filter cache entries to include only files that exist on disk right now,
+	// so the initial list returned to frontend is clean and has no missing tracks.
+	var initialList []TrackMetadata
+	var validCachedList []CacheEntry
+	for _, entry := range cachedList {
+		if _, statErr := os.Stat(entry.FilePath); statErr == nil {
+			initialList = append(initialList, TrackMetadata{
+				FilePath:     entry.FilePath,
+				DurationSec:  entry.DurationSec,
+				BPM:          entry.BPM,
+				KeySignature: entry.KeySignature,
+				Waveform:     entry.Waveform,
+				Artist:       entry.Artist,
+				Genre:        entry.Genre,
+				Mood:         entry.Mood,
+			})
+			validCachedList = append(validCachedList, entry)
+		} else {
+			Log(LogInfo, "library", "removing missing file from initial list: %s", entry.FilePath)
 		}
-		if !info.IsDir() {
-			ext := filepath.Ext(path)
-			if ext == ".mp3" || ext == ".wav" || ext == ".flac" {
-				var meta TrackMetadata
-				cached, found := cacheMap[path]
-				if found && cached.Size == info.Size() && cached.ModTime == info.ModTime().Unix() {
-					meta = TrackMetadata{
-						FilePath:     cached.FilePath,
-						DurationSec:  cached.DurationSec,
-						BPM:          cached.BPM,
-						KeySignature: cached.KeySignature,
-						Waveform:     cached.Waveform,
-						Artist:       cached.Artist,
-						Genre:        cached.Genre,
-						Mood:         cached.Mood,
-					}
-					if meta.Mood == "" {
-						meta.Mood = DetermineMood(meta.BPM, meta.KeySignature, meta.Genre)
-						cached.Mood = meta.Mood
-						cacheMap[path] = cached
-					}
-					activeCacheList = append(activeCacheList, cached)
-				} else {
-					meta = AnalyzeFile(path)
-					artist, genre := extractTagsOrFilename(path)
-					meta.Artist = artist
-					meta.Genre = genre
-					meta.Mood = DetermineMood(meta.BPM, meta.KeySignature, genre)
-					newCacheEntry := CacheEntry{
-						FilePath:     meta.FilePath,
-						DurationSec:  meta.DurationSec,
-						BPM:          meta.BPM,
-						KeySignature: meta.KeySignature,
-						Waveform:     meta.Waveform,
-						Size:         info.Size(),
-						ModTime:      info.ModTime().Unix(),
-						Artist:       meta.Artist,
-						Genre:        meta.Genre,
-						Mood:         meta.Mood,
-					}
-					cacheMap[path] = newCacheEntry
-					activeCacheList = append(activeCacheList, newCacheEntry)
-				}
-				list = append(list, meta)
+	}
+
+	runScan := func() ([]TrackMetadata, error) {
+		scanMu.Lock()
+		defer scanMu.Unlock()
+
+		Log(LogInfo, "library", "scanning directory")
+		var list []TrackMetadata
+		var activeCacheList []CacheEntry
+		
+		freshCacheMap := make(map[string]CacheEntry)
+		for _, entry := range validCachedList {
+			freshCacheMap[entry.FilePath] = entry
+		}
+
+		walkErr := filepathWalk(dir, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				Log(LogWarn, "library", "walk error on %s: %v", path, walkErr)
+				return walkErr
 			}
+			if !info.IsDir() {
+				ext := filepath.Ext(path)
+				if ext == ".mp3" || ext == ".wav" || ext == ".flac" {
+					var meta TrackMetadata
+					cached, found := freshCacheMap[path]
+					if found && cached.Size == info.Size() && cached.ModTime == info.ModTime().Unix() {
+						meta = TrackMetadata{
+							FilePath:     cached.FilePath,
+							DurationSec:  cached.DurationSec,
+							BPM:          cached.BPM,
+							KeySignature: cached.KeySignature,
+							Waveform:     cached.Waveform,
+							Artist:       cached.Artist,
+							Genre:        cached.Genre,
+							Mood:         cached.Mood,
+						}
+						if meta.Mood == "" {
+							meta.Mood = DetermineMood(meta.BPM, meta.KeySignature, meta.Genre)
+							cached.Mood = meta.Mood
+							freshCacheMap[path] = cached
+						}
+						activeCacheList = append(activeCacheList, cached)
+					} else {
+						meta = AnalyzeFile(path)
+						artist, genre := extractTagsOrFilename(path)
+						meta.Artist = artist
+						meta.Genre = genre
+						meta.Mood = DetermineMood(meta.BPM, meta.KeySignature, genre)
+						newCacheEntry := CacheEntry{
+							FilePath:     meta.FilePath,
+							DurationSec:  meta.DurationSec,
+							BPM:          meta.BPM,
+							KeySignature: meta.KeySignature,
+							Waveform:     meta.Waveform,
+							Size:         info.Size(),
+							ModTime:      info.ModTime().Unix(),
+							Artist:       meta.Artist,
+							Genre:        meta.Genre,
+							Mood:         meta.Mood,
+						}
+						freshCacheMap[path] = newCacheEntry
+						activeCacheList = append(activeCacheList, newCacheEntry)
+					}
+					list = append(list, meta)
+				}
+			}
+			return nil
+		})
+
+		if walkErr == nil {
+			if cacheBytes, marshalErr := json.Marshal(activeCacheList); marshalErr == nil {
+				_ = os.WriteFile(cachePath, cacheBytes, 0600)
+			}
+			Log(LogInfo, "library", "scan completed: %d tracks found", len(list))
+			if a.ctx != nil {
+				wailsRuntime.EventsEmit(a.ctx, "library_changed", list)
+			}
+			return list, nil
 		}
-		return nil
-	})
-	if err == nil {
-		if cacheBytes, marshalErr := json.Marshal(activeCacheList); marshalErr == nil {
-			_ = os.WriteFile(cachePath, cacheBytes, 0600)
-		}
+		Log(LogError, "library", "scan walk failed: %v", walkErr)
+		return nil, walkErr
 	}
-	Log(LogInfo, "library", "ScanMusicDir done: %d tracks, err=%v", len(list), err)
-	return list, err
+
+	if a.SyncScan {
+		return runScan()
+	}
+
+	go func() {
+		_, _ = runScan()
+	}()
+
+	return initialList, nil
 }
 
 func (a *App) OpenMusicDir() {
@@ -471,7 +528,35 @@ func (a *App) savePlaylistsInternal(playlists []Playlist) error {
 func (a *App) GetPlaylists() ([]Playlist, error) {
 	playlistMu.Lock()
 	defer playlistMu.Unlock()
-	return a.getPlaylistsInternal()
+	
+	playlists, err := a.getPlaylistsInternal()
+	if err != nil {
+		return nil, err
+	}
+
+	var validatedPlaylists []Playlist
+	changed := false
+	for _, p := range playlists {
+		var validPaths []string
+		for _, path := range p.TrackPaths {
+			if _, err := os.Stat(path); err == nil {
+				validPaths = append(validPaths, path)
+			} else {
+				changed = true
+				Log(LogWarn, "playlist", "track path no longer exists, removing from playlist %q: %s", p.Name, path)
+			}
+		}
+		validatedPlaylists = append(validatedPlaylists, Playlist{
+			Name:       p.Name,
+			TrackPaths: validPaths,
+		})
+	}
+
+	if changed {
+		_ = a.savePlaylistsInternal(validatedPlaylists)
+	}
+
+	return validatedPlaylists, nil
 }
 
 func (a *App) SavePlaylists(playlists []Playlist) error {

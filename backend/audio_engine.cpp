@@ -867,11 +867,23 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
         if (bpm1 < 30.0 || bpm1 > 300.0) bpm1 = 120.0;
 
         if (g_mixer_state == 1) {
-            g_tracks[0].tempo_ratio = 1.0 * (1.0 - t) + (bpm1 / bpm0) * t;
-            g_tracks[1].tempo_ratio = 1.0;
+            {
+                std::lock_guard<std::mutex> lock0(g_tracks[0].mtx);
+                g_tracks[0].tempo_ratio = 1.0 * (1.0 - t) + (bpm1 / bpm0) * t;
+            }
+            {
+                std::lock_guard<std::mutex> lock1(g_tracks[1].mtx);
+                g_tracks[1].tempo_ratio = 1.0;
+            }
         } else {
-            g_tracks[1].tempo_ratio = 1.0 * (1.0 - t) + (bpm0 / bpm1) * t;
-            g_tracks[0].tempo_ratio = 1.0;
+            {
+                std::lock_guard<std::mutex> lock1(g_tracks[1].mtx);
+                g_tracks[1].tempo_ratio = 1.0 * (1.0 - t) + (bpm0 / bpm1) * t;
+            }
+            {
+                std::lock_guard<std::mutex> lock0(g_tracks[0].mtx);
+                g_tracks[0].tempo_ratio = 1.0;
+            }
         }
     }
 
@@ -896,11 +908,17 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
         }
 
         if (t >= 1.0) {
-            g_tracks[0].is_playing = false;
-            g_tracks[0].tempo_ratio = 1.0;
-            g_tracks[0].pitch_semi = 0.0;
-            g_tracks[1].tempo_ratio = 1.0;
-            g_tracks[1].pitch_semi = 0.0;
+            {
+                std::lock_guard<std::mutex> lock0(g_tracks[0].mtx);
+                g_tracks[0].is_playing = false;
+                g_tracks[0].tempo_ratio = 1.0;
+                g_tracks[0].pitch_semi = 0.0;
+            }
+            {
+                std::lock_guard<std::mutex> lock1(g_tracks[1].mtx);
+                g_tracks[1].tempo_ratio = 1.0;
+                g_tracks[1].pitch_semi = 0.0;
+            }
             g_mixer_state = 2;
         }
     } else if (g_mixer_state == 3) {
@@ -916,11 +934,17 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
         }
 
         if (t >= 1.0) {
-            g_tracks[1].is_playing = false;
-            g_tracks[1].tempo_ratio = 1.0;
-            g_tracks[1].pitch_semi = 0.0;
-            g_tracks[0].tempo_ratio = 1.0;
-            g_tracks[0].pitch_semi = 0.0;
+            {
+                std::lock_guard<std::mutex> lock1(g_tracks[1].mtx);
+                g_tracks[1].is_playing = false;
+                g_tracks[1].tempo_ratio = 1.0;
+                g_tracks[1].pitch_semi = 0.0;
+            }
+            {
+                std::lock_guard<std::mutex> lock0(g_tracks[0].mtx);
+                g_tracks[0].tempo_ratio = 1.0;
+                g_tracks[0].pitch_semi = 0.0;
+            }
             g_mixer_state = 0;
         }
     } else if (g_mixer_state == 0) {
@@ -944,8 +968,11 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
                 g_mixer_state = 1;
                 g_crossfade_elapsed = 0.0;
                 g_actual_crossfade_duration = actual_crossfade_dur;
-                g_tracks[1].is_playing = true;
-                g_tracks[1].pitch_semi = 0.0;
+                {
+                    std::lock_guard<std::mutex> lock1(g_tracks[1].mtx);
+                    g_tracks[1].is_playing = true;
+                    g_tracks[1].pitch_semi = 0.0;
+                }
             }
         }
     } else if (g_mixer_state == 2) {
@@ -969,8 +996,11 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
                 g_mixer_state = 3;
                 g_crossfade_elapsed = 0.0;
                 g_actual_crossfade_duration = actual_crossfade_dur;
-                g_tracks[0].is_playing = true;
-                g_tracks[0].pitch_semi = 0.0;
+                {
+                    std::lock_guard<std::mutex> lock0(g_tracks[0].mtx);
+                    g_tracks[0].is_playing = true;
+                    g_tracks[0].pitch_semi = 0.0;
+                }
             }
         }
     }

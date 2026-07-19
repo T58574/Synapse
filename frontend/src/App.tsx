@@ -855,6 +855,14 @@ function App() {
     }, []);
 
     useEffect(() => {
+        const cancel = EventsOn("library_changed", (list: any) => {
+            setLibraryTracks(list || []);
+            uiLog('INFO', `library_changed: background scan finished, loaded ${list?.length ?? 0} tracks`);
+        });
+        return cancel;
+    }, []);
+
+    useEffect(() => {
         const interval = setInterval(async () => {
             const st = stateRef.current;
             const updatedPlaying = [...st.playing] as [boolean, boolean];
