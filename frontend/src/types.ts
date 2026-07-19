@@ -1,5 +1,6 @@
 export interface TrackInfo {
     filePath: string;
+    title?: string;
     durationSec: number;
     bpm: number;
     keySignature: string;

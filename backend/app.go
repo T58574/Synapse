@@ -109,13 +109,15 @@ func (a *App) LoadTrack(slot int, filePath string) (TrackMetadata, error) {
 		return TrackMetadata{}, fmt.Errorf("failed to load track")
 	}
 	meta := GetTrackMetadata(slot, filePath)
-	artist, genre := extractTagsOrFilename(filePath)
+	title, artist, genre := extractTagsOrFilename(filePath)
+	meta.Title = title
 	meta.Artist = artist
 	meta.Genre = genre
 	meta.Mood = DetermineMood(meta.BPM, meta.KeySignature, genre)
 
 	go func(s int, path string, initialMeta TrackMetadata) {
 		analyzed := AnalyzeFile(path)
+		analyzed.Title = initialMeta.Title
 		analyzed.Artist = initialMeta.Artist
 		analyzed.Genre = initialMeta.Genre
 		analyzed.Mood = DetermineMood(analyzed.BPM, analyzed.KeySignature, analyzed.Genre)
@@ -283,6 +285,7 @@ func (a *App) GetMusicDir() (string, error) {
 
 type CacheEntry struct {
 	FilePath     string    `json:"filePath"`
+	Title        string    `json:"title"`
 	DurationSec  float64   `json:"durationSec"`
 	BPM          float64   `json:"bpm"`
 	KeySignature string    `json:"keySignature"`
@@ -320,8 +323,13 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 	var validCachedList []CacheEntry
 	for _, entry := range cachedList {
 		if _, statErr := os.Stat(entry.FilePath); statErr == nil {
+			title := entry.Title
+			if title == "" {
+				title, _, _ = extractTagsOrFilename(entry.FilePath)
+			}
 			initialList = append(initialList, TrackMetadata{
 				FilePath:     entry.FilePath,
+				Title:        title,
 				DurationSec:  entry.DurationSec,
 				BPM:          entry.BPM,
 				KeySignature: entry.KeySignature,
@@ -330,6 +338,7 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 				Genre:        entry.Genre,
 				Mood:         entry.Mood,
 			})
+			entry.Title = title
 			validCachedList = append(validCachedList, entry)
 		} else {
 			Log(LogInfo, "library", "removing missing file from initial list: %s", entry.FilePath)
@@ -360,8 +369,15 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 					var meta TrackMetadata
 					cached, found := freshCacheMap[path]
 					if found && cached.Size == info.Size() && cached.ModTime == info.ModTime().Unix() {
+						title := cached.Title
+						if title == "" {
+							title, _, _ = extractTagsOrFilename(cached.FilePath)
+							cached.Title = title
+							freshCacheMap[path] = cached
+						}
 						meta = TrackMetadata{
 							FilePath:     cached.FilePath,
+							Title:        title,
 							DurationSec:  cached.DurationSec,
 							BPM:          cached.BPM,
 							KeySignature: cached.KeySignature,
@@ -378,12 +394,14 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 						activeCacheList = append(activeCacheList, cached)
 					} else {
 						meta = AnalyzeFile(path)
-						artist, genre := extractTagsOrFilename(path)
+						title, artist, genre := extractTagsOrFilename(path)
+						meta.Title = title
 						meta.Artist = artist
 						meta.Genre = genre
 						meta.Mood = DetermineMood(meta.BPM, meta.KeySignature, genre)
 						newCacheEntry := CacheEntry{
 							FilePath:     meta.FilePath,
+							Title:        meta.Title,
 							DurationSec:  meta.DurationSec,
 							BPM:          meta.BPM,
 							KeySignature: meta.KeySignature,
@@ -645,7 +663,8 @@ func (a *App) RemoveTrackFromPlaylist(playlistName string, trackPath string) err
 	return fmt.Errorf("playlist not found")
 }
 
-func extractTagsOrFilename(path string) (string, string) {
+func extractTagsOrFilename(path string) (string, string, string) {
+	title := ""
 	artist := ""
 	genre := ""
 	f, err := os.Open(path)
@@ -653,14 +672,23 @@ func extractTagsOrFilename(path string) (string, string) {
 		defer f.Close()
 		m, err := tag.ReadFrom(f)
 		if err == nil {
+			title = m.Title()
 			artist = m.Artist()
 			genre = m.Genre()
 		}
 	}
+	filename := filepath.Base(path)
+	filenameNoExt := strings.TrimSuffix(filename, filepath.Ext(path))
+	parts := strings.SplitN(filenameNoExt, " - ", 2)
+
+	if title == "" {
+		if len(parts) == 2 {
+			title = strings.TrimSpace(parts[1])
+		} else {
+			title = filenameNoExt
+		}
+	}
 	if artist == "" {
-		filename := filepath.Base(path)
-		filenameNoExt := strings.TrimSuffix(filename, filepath.Ext(path))
-		parts := strings.SplitN(filenameNoExt, " - ", 2)
 		if len(parts) == 2 {
 			artist = strings.TrimSpace(parts[0])
 		} else {
@@ -670,6 +698,162 @@ func extractTagsOrFilename(path string) (string, string) {
 	if genre == "" {
 		genre = "Unknown Genre"
 	}
-	return artist, genre
+	return title, artist, genre
 }
+
+func (a *App) UpdateTrackMetadata(filePath string, title string, artist string, genre string, bpm float64, keySignature string) error {
+	Log(LogInfo, "library", "UpdateTrackMetadata file=%q title=%q artist=%q genre=%q bpm=%.1f key=%q", filePath, title, artist, genre, bpm, keySignature)
+	dir, err := a.GetMusicDir()
+	if err != nil {
+		return err
+	}
+	cachePath := filepath.Join(dir, "cache.json")
+	
+	scanMu.Lock()
+	defer scanMu.Unlock()
+
+	var cachedList []CacheEntry
+	if cacheBytes, readErr := os.ReadFile(cachePath); readErr == nil {
+		_ = json.Unmarshal(cacheBytes, &cachedList)
+	}
+
+	found := false
+	mood := DetermineMood(bpm, keySignature, genre)
+	for i, entry := range cachedList {
+		if entry.FilePath == filePath {
+			cachedList[i].Title = title
+			cachedList[i].Artist = artist
+			cachedList[i].Genre = genre
+			cachedList[i].BPM = bpm
+			cachedList[i].KeySignature = keySignature
+			cachedList[i].Mood = mood
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		info, err := os.Stat(filePath)
+		if err != nil {
+			return err
+		}
+		cachedList = append(cachedList, CacheEntry{
+			FilePath:     filePath,
+			Title:        title,
+			Artist:       artist,
+			Genre:        genre,
+			BPM:          bpm,
+			KeySignature: keySignature,
+			Mood:         mood,
+			Size:         info.Size(),
+			ModTime:      info.ModTime().Unix(),
+		})
+	}
+
+	if cacheBytes, marshalErr := json.Marshal(cachedList); marshalErr == nil {
+		_ = os.WriteFile(cachePath, cacheBytes, 0600)
+	}
+
+	a.currentPathsMu.Lock()
+	p0 := a.currentPaths[0] == filePath
+	p1 := a.currentPaths[1] == filePath
+	a.currentPathsMu.Unlock()
+
+	newMeta := TrackMetadata{
+		FilePath:     filePath,
+		Title:        title,
+		Artist:       artist,
+		Genre:        genre,
+		BPM:          bpm,
+		KeySignature: keySignature,
+		Mood:         mood,
+	}
+
+	if p0 {
+		SetTrackMetadata(0, newMeta)
+		if a.ctx != nil {
+			wailsRuntime.EventsEmit(a.ctx, "track_analyzed", 0, newMeta)
+		}
+	}
+	if p1 {
+		SetTrackMetadata(1, newMeta)
+		if a.ctx != nil {
+			wailsRuntime.EventsEmit(a.ctx, "track_analyzed", 1, newMeta)
+		}
+	}
+
+	go func() {
+		_, _ = a.ScanMusicDir()
+	}()
+
+	return nil
+}
+
+func (a *App) DeleteTrack(filePath string) error {
+	Log(LogInfo, "library", "DeleteTrack file=%q", filePath)
+	
+	a.currentPathsMu.Lock()
+	if a.currentPaths[0] == filePath {
+		PauseTrack(0)
+		a.currentPaths[0] = ""
+	}
+	if a.currentPaths[1] == filePath {
+		PauseTrack(1)
+		a.currentPaths[1] = ""
+	}
+	a.currentPathsMu.Unlock()
+
+	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+		Log(LogError, "library", "DeleteTrack Remove file error: %v", err)
+		return err
+	}
+
+	dir, err := a.GetMusicDir()
+	if err == nil {
+		cachePath := filepath.Join(dir, "cache.json")
+		scanMu.Lock()
+		var cachedList []CacheEntry
+		if cacheBytes, readErr := os.ReadFile(cachePath); readErr == nil {
+			_ = json.Unmarshal(cacheBytes, &cachedList)
+		}
+		var updatedCache []CacheEntry
+		for _, entry := range cachedList {
+			if entry.FilePath != filePath {
+				updatedCache = append(updatedCache, entry)
+			}
+		}
+		if cacheBytes, marshalErr := json.Marshal(updatedCache); marshalErr == nil {
+			_ = os.WriteFile(cachePath, cacheBytes, 0600)
+		}
+		scanMu.Unlock()
+	}
+
+	playlistMu.Lock()
+	playlists, err := a.getPlaylistsInternal()
+	if err == nil {
+		changed := false
+		for i, p := range playlists {
+			var updatedPaths []string
+			for _, pt := range p.TrackPaths {
+				if pt != filePath {
+					updatedPaths = append(updatedPaths, pt)
+				} else {
+					changed = true
+				}
+			}
+			playlists[i].TrackPaths = updatedPaths
+		}
+		if changed {
+			_ = a.savePlaylistsInternal(playlists)
+		}
+	}
+	playlistMu.Unlock()
+
+	go func() {
+		_, _ = a.ScanMusicDir()
+	}()
+
+	return nil
+}
+
 

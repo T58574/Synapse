@@ -665,7 +665,7 @@ body {
     font-size: 13px;
     font-weight: 600;
     color: var(--text-color);
-    max-width: 200px;
+    max-width: 380px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2235,4 +2235,116 @@ body {
 .dsp-slider-horizontal::-webkit-slider-thumb:hover {
     transform: scale(1.3);
     background: var(--accent-color);
+}
+
+/* Generic Modals (Edit Track, Delete Confirmation) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    width: 480px;
+    max-width: 90%;
+    padding: 28px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    color: var(--text-color);
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted-text-color);
+    cursor: pointer;
+    font-size: 16px;
+    transition: color 0.15s;
+}
+
+.close-btn:hover {
+    color: var(--text-color);
+}
+
+.edit-track-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+
+.form-group label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted-text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.modal-text-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text-color);
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-text-input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px var(--accent-bg-glow);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }

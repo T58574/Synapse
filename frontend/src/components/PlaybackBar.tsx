@@ -67,7 +67,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
                             <span 
                                 className="playing-title clickable-copy"
                                 onClick={() => {
-                                    const title = getFilename(activeTrack.filePath);
+                                    const title = activeTrack.title || getFilename(activeTrack.filePath);
                                     if (copyToClipboard) {
                                         copyToClipboard(title, 'title');
                                     } else {
@@ -76,7 +76,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
                                 }}
                                 title={t('clickToCopyTitle')}
                             >
-                                {getFilename(activeTrack.filePath)}
+                                {activeTrack.title || getFilename(activeTrack.filePath)}
                             </span>
                             <span className="playing-stats">
                                 {activeTrack.artist && (

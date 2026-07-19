@@ -14,8 +14,8 @@ export function DeletePlaylist(arg1) {
   return window['go']['backend']['App']['DeletePlaylist'](arg1);
 }
 
-export function DownloadFromSoundCloud(arg1) {
-  return window['go']['backend']['App']['DownloadFromSoundCloud'](arg1);
+export function DeleteTrack(arg1) {
+  return window['go']['backend']['App']['DeleteTrack'](arg1);
 }
 
 export function GetAudioDevices() {
@@ -74,10 +74,6 @@ export function ScanMusicDir() {
   return window['go']['backend']['App']['ScanMusicDir']();
 }
 
-export function SearchSoundCloud(arg1) {
-  return window['go']['backend']['App']['SearchSoundCloud'](arg1);
-}
-
 export function Seek(arg1, arg2) {
   return window['go']['backend']['App']['Seek'](arg1, arg2);
 }
@@ -120,4 +116,8 @@ export function SetVolume(arg1, arg2) {
 
 export function ToggleAutoMix(arg1) {
   return window['go']['backend']['App']['ToggleAutoMix'](arg1);
+}
+
+export function UpdateTrackMetadata(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['backend']['App']['UpdateTrackMetadata'](arg1, arg2, arg3, arg4, arg5, arg6);
 }

@@ -30,26 +30,9 @@ export namespace backend {
 	        this.trackPaths = source["trackPaths"];
 	    }
 	}
-	export class SoundCloudResult {
-	    title: string;
-	    uploader: string;
-	    url: string;
-	    duration: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new SoundCloudResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.title = source["title"];
-	        this.uploader = source["uploader"];
-	        this.url = source["url"];
-	        this.duration = source["duration"];
-	    }
-	}
 	export class TrackMetadata {
 	    filePath: string;
+	    title: string;
 	    durationSec: number;
 	    bpm: number;
 	    keySignature: string;
@@ -65,6 +48,7 @@ export namespace backend {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.filePath = source["filePath"];
+	        this.title = source["title"];
 	        this.durationSec = source["durationSec"];
 	        this.bpm = source["bpm"];
 	        this.keySignature = source["keySignature"];

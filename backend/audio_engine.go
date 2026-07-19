@@ -15,6 +15,7 @@ import (
 
 type TrackMetadata struct {
 	FilePath     string    `json:"filePath"`
+	Title        string    `json:"title"`
 	DurationSec  float64   `json:"durationSec"`
 	BPM          float64   `json:"bpm"`
 	KeySignature string    `json:"keySignature"`

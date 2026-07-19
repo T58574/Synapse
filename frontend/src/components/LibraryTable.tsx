@@ -28,6 +28,8 @@ interface LibraryTableProps {
     isMyWave: boolean;
     onToggleMyWave: () => void;
     language: Language;
+    onEditTrack?: (track: TrackInfo) => void;
+    onDeleteTrack?: (track: TrackInfo) => void;
 }
 
 export const LibraryTable: React.FC<LibraryTableProps> = ({
@@ -53,7 +55,9 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
     copyToClipboard,
     isMyWave,
     onToggleMyWave,
-    language
+    language,
+    onEditTrack,
+    onDeleteTrack
 }) => {
     const { t } = useTranslation(language);
     const sortedTracks = filteredTracks;
@@ -121,15 +125,16 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                                                 className="track-title-main clickable-copy"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
+                                                    const displayTitle = track.title || filename;
                                                     if (copyToClipboard) {
-                                                        copyToClipboard(filename, 'title');
+                                                        copyToClipboard(displayTitle, 'title');
                                                     } else {
-                                                        navigator.clipboard.writeText(filename);
+                                                        navigator.clipboard.writeText(displayTitle);
                                                     }
                                                 }}
                                                 title={t('clickToCopyTitle')}
                                             >
-                                                {filename}
+                                                {track.title || filename}
                                             </div>
                                             {(track.artist || track.genre) && (
                                                 <div className="track-artist-sub">
@@ -168,6 +173,20 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                                         <td>{formatTime(track.durationSec)}</td>
                                         <td className="actions-cell" onClick={(e) => e.stopPropagation()}>
                                             <div className="action-buttons-group">
+                                                <button 
+                                                    className="track-action-btn edit-btn"
+                                                    onClick={() => onEditTrack && onEditTrack(track)}
+                                                    title={language === 'ru' ? 'Редактировать метаданные' : 'Edit metadata'}
+                                                >
+                                                    ✏️
+                                                </button>
+                                                <button 
+                                                    className="track-action-btn delete-btn"
+                                                    onClick={() => onDeleteTrack && onDeleteTrack(track)}
+                                                    title={language === 'ru' ? 'Удалить трек' : 'Delete track'}
+                                                >
+                                                    🗑️
+                                                </button>
                                                 <button 
                                                     className="track-action-btn add-btn"
                                                     onClick={() => setActivePlaylistMenuTrack(activePlaylistMenuTrack === track.filePath ? null : track.filePath)}

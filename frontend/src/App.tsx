@@ -25,7 +25,9 @@ import {
     SetAudioDevice,
     SetEQ,
     SetEQ10,
-    SetDSP
+    SetDSP,
+    UpdateTrackMetadata,
+    DeleteTrack
 } from "../wailsjs/go/backend/App";
 
 import { TrackInfo, PlaylistInfo } from './types';
@@ -94,6 +96,10 @@ function App() {
             return 'default';
         }
     });
+
+    const [trackToEdit, setTrackToEdit] = useState<TrackInfo | null>(null);
+    const [editForm, setEditForm] = useState({ title: '', artist: '', genre: '', bpm: 120, keySignature: '8A' });
+    const [trackToDelete, setTrackToDelete] = useState<TrackInfo | null>(null);
 
     const themes = {
         saas: {
@@ -510,6 +516,67 @@ function App() {
             await loadPlaylists();
         } catch (err) {
             uiLog('ERROR', `RemoveTrackFromPlaylist error: ${String(err)}`);
+        }
+    };
+
+    const handleEditTrackClick = (track: TrackInfo) => {
+        setTrackToEdit(track);
+        setEditForm({
+            title: track.title || getFilename(track.filePath),
+            artist: track.artist || '',
+            genre: track.genre || '',
+            bpm: Math.round(track.bpm),
+            keySignature: track.keySignature || '8A'
+        });
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!trackToEdit) return;
+        try {
+            await UpdateTrackMetadata(
+                trackToEdit.filePath,
+                editForm.title,
+                editForm.artist,
+                editForm.genre,
+                Number(editForm.bpm),
+                editForm.keySignature
+            );
+            uiLog('INFO', `Successfully updated metadata for ${trackToEdit.filePath}`);
+            setToastMessage(language === 'ru' ? 'Метаданные обновлены' : 'Metadata updated successfully');
+            if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+            toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 2500);
+            setTrackToEdit(null);
+            await loadLibrary();
+        } catch (err) {
+            uiLog('ERROR', `Failed to update metadata: ${String(err)}`);
+        }
+    };
+
+    const handleDeleteTrackClick = (track: TrackInfo) => {
+        setTrackToDelete(track);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!trackToDelete) return;
+        try {
+            await DeleteTrack(trackToDelete.filePath);
+            uiLog('INFO', `Successfully deleted track ${trackToDelete.filePath}`);
+            setToastMessage(language === 'ru' ? 'Трек удален с диска' : 'Track deleted from disk');
+            if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+            toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 2500);
+            
+            setTracks(prev => {
+                const updated = [...prev] as [TrackInfo | null, TrackInfo | null];
+                if (updated[0]?.filePath === trackToDelete.filePath) updated[0] = null;
+                if (updated[1]?.filePath === trackToDelete.filePath) updated[1] = null;
+                return updated;
+            });
+
+            setTrackToDelete(null);
+            await loadLibrary();
+        } catch (err) {
+            uiLog('ERROR', `Failed to delete track: ${String(err)}`);
         }
     };
 
@@ -1068,6 +1135,8 @@ function App() {
                                     isMyWave={isMyWave}
                                     onToggleMyWave={handleToggleMyWave}
                                     language={language}
+                                    onEditTrack={handleEditTrackClick}
+                                    onDeleteTrack={handleDeleteTrackClick}
                                 />
                             </div>
                         </div>
@@ -1141,6 +1210,117 @@ function App() {
                 onSavePreset={handleSavePreset}
                 onDeletePreset={handleDeletePreset}
             />
+
+            {trackToEdit && (
+                <div className="modal-overlay" onClick={() => setTrackToEdit(null)}>
+                    <div className="modal-content edit-track-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>{language === 'ru' ? 'Редактировать метаданные' : 'Edit Metadata'}</h2>
+                            <button className="close-btn" onClick={() => setTrackToEdit(null)}>✕</button>
+                        </div>
+                        <form onSubmit={handleEditSubmit} className="edit-track-form">
+                            <div className="form-group">
+                                <label>{language === 'ru' ? 'Название трека' : 'Track Title'}</label>
+                                <input 
+                                    type="text" 
+                                    className="modal-text-input"
+                                    value={editForm.title} 
+                                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} 
+                                    required 
+                                    placeholder="Enter title"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>{language === 'ru' ? 'Исполнитель' : 'Artist'}</label>
+                                <input 
+                                    type="text" 
+                                    className="modal-text-input"
+                                    value={editForm.artist} 
+                                    onChange={(e) => setEditForm({ ...editForm, artist: e.target.value })} 
+                                    placeholder="Enter artist"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>{language === 'ru' ? 'Жанр / Стиль' : 'Genre / Style'}</label>
+                                <input 
+                                    type="text" 
+                                    className="modal-text-input"
+                                    value={editForm.genre} 
+                                    onChange={(e) => setEditForm({ ...editForm, genre: e.target.value })} 
+                                    placeholder="Enter genre"
+                                />
+                            </div>
+                            <div className="form-row" style={{ display: 'flex', gap: '16px' }}>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label>BPM</label>
+                                    <input 
+                                        type="number" 
+                                        className="modal-text-input"
+                                        value={editForm.bpm} 
+                                        onChange={(e) => setEditForm({ ...editForm, bpm: Number(e.target.value) })} 
+                                        min="20"
+                                        max="300"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label>{language === 'ru' ? 'Тональность' : 'Key'}</label>
+                                    <input 
+                                        type="text" 
+                                        className="modal-text-input"
+                                        value={editForm.keySignature} 
+                                        onChange={(e) => setEditForm({ ...editForm, keySignature: e.target.value.toUpperCase() })} 
+                                        placeholder="e.g. 8A, 8B"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+                                <button type="button" className="btn-secondary" onClick={() => setTrackToEdit(null)}>
+                                    {language === 'ru' ? 'Отмена' : 'Cancel'}
+                                </button>
+                                <button type="submit" className="btn-primary">
+                                    {language === 'ru' ? 'Сохранить' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {trackToDelete && (
+                <div className="modal-overlay" onClick={() => setTrackToDelete(null)}>
+                    <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 style={{ color: '#F43F5E' }}>{language === 'ru' ? 'Удалить трек?' : 'Delete Track?'}</h2>
+                            <button className="close-btn" onClick={() => setTrackToDelete(null)}>✕</button>
+                        </div>
+                        <div className="modal-body" style={{ margin: '16px 0', fontSize: '13px', color: 'var(--muted-text-color)', lineHeight: '1.5', textAlign: 'left' }}>
+                            <p>
+                                {language === 'ru' 
+                                    ? `Вы действительно хотите навсегда удалить этот файл с диска? Это действие нельзя отменить.`
+                                    : `Are you sure you want to permanently delete this file from your disk? This action cannot be undone.`}
+                            </p>
+                            <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: 'var(--text-color)', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                                <strong>{trackToDelete.title || getFilename(trackToDelete.filePath)}</strong>
+                                <div style={{ fontSize: '11px', color: 'var(--muted-text-color)', marginTop: '4px' }}>{trackToDelete.filePath}</div>
+                            </div>
+                        </div>
+                        <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+                            <button className="btn-secondary" onClick={() => setTrackToDelete(null)}>
+                                {language === 'ru' ? 'Отмена' : 'Cancel'}
+                            </button>
+                            <button 
+                                className="btn-primary" 
+                                style={{ background: 'linear-gradient(135deg, #F43F5E 0%, #BE123C 100%)', boxShadow: '0 4px 15px rgba(244, 63, 94, 0.2)' }}
+                                onClick={handleDeleteConfirm}
+                            >
+                                {language === 'ru' ? 'Удалить' : 'Delete Permanently'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {toastMessage && (
                 <div className="toast-notification">

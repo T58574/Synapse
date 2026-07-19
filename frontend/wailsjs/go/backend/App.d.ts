@@ -8,7 +8,7 @@ export function CreatePlaylist(arg1:string):Promise<void>;
 
 export function DeletePlaylist(arg1:string):Promise<void>;
 
-export function DownloadFromSoundCloud(arg1:string):Promise<void>;
+export function DeleteTrack(arg1:string):Promise<void>;
 
 export function GetAudioDevices():Promise<Array<backend.AudioDevice>>;
 
@@ -38,8 +38,6 @@ export function SavePlaylists(arg1:Array<backend.Playlist>):Promise<void>;
 
 export function ScanMusicDir():Promise<Array<backend.TrackMetadata>>;
 
-export function SearchSoundCloud(arg1:string):Promise<Array<backend.SoundCloudResult>>;
-
 export function Seek(arg1:number,arg2:number):Promise<void>;
 
 export function SelectAudioFile():Promise<string>;
@@ -61,3 +59,5 @@ export function SetTempo(arg1:number,arg2:number):Promise<void>;
 export function SetVolume(arg1:number,arg2:number):Promise<void>;
 
 export function ToggleAutoMix(arg1:boolean):Promise<void>;
+
+export function UpdateTrackMetadata(arg1:string,arg2:string,arg3:string,arg4:string,arg5:number,arg6:string):Promise<void>;
