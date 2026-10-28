@@ -11,6 +11,7 @@
     "build:frontend": "node scripts/build-menu.js --frontend",
     "test": "node scripts/build-menu.js --test",
     "doctor": "node scripts/build-menu.js --doctor",
-    "clean": "node scripts/build-menu.js --clean"
+    "clean": "node scripts/build-menu.js --clean",
+    "install:wails": "node scripts/build-menu.js --install-wails"
   }
 }
