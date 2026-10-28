@@ -2751,14 +2751,6 @@ body {
     background: var(--accent-color-hover);
     box-shadow: 0 0 14px var(--accent-color);
 }
-    outline: none;
-    cursor: pointer;
-    transition: border-color 0.2s;
-}
-
-.preset-select-dropdown:focus {
-    border-color: var(--accent-color);
-}
 
 .delete-preset-btn {
     background: rgba(244, 63, 94, 0.1);

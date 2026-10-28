@@ -445,11 +445,13 @@ async function handleAction(choice) {
             break;
         }
         case '7': {
-            console.log(`\n${colors.bold}Running Full Test Suite...${colors.reset}\n`);
-            console.log(`${colors.cyan}[1/2] Backend Go Tests${colors.reset}`);
+            console.log(`\n${colors.bold}Running Full Test Suite & Build Verification...${colors.reset}\n`);
+            console.log(`${colors.cyan}[1/3] Backend Go Tests${colors.reset}`);
             ensureFrontendDistStub();
             executeCommand('go', ['test', './...']);
-            console.log(`\n${colors.cyan}[2/2] Frontend Vitest Tests${colors.reset}`);
+            console.log(`\n${colors.cyan}[2/3] Frontend Bundle Build (tsc && vite build)${colors.reset}`);
+            executeCommand('npm', ['run', 'build'], FRONTEND_DIR);
+            console.log(`\n${colors.cyan}[3/3] Frontend Vitest Tests${colors.reset}`);
             executeCommand('npm', ['run', 'test'], FRONTEND_DIR);
             break;
         }
