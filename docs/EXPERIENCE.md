@@ -98,6 +98,28 @@
 - **Lesson (Takeaway)**: Never rely on native `<select>` tags in dark or stylized desktop webviews. Build custom accessible dropdown components (`CyberSelect`) with synthetic popup menus, chamfered polygon clip-paths, and theme CSS variable inheritance.
 - **Evidence**: Resolved in `frontend/src/components/CyberSelect.tsx` and `SettingsView.tsx`.
 
+## Testing & Toolchain Diagnostics
+
+### Cue (Symptom): `go test ./...` fails with `pattern all:frontend/dist: no matching files found`
+- **Lesson (Takeaway)**: Go's `//go:embed all:frontend/dist` requires the directory to exist at compile time. In headless or CI/CD test environments where frontend build hasn't run yet, build scripts must generate a stub `frontend/dist/index.html`.
+- **Evidence**: Added `ensureFrontendDistStub()` in `scripts/build-menu.js`.
+
+### Cue (Symptom): Linux Cgo fails linking with `/usr/bin/ld: cannot find -lasound`
+- **Lesson (Takeaway)**: Linux environments with only runtime ALSA have `/usr/lib/.../libasound.so.2` but miss `/usr/lib/.../libasound.so` (from `libasound2-dev`). Automatically symlink `libasound.so.2` to a temporary library path and augment `LIBRARY_PATH` in build orchestrators.
+- **Evidence**: Added `augmentLinuxAudioLibs()` in `scripts/build-menu.js`.
+
+### Cue (Symptom): `ScanMusicDir` silently swallows directory traversal errors
+- **Lesson (Takeaway)**: When implementing `filepath.WalkFunc`, never return `nil` when `walkErr != nil` unless intentional ignore. Return `walkErr` to bubble traversal and permission errors.
+- **Evidence**: Fixed `backend/scanner.go:90-93`, verified in `backend/audio_engine_test.go:TestAppMocks`.
+
+### Cue (Symptom): Testing Library `getByText` fails on Cyberpunk UI headings
+- **Lesson (Takeaway)**: Do not call `.toUpperCase()` directly in JSX templates for localized strings. Use CSS `text-transform: uppercase` so that the underlying DOM text node retains standard casing, keeping i18n text queries and accessibility labels consistent.
+- **Evidence**: `LibraryTable.tsx:273`, `MusiciansView.tsx:112`, and `App.css:.terminal-main-heading`.
+
+### Cue (Symptom): Regex delimiter in `splitArtists` leaves dot on featured artist (`. Nile Rodgers`)
+- **Lesson (Takeaway)**: `\b` word boundary does not match between a non-word punctuation character (like `.`) and whitespace. Use `\b(?:feat|ft)\.?` without trailing word boundary after the dot, and strip residual leading punctuation.
+- **Evidence**: Fixed `frontend/src/utils.ts:5-10`, verified in `frontend/src/utils.test.ts`.
+
 ### Cue (Symptom): Unstyled white Windows native scrollbar cuts across dark application interface
 - **Lesson (Takeaway)**: Standard CSS scoped scrollbars on specific containers (like `.sidebar::-webkit-scrollbar`) leave `body`, `.content-panel`, and main tables unstyled, prompting Windows to render glaring white tracks. Always define universal `*::-webkit-scrollbar` rules with `scrollbar-width: thin`.
 - **Evidence**: Fixed in `frontend/src/App.css:8-70`.

@@ -102,9 +102,45 @@ function augmentPathWithGcc() {
     }
 }
 
-// Augment PATH immediately on load
+// Augment PATH with common Windows GCC compiler locations
+function augmentLinuxAudioLibs() {
+    if (process.platform !== 'linux') return;
+    const candidates = [
+        '/usr/lib/x86_64-linux-gnu/libasound.so.2',
+        '/lib/x86_64-linux-gnu/libasound.so.2',
+        '/usr/lib/libasound.so.2'
+    ];
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            const tmpLib = '/tmp/lib';
+            const symlink = path.join(tmpLib, 'libasound.so');
+            try {
+                if (!fs.existsSync(tmpLib)) fs.mkdirSync(tmpLib, { recursive: true });
+                if (!fs.existsSync(symlink)) fs.symlinkSync(candidate, symlink);
+                const currentLib = process.env.LIBRARY_PATH || '';
+                if (!currentLib.includes(tmpLib)) {
+                    process.env.LIBRARY_PATH = currentLib ? `${tmpLib}:${currentLib}` : tmpLib;
+                }
+            } catch {}
+            break;
+        }
+    }
+}
+
+function ensureFrontendDistStub() {
+    const distDir = path.join(FRONTEND_DIR, 'dist');
+    const indexHtml = path.join(distDir, 'index.html');
+    if (!fs.existsSync(distDir)) {
+        try { fs.mkdirSync(distDir, { recursive: true }); } catch {}
+    }
+    if (!fs.existsSync(indexHtml)) {
+        try { fs.writeFileSync(indexHtml, '<!DOCTYPE html><html><body></body></html>', 'utf8'); } catch {}
+    }
+}
+
 augmentPathWithGoBins();
 augmentPathWithGcc();
+augmentLinuxAudioLibs();
 
 function printHeader() {
     console.log(`\n${colors.cyan}${colors.bold}======================================================================${colors.reset}`);
@@ -292,7 +328,7 @@ function executeCommand(command, args = [], cwd = ROOT_DIR, env = process.env) {
 
     const res = spawnSync(fullCommandLine, {
         cwd,
-        env: { ...env, CGO_ENABLED: '1', PATH: process.env.PATH },
+        env: { ...env, CGO_ENABLED: '1', PATH: process.env.PATH, LIBRARY_PATH: process.env.LIBRARY_PATH || '' },
         stdio: 'inherit',
         shell: true
     });
@@ -411,6 +447,7 @@ async function handleAction(choice) {
         case '7': {
             console.log(`\n${colors.bold}Running Full Test Suite...${colors.reset}\n`);
             console.log(`${colors.cyan}[1/2] Backend Go Tests${colors.reset}`);
+            ensureFrontendDistStub();
             executeCommand('go', ['test', './...']);
             console.log(`\n${colors.cyan}[2/2] Frontend Vitest Tests${colors.reset}`);
             executeCommand('npm', ['run', 'test'], FRONTEND_DIR);

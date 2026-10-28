@@ -270,7 +270,7 @@ export const LibraryTable: React.FC<LibraryTableProps> = React.memo(({
                                     <line x1="20" y1="12" x2="22" y2="12" />
                                 </svg>
                             </div>
-                            <h3 className="terminal-main-heading">{t('libraryEmptyTitle').toUpperCase()}</h3>
+                            <h3 className="terminal-main-heading">{t('libraryEmptyTitle')}</h3>
                             <div className="terminal-log-output cyber-tech-mono">
                                 <p>&gt; SCAN_TARGET: %USERPROFILE%\.0xplayer</p>
                                 <p>&gt; DETECTED_AUDIO_STREAMS: 0</p>

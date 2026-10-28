@@ -88,7 +88,7 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 
 		walkErr := filepathWalk(dir, func(path string, info os.FileInfo, walkErr error) error {
 			if walkErr != nil {
-				return nil
+				return walkErr
 			}
 			if !info.IsDir() {
 				ext := strings.ToLower(filepath.Ext(path))

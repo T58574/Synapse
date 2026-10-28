@@ -109,7 +109,7 @@ export const MusiciansView: React.FC<MusiciansViewProps> = React.memo(({
                             <span className="terminal-code">404_NOT_FOUND</span>
                         </div>
                         <div className="terminal-body">
-                            <h3 className="terminal-main-heading">{t('noArtistsFound').toUpperCase()}</h3>
+                            <h3 className="terminal-main-heading">{t('noArtistsFound')}</h3>
                             <div className="terminal-log-output cyber-tech-mono">
                                 <p>&gt; QUERY: &quot;{searchQuery}&quot;</p>
                                 <p>&gt; STATUS: {t('noArtistsMatch', { query: searchQuery })}</p>
