@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayIcon, PauseIcon, RowPlayIcon, RowPauseIcon, PlusIcon, MusicIcon, FolderIcon, LoadIcon, QueueIcon } from './Icons';
+import { PlayIcon, PauseIcon, RowPlayIcon, RowPauseIcon, PlusIcon, MusicIcon, FolderIcon, LoadIcon, QueueIcon, EditIcon, TrashIcon } from './Icons';
 import { TrackInfo, PlaylistInfo } from '../types';
 import { splitArtists, getFilename, formatTime } from '../utils';
 import { Language, useTranslation } from '../localization';
@@ -177,14 +177,14 @@ export const LibraryTable: React.FC<LibraryTableProps> = React.memo(({
                                                     onClick={() => onEditTrack && onEditTrack(track)}
                                                     title={language === 'ru' ? 'Редактировать метаданные' : 'Edit metadata'}
                                                 >
-                                                    ✏️
+                                                    <EditIcon />
                                                 </button>
                                                 <button 
                                                     className="track-action-btn delete-btn"
                                                     onClick={() => onDeleteTrack && onDeleteTrack(track)}
                                                     title={language === 'ru' ? 'Удалить трек' : 'Delete track'}
                                                 >
-                                                    🗑️
+                                                    <TrashIcon />
                                                 </button>
                                                 <button 
                                                     className="track-action-btn queue-btn"

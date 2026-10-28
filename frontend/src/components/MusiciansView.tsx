@@ -82,31 +82,42 @@ export const MusiciansView: React.FC<MusiciansViewProps> = React.memo(({
                     </p>
                 </div>
                 <div className="search-bar-container">
-                    <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
+                    <span className="search-prefix">&gt;</span>
                     <input 
                         type="text" 
-                        placeholder={t('searchArtistsPlaceholder')} 
+                        placeholder={`// ${t('searchArtistsPlaceholder').toUpperCase()}`} 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="search-input"
                     />
-                    {searchQuery && (
+                    {searchQuery ? (
                         <button className="clear-search-btn" onClick={() => setSearchQuery('')}>✕</button>
+                    ) : (
+                        <span className="search-shortcut">ART::FND</span>
                     )}
                 </div>
             </div>
 
             {filteredArtists.length === 0 ? (
-                <div className="empty-library">
-                    <div className="empty-card">
-                        <h3>{t('noArtistsFound')}</h3>
-                        <p>{t('noArtistsMatch', { query: searchQuery })}</p>
-                        <button className="btn-secondary" onClick={() => setSearchQuery('')}>
-                            {t('clearSearch')}
-                        </button>
+                <div className="empty-library cyber-empty-terminal">
+                    <div className="cyber-terminal-card">
+                        <div className="terminal-header-bar">
+                            <div className="terminal-title-group">
+                                <span className="terminal-beacon red"></span>
+                                <span className="terminal-title">SYS_SEARCH // NO_MATCH</span>
+                            </div>
+                            <span className="terminal-code">404_NOT_FOUND</span>
+                        </div>
+                        <div className="terminal-body">
+                            <h3 className="terminal-main-heading">{t('noArtistsFound').toUpperCase()}</h3>
+                            <div className="terminal-log-output cyber-tech-mono">
+                                <p>&gt; QUERY: &quot;{searchQuery}&quot;</p>
+                                <p>&gt; STATUS: {t('noArtistsMatch', { query: searchQuery })}</p>
+                            </div>
+                            <button className="btn-secondary cyber-terminal-btn" onClick={() => setSearchQuery('')}>
+                                [ {t('clearSearch').toUpperCase()} ]
+                            </button>
+                        </div>
                     </div>
                 </div>
             ) : (

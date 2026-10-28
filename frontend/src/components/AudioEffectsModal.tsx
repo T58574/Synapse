@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Language, useTranslation } from '../localization';
 import { EventsOn } from "../../wailsjs/runtime/runtime";
+import { CyberSelect, CyberSelectOption } from './CyberSelect';
+import { TrashIcon } from './Icons';
 
 interface AudioEffectsModalProps {
     isOpen: boolean;
@@ -234,25 +236,17 @@ export const AudioEffectsModal: React.FC<AudioEffectsModalProps> = ({
                         <div className="presets-block">
                             <h3>{t('presets')}</h3>
                             <div className="presets-controls-row">
-                                <select
+                                <CyberSelect
                                     value={selectedPresetKey}
-                                    onChange={(e) => handlePresetChange(e.target.value)}
-                                    className="preset-select-dropdown"
-                                >
-                                    <option value="Custom" disabled>{language === 'ru' ? 'Пользовательский' : 'Custom/Modified'}</option>
-                                    <optgroup label={language === 'ru' ? 'Заводские пресеты' : 'Factory Presets'}>
-                                        {Object.keys(FACTORY_PRESETS).map(name => (
-                                            <option key={name} value={name}>{name}</option>
-                                        ))}
-                                    </optgroup>
-                                    {Object.keys(customPresets).length > 0 && (
-                                        <optgroup label={language === 'ru' ? 'Пользовательские' : 'Custom Presets'}>
-                                            {Object.keys(customPresets).map(name => (
-                                                <option key={name} value={name}>{name}</option>
-                                            ))}
-                                        </optgroup>
-                                    )}
-                                </select>
+                                    onChange={(val) => handlePresetChange(val)}
+                                    prefix="PRESET"
+                                    className="cyber-preset-select"
+                                    options={[
+                                        ...(selectedPresetKey === 'Custom' ? [{ value: 'Custom', label: language === 'ru' ? 'Пользовательский' : 'Custom/Modified', badge: 'USR' }] : []),
+                                        ...Object.keys(FACTORY_PRESETS).map(name => ({ value: name, label: name, badge: 'ROM' })),
+                                        ...Object.keys(customPresets).map(name => ({ value: name, label: name, badge: 'USR' }))
+                                    ]}
+                                />
                                 {customPresets[selectedPresetKey] && (
                                     <button 
                                         className="delete-preset-btn"
@@ -262,7 +256,7 @@ export const AudioEffectsModal: React.FC<AudioEffectsModalProps> = ({
                                         }}
                                         title={language === 'ru' ? 'Удалить пресет' : 'Delete preset'}
                                     >
-                                        🗑
+                                        <TrashIcon />
                                     </button>
                                 )}
                             </div>
