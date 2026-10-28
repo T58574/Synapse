@@ -2,6 +2,7 @@ package backend
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,7 +50,8 @@ func extractTagsOrFilename(path string) (string, string, string) {
 }
 
 func (a *App) UpdateTrackMetadata(filePath string, title string, artist string, genre string, bpm float64, keySignature string) error {
-	Log(LogInfo, "library", "UpdateTrackMetadata file=%q title=%q artist=%q genre=%q bpm=%.1f key=%q", filePath, title, artist, genre, bpm, keySignature)
+	bpm = math.Round(bpm)
+	Log(LogInfo, "library", "UpdateTrackMetadata file=%q title=%q artist=%q genre=%q bpm=%.0f key=%q", filePath, title, artist, genre, bpm, keySignature)
 	dir, err := a.GetMusicDir()
 	if err != nil {
 		return err
@@ -71,7 +73,7 @@ func (a *App) UpdateTrackMetadata(filePath string, title string, artist string, 
 			cachedList[i].Title = title
 			cachedList[i].Artist = artist
 			cachedList[i].Genre = genre
-			cachedList[i].BPM = bpm
+			cachedList[i].BPM = math.Round(bpm)
 			cachedList[i].KeySignature = keySignature
 			cachedList[i].Mood = mood
 			found = true

@@ -106,7 +106,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
                                         {activeTrack.artist}
                                     </span>
                                 )}
-                                BPM: {activeTrack.bpm.toFixed(0)} | {t('keyCol')}: {activeTrack.keySignature}
+                                BPM: {Math.round(activeTrack.bpm)} | {t('keyCol')}: {activeTrack.keySignature}
                             </span>
                         </div>
                     </div>

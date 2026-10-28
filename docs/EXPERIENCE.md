@@ -131,3 +131,19 @@
 ### Cue (Symptom): Monolithic CSS "god file" (>3000 lines) causes selector conflicts and merge collisions
 - **Lesson (Takeaway)**: Decompose monolithic stylesheets by component domain (`AppHeader.css`, `PlaybackBar.css`, `CyberSelect.css`, `AudioEffectsModal.css`, `theme.css`) imported into a clean master manifest. Keeps all modules within 100-450 lines and eliminates dead duplicate rules.
 - **Evidence**: Decomposed `frontend/src/App.css` (3138 lines -> 35 lines) into 11 modular CSS files, shrinking output CSS bundle by ~3KB.
+
+### Cue (Symptom): Playback crash / access violation in miniaudio during track playback
+- **Lesson (Takeaway)**: Never copy `ma_decoder` by value (e.g. `ts.decoder = temp_decoder`). `ma_decoder` embeds a `ma_resampler` whose `pBackend` pointer points directly to its own internal state (`&resampler.state`). Shallow-copying from a stack variable leaves `pBackend` pointing to dead stack memory, triggering segfaults in `audio_callback`. Always allocate `ma_decoder*` on the heap and initialize in-place.
+- **Evidence**: Fixed in `backend/audio_engine.cpp:load_track`.
+
+### Cue (Symptom): Scrollbars fail to scroll on non-library views (Settings, Musicians)
+- **Lesson (Takeaway)**: In nested Flexbox layouts, children default to `min-height: auto`. Without `min-height: 0` and `height: 100%` on intermediary flex wrappers (`.app-main-layout`, `.content-panel`), content expands past the viewport and gets clipped by parent `overflow: hidden`, preventing inner `overflow-y: auto` from engaging. Always set `min-height: 0` on flex containers and ensure `8px` minimum scrollbar width for mouse accessibility.
+- **Evidence**: Fixed in `frontend/src/styles/theme.css`, `SettingsView.css`, `MusiciansView.css`.
+
+### Cue (Symptom): BPM displays floating-point decimals and drifts across sampling rates
+- **Lesson (Takeaway)**: Autocorrelation lag-to-BPM calculation must compute the exact downsampled envelope sample rate (`(double)outputSampleRate / downsample_ratio`) rather than assuming nominal target rate. Standard DJ workstations expect strictly whole integer BPM; round with `std::round` / `math.Round` / `Math.round` across all C++, Go, and React boundaries.
+- **Evidence**: Fixed in `backend/audio_engine.cpp:analyze_audio`, `scanner.go`, `track_ops.go`, and `LibraryTable.tsx`.
+
+### Cue (Symptom): Wails `EventsEmit` panics during test runs (`An invalid context was passed`)
+- **Lesson (Takeaway)**: Background ticker routines (such as `broadcastSpectrum`) spawned during `Startup` with an arbitrary context will leak and persist across unit tests unless explicitly cancelled. Always wrap incoming context with `context.WithCancel(ctx)`, store `cancel context.CancelFunc` on the application struct, invoke it in `Shutdown`, and pass `nil` to `Startup` in unit tests that do not mock Wails runtime events.
+- **Evidence**: Fixed in `backend/app.go:Startup/Shutdown` and `audio_engine_test.go:TestLogFromJS`.

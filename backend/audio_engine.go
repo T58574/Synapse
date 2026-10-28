@@ -10,6 +10,7 @@ package backend
 */
 import "C"
 import (
+	"math"
 	"unsafe"
 )
 
@@ -81,7 +82,7 @@ func GetTrackMetadata(slot int, filePath string) TrackMetadata {
 	return TrackMetadata{
 		FilePath:     filePath,
 		DurationSec:  float64(metaC.durationSec),
-		BPM:          float64(metaC.bpm),
+		BPM:          math.Round(float64(metaC.bpm)),
 		KeySignature: key,
 		Waveform:     waveform,
 	}
@@ -94,7 +95,7 @@ func SetTrackMetadata(slot int, meta TrackMetadata) {
 	if len(meta.Waveform) > 0 {
 		cWaveform = (*C.float)(&meta.Waveform[0])
 	}
-	C.set_track_metadata(C.int(slot), C.double(meta.DurationSec), C.double(meta.BPM), cKey, cWaveform, C.int(len(meta.Waveform)))
+	C.set_track_metadata(C.int(slot), C.double(meta.DurationSec), C.double(math.Round(meta.BPM)), cKey, cWaveform, C.int(len(meta.Waveform)))
 }
 
 func SetTrackEQ(slot int, bass, mid, treble float32) {
@@ -189,7 +190,7 @@ func AnalyzeFile(filePath string) TrackMetadata {
 	result := TrackMetadata{
 		FilePath:     filePath,
 		DurationSec:  float64(metaC.durationSec),
-		BPM:          float64(metaC.bpm),
+		BPM:          math.Round(float64(metaC.bpm)),
 		KeySignature: key,
 		Waveform:     waveform,
 	}

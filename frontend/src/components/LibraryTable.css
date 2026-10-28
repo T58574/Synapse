@@ -159,7 +159,12 @@
 }
 
 .tracks-list-container {
-    padding: 20px 40px;
+    padding: 20px 40px 60px 40px;
+    background: rgba(8, 10, 16, 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    min-height: 100%;
 }
 
 .tracks-table {
@@ -187,6 +192,7 @@
     color: var(--text-color);
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     vertical-align: middle;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .tracks-table td:nth-child(3),

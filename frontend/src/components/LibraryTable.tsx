@@ -167,7 +167,7 @@ export const LibraryTable: React.FC<LibraryTableProps> = React.memo(({
                                                 </div>
                                             )}
                                         </td>
-                                        <td>{track.bpm.toFixed(1)}</td>
+                                        <td>{Math.round(track.bpm)}</td>
                                         <td className="glowing-key">{track.keySignature}</td>
                                         <td>{formatTime(track.durationSec)}</td>
                                         <td className="actions-cell" onClick={(e) => e.stopPropagation()}>

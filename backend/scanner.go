@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,7 +75,7 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 			Artist:       entry.Artist,
 			Genre:        entry.Genre,
 			DurationSec:  entry.DurationSec,
-			BPM:          entry.BPM,
+			BPM:          math.Round(entry.BPM),
 			KeySignature: entry.KeySignature,
 			Waveform:     entry.Waveform,
 			Mood:         entry.Mood,
@@ -114,7 +115,7 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 							Artist:       cached.Artist,
 							Genre:        cached.Genre,
 							DurationSec:  cached.DurationSec,
-							BPM:          cached.BPM,
+							BPM:          math.Round(cached.BPM),
 							KeySignature: cached.KeySignature,
 							Waveform:     cached.Waveform,
 							Mood:         cached.Mood,
@@ -134,7 +135,7 @@ func (a *App) ScanMusicDir() ([]TrackMetadata, error) {
 							FilePath:     path,
 							Title:        meta.Title,
 							DurationSec:  meta.DurationSec,
-							BPM:          meta.BPM,
+							BPM:          math.Round(meta.BPM),
 							KeySignature: meta.KeySignature,
 							Waveform:     meta.Waveform,
 							Size:         info.Size(),

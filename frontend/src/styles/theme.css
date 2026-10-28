@@ -20,8 +20,8 @@ div::-webkit-scrollbar,
 main::-webkit-scrollbar,
 aside::-webkit-scrollbar,
 section::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 8px;
+    height: 8px;
     background: rgba(8, 9, 13, 0.95);
 }
 
@@ -116,6 +116,8 @@ body {
 .app-main-layout {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
     height: 100%;
     width: 100%;
     overflow: hidden;
@@ -123,24 +125,35 @@ body {
     z-index: 1;
 }
 
-.library-body-layout {
-    display: flex;
-    flex-direction: row;
+.content-panel {
+    flex: 1;
+    min-height: 0;
     height: 100%;
     width: 100%;
     overflow: hidden;
-}
-
-.library-main-content {
-    flex: 1;
-    overflow-y: auto;
+    position: relative;
     display: flex;
     flex-direction: column;
     background: transparent;
 }
 
-.content-panel {
+.library-body-layout {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.library-main-content {
     flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
     background: transparent;
 }
 

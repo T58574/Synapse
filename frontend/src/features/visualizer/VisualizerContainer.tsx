@@ -26,10 +26,10 @@ const PALETTES: Record<string, Palette> = {
         muted: [122/255, 136/255, 155/255]
     },
     arasaka: {
-        bg: [7/255, 7/255, 9/255],
-        accent: [255/255, 0/255, 60/255],
-        surface: [19/255, 17/255, 20/255],
-        muted: [142/255, 127/255, 133/255]
+        bg: [5/255, 5/255, 7/255],
+        accent: [229/255, 0/255, 18/255],
+        surface: [14/255, 12/255, 14/255],
+        muted: [138/255, 132/255, 136/255]
     },
     netrunner: {
         bg: [4/255, 9/255, 12/255],
@@ -377,7 +377,7 @@ export const VisualizerContainer: React.FC<VisualizerContainerProps> = ({
                 display: 'block',
                 pointerEvents: 'none',
                 zIndex: 0,
-                opacity: 0.55
+                opacity: 0.22
             }}
         />
     );

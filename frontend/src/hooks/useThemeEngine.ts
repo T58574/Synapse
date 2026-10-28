@@ -14,14 +14,14 @@ export const THEMES: Record<string, ThemeConfig> = {
         accentText: '#08090D'
     },
     arasaka: {
-        accent: '#FF003C',       // Arasaka blood crimson
-        dark: '#C80030',
-        hover: '#FF3366',
-        bg: '#070709',          // Monolithic black
-        surface: '#131114',     // Dark red tinted carbon
+        accent: '#E50012',       // Arasaka corporate blood crimson
+        dark: '#99000B',
+        hover: '#FF1A2B',
+        bg: '#050507',          // Monolithic void black
+        surface: '#0E0C0E',     // Deep obsidian panel
         text: '#F5F5F7',
-        mutedText: '#8E7F85',
-        border: '#3D1520',
+        mutedText: '#8A8488',
+        border: '#420D14',
         accentText: '#FFFFFF'
     },
     netrunner: {

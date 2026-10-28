@@ -279,7 +279,7 @@ struct Exciter {
 };
 
 struct TrackState {
-    ma_decoder decoder;
+    ma_decoder* decoder = nullptr;
     bool has_decoder = false;
     signalsmith::stretch::SignalsmithStretch<float> stretch;
     bool stretch_initialized = false;
@@ -513,14 +513,24 @@ static void analyze_audio(const char* file_path, double* out_duration, double* o
     }
     out_waveform = peaks;
 
-    // BPM/ключ анализируем на фрагменте начиная с 1/3 длительности.
-    ma_uint64 analysis_start = (ma_uint64)(duration / 3.0 * dec.outputSampleRate);
+    // BPM/ключ анализируем на фрагменте: для коротких файлов с 0, для длинных — с 25% длительности.
+    ma_uint64 analysis_start = 0;
+    if (duration > 35.0) {
+        analysis_start = (ma_uint64)(duration * 0.25 * dec.outputSampleRate);
+    }
     ma_decoder_seek_to_pcm_frame(&dec, analysis_start);
     int analysis_frames = (int)(dec.outputSampleRate * 30.0);
     std::vector<float> analysis_buf(analysis_frames * dec.outputChannels);
     ma_uint64 read_analysis = 0;
     ma_decoder_read_pcm_frames(&dec, analysis_buf.data(), analysis_frames, &read_analysis);
     
+    if (read_analysis == 0) {
+        *out_bpm = 120.0;
+        *out_key = "8A";
+        ma_decoder_uninit(&dec);
+        return;
+    }
+
     std::vector<float> mono_buf(read_analysis);
     for (ma_uint64 i = 0; i < read_analysis; i++) {
         float sum = 0.0f;
@@ -530,10 +540,17 @@ static void analyze_audio(const char* file_path, double* out_duration, double* o
         mono_buf[i] = sum / dec.outputChannels;
     }
     
-    double envelope_fs = 200.0;
-    int downsample_ratio = (int)(dec.outputSampleRate / envelope_fs);
+    double target_fs = 200.0;
+    int downsample_ratio = (int)(dec.outputSampleRate / target_fs);
     if (downsample_ratio < 1) downsample_ratio = 1;
+    double actual_env_fs = (double)dec.outputSampleRate / (double)downsample_ratio;
     size_t env_size = mono_buf.size() / downsample_ratio;
+    if (env_size < 2) {
+        *out_bpm = 120.0;
+        *out_key = "8A";
+        ma_decoder_uninit(&dec);
+        return;
+    }
     std::vector<float> env(env_size);
     const float* src = mono_buf.data();
     float* dst = env.data();
@@ -562,8 +579,13 @@ static void analyze_audio(const char* file_path, double* out_duration, double* o
         onset[i] = diff > 0.0f ? diff : 0.0f;
     }
     
-    int min_lag = (int)(envelope_fs * 60.0 / 300.0);
-    int max_lag = (int)(envelope_fs * 60.0 / 60.0);
+    int min_lag = (int)(actual_env_fs * 60.0 / 300.0);
+    int max_lag = (int)(actual_env_fs * 60.0 / 60.0);
+    if (max_lag >= (int)onset.size()) {
+        max_lag = (int)onset.size() - 1;
+    }
+    if (min_lag < 1) min_lag = 1;
+
     std::vector<double> corrs(max_lag + 2, 0.0);
     double max_corr = -1.0;
     int best_lag = min_lag;
@@ -585,7 +607,7 @@ static void analyze_audio(const char* file_path, double* out_duration, double* o
     }
 
     int half_lag = best_lag / 2;
-    if (half_lag >= min_lag && corrs[half_lag] > max_corr * 0.5) {
+    if (half_lag >= min_lag && corrs[half_lag] > max_corr * 0.7) {
         best_lag = half_lag;
     }
 
@@ -597,10 +619,22 @@ static void analyze_audio(const char* file_path, double* out_duration, double* o
         double denom = alpha - 2.0 * beta + gamma;
         if (denom != 0.0) {
             double p = 0.5 * (alpha - gamma) / denom;
-            fractional_lag = best_lag + p;
+            if (p >= -1.0 && p <= 1.0) {
+                fractional_lag = best_lag + p;
+            }
         }
     }
-    *out_bpm = 60.0 * envelope_fs / fractional_lag;
+
+    double calc_bpm = 120.0;
+    if (fractional_lag > 0.0) {
+        calc_bpm = 60.0 * actual_env_fs / fractional_lag;
+    }
+    while (calc_bpm < 70.0) calc_bpm *= 2.0;
+    while (calc_bpm > 180.0) calc_bpm /= 2.0;
+    *out_bpm = std::round(calc_bpm);
+    if (*out_bpm < 40.0 || *out_bpm > 250.0 || std::isnan(*out_bpm)) {
+        *out_bpm = 120.0;
+    }
     
     int fft_size = 4096;
     std::vector<std::complex<double>> fft_in(fft_size);
@@ -662,13 +696,17 @@ static void analyze_audio(const char* file_path, double* out_duration, double* o
             best_is_minor = is_minor;
         }
     }
-    *out_key = get_camelot_key(best_key_idx, best_is_minor);
+    if (max_r > -1.0) {
+        *out_key = get_camelot_key(best_key_idx, best_is_minor);
+    } else {
+        *out_key = "8A";
+    }
     ma_decoder_uninit(&dec);
 }
 
 static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count, int channels, int sample_rate) {
     std::lock_guard<std::mutex> lock(ts.mtx);
-    if (!ts.has_decoder || !ts.is_playing) {
+    if (!ts.has_decoder || !ts.decoder || !ts.is_playing) {
         memset(out_buffer, 0, frame_count * channels * sizeof(float));
         return;
     }
@@ -741,16 +779,16 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
     };
     
     if (ts.seek_position >= 0.0) {
-        ma_uint64 target_frame = (ma_uint64)(ts.seek_position * ts.decoder.outputSampleRate);
+        ma_uint64 target_frame = (ma_uint64)(ts.seek_position * ts.decoder->outputSampleRate);
         ts.recent_samples.assign(1024, 0.0f);
         ts.recent_ptr = 0;
         ma_uint64 total_frames = 0;
-        if (ma_decoder_get_length_in_pcm_frames(&ts.decoder, &total_frames) == MA_SUCCESS) {
+        if (ma_decoder_get_length_in_pcm_frames(ts.decoder, &total_frames) == MA_SUCCESS) {
             if (target_frame >= total_frames) {
                 target_frame = total_frames > 0 ? total_frames - 1 : 0;
             }
         }
-        ma_decoder_seek_to_pcm_frame(&ts.decoder, target_frame);
+        ma_decoder_seek_to_pcm_frame(ts.decoder, target_frame);
         ts.seek_position = -1.0;
         if (ts.stretch_initialized) {
             ts.stretch.reset();
@@ -759,7 +797,7 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
     
     if (!g_automix_enabled && ts.tempo_ratio == 1.0 && ts.pitch_semi == 0.0) {
         ma_uint64 read_frames = 0;
-        ma_decoder_read_pcm_frames(&ts.decoder, out_buffer, frame_count, &read_frames);
+        ma_decoder_read_pcm_frames(ts.decoder, out_buffer, frame_count, &read_frames);
         for (ma_uint64 i = 0; i < read_frames * channels; i++) {
             volatile float* p = &out_buffer[i];
             *p = *p * ts.volume;
@@ -799,7 +837,7 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
     
     std::vector<float> temp_in(M * channels);
     ma_uint64 read_frames = 0;
-    ma_decoder_read_pcm_frames(&ts.decoder, temp_in.data(), M, &read_frames);
+    ma_decoder_read_pcm_frames(ts.decoder, temp_in.data(), M, &read_frames);
     if (read_frames < (ma_uint64)M) {
         memset(temp_in.data() + read_frames * channels, 0, (M - read_frames) * channels * sizeof(float));
         if (read_frames == 0) {
@@ -851,9 +889,11 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
 static double g_actual_crossfade_duration = 8.0;
 
 static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+    if (!pDevice || !pOutput || frameCount == 0) return;
     float* out = (float*)pOutput;
     int channels = pDevice->playback.channels;
     int sample_rate = pDevice->sampleRate;
+    if (channels <= 0 || sample_rate <= 0) return;
 
     if (g_mixer_state == 1 || g_mixer_state == 3) {
         g_crossfade_elapsed += (double)frameCount / sample_rate;
@@ -1050,6 +1090,13 @@ int init_audio_engine(int sample_rate, int channels) {
         return 0;
     }
 
+    if (g_device.sampleRate > 0) {
+        g_sample_rate = g_device.sampleRate;
+    }
+    if (g_device.playback.channels > 0) {
+        g_channels = g_device.playback.channels;
+    }
+
     if (ma_device_start(&g_device) != MA_SUCCESS) {
         ENGINE_LOGE("init_audio_engine: ma_device_start FAILED");
         ma_device_uninit(&g_device);
@@ -1057,7 +1104,7 @@ int init_audio_engine(int sample_rate, int channels) {
     }
 
     g_device_initialized = true;
-    ENGINE_LOGI("init_audio_engine OK");
+    ENGINE_LOGI("init_audio_engine OK (actual sr=%d channels=%d)", g_sample_rate, g_channels);
     return 1;
 }
 
@@ -1069,8 +1116,10 @@ void cleanup_audio_engine() {
     }
     for (int i = 0; i < 2; i++) {
         std::lock_guard<std::mutex> lock(g_tracks[i].mtx);
-        if (g_tracks[i].has_decoder) {
-            ma_decoder_uninit(&g_tracks[i].decoder);
+        if (g_tracks[i].has_decoder && g_tracks[i].decoder) {
+            ma_decoder_uninit(g_tracks[i].decoder);
+            delete g_tracks[i].decoder;
+            g_tracks[i].decoder = nullptr;
             g_tracks[i].has_decoder = false;
         }
     }
@@ -1081,26 +1130,29 @@ int load_track(int slot, const char* file_path) {
     engine_log_open();
     if (slot < 0 || slot > 1) return 0;
 
-    ma_decoder temp_decoder;
-    if (init_decoder_fixed(file_path, &temp_decoder) != MA_SUCCESS) {
+    ma_decoder* new_decoder = new ma_decoder();
+    if (init_decoder_fixed(file_path, new_decoder) != MA_SUCCESS) {
         ENGINE_LOGE("load_track: decoder init FAILED slot=%d path=%s", slot, file_path);
+        delete new_decoder;
         return 0;
     }
 
     double duration = 0.0;
     ma_uint64 total_frames = 0;
-    if (ma_decoder_get_length_in_pcm_frames(&temp_decoder, &total_frames) == MA_SUCCESS) {
-        duration = (double)total_frames / temp_decoder.outputSampleRate;
+    if (ma_decoder_get_length_in_pcm_frames(new_decoder, &total_frames) == MA_SUCCESS && new_decoder->outputSampleRate > 0) {
+        duration = (double)total_frames / new_decoder->outputSampleRate;
     }
 
     TrackState& ts = g_tracks[slot];
     std::lock_guard<std::mutex> lock(ts.mtx);
-    if (ts.has_decoder) {
-        ma_decoder_uninit(&ts.decoder);
+    if (ts.has_decoder && ts.decoder) {
+        ma_decoder_uninit(ts.decoder);
+        delete ts.decoder;
+        ts.decoder = nullptr;
         ts.has_decoder = false;
     }
 
-    ts.decoder = temp_decoder;
+    ts.decoder = new_decoder;
     ts.has_decoder = true;
     ts.duration = duration;
 
@@ -1139,7 +1191,7 @@ TrackMetadataC get_track_metadata(int slot) {
     if (slot < 0 || slot > 1) return meta;
     TrackState& ts = g_tracks[slot];
     std::lock_guard<std::mutex> lock(ts.mtx);
-    if (!ts.has_decoder) return meta;
+    if (!ts.has_decoder || !ts.decoder) return meta;
     
     meta.durationSec = ts.duration;
     meta.bpm = ts.bpm;
@@ -1157,7 +1209,7 @@ void set_track_metadata(int slot, double duration, double bpm, const char* key, 
     TrackState& ts = g_tracks[slot];
     std::lock_guard<std::mutex> lock(ts.mtx);
     ts.duration = duration;
-    ts.bpm = bpm;
+    ts.bpm = std::round(bpm);
     if (key) {
         ts.key = key;
     }
@@ -1209,7 +1261,7 @@ int get_track_spectrum(int slot, float* out_buffer, int max_size) {
     static thread_local std::vector<float> samples(1024, 0.0f);
     {
         std::lock_guard<std::mutex> lock(ts.mtx);
-        if (!ts.has_decoder || !ts.is_playing || ts.recent_samples.size() != 1024) {
+        if (!ts.has_decoder || !ts.decoder || !ts.is_playing || ts.recent_samples.size() != 1024) {
             memset(out_buffer, 0, max_size * sizeof(float));
             return 0;
         }
@@ -1247,8 +1299,12 @@ int get_track_spectrum(int slot, float* out_buffer, int max_size) {
 void play_track(int slot) {
     ENGINE_LOGI("play_track slot=%d", slot);
     if (slot < 0 || slot > 1) return;
+    if (!g_device_initialized) {
+        ENGINE_LOGW("play_track: device not initialized, attempting init...");
+        init_audio_engine(g_sample_rate > 0 ? g_sample_rate : 44100, 2);
+    }
     std::lock_guard<std::mutex> lock(g_tracks[slot].mtx);
-    if (g_tracks[slot].has_decoder) {
+    if (g_tracks[slot].has_decoder && g_tracks[slot].decoder) {
         g_tracks[slot].is_playing = true;
         if (g_mixer_state != 1 && g_mixer_state != 3) {
             if (slot == 0) g_mixer_state = 0;
@@ -1298,11 +1354,11 @@ double get_track_position(int slot) {
     if (slot < 0 || slot > 1) return 0.0;
     TrackState& ts = g_tracks[slot];
     std::lock_guard<std::mutex> lock(ts.mtx);
-    if (!ts.has_decoder) return 0.0;
+    if (!ts.has_decoder || !ts.decoder) return 0.0;
     ma_uint64 current_frame = 0;
-    ma_decoder_get_cursor_in_pcm_frames(&ts.decoder, &current_frame);
-    if (ts.decoder.outputSampleRate == 0) return 0.0;
-    return (double)current_frame / ts.decoder.outputSampleRate;
+    ma_decoder_get_cursor_in_pcm_frames(ts.decoder, &current_frame);
+    if (ts.decoder->outputSampleRate == 0) return 0.0;
+    return (double)current_frame / ts.decoder->outputSampleRate;
 }
 
 int is_track_playing(int slot) {

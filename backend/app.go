@@ -30,6 +30,7 @@ var (
 
 type App struct {
 	ctx                context.Context
+	cancel             context.CancelFunc
 	currentPaths       [2]string
 	currentPathsMu     sync.Mutex
 	SyncScan           bool
@@ -50,11 +51,18 @@ func NewApp() *App {
 func (a *App) Startup(ctx context.Context) {
 	InitLogger()
 	Log(LogInfo, "app", "=== Synapse startup ===")
-	a.ctx = ctx
+	if ctx != nil {
+		childCtx, cancel := context.WithCancel(ctx)
+		a.ctx = childCtx
+		a.cancel = cancel
+	} else {
+		a.ctx = nil
+		a.cancel = nil
+	}
 	Log(LogInfo, "app", "init audio engine: sampleRate=44100 channels=2")
 	InitAudioEngine(44100, 2)
 	a.GetMusicDir()
-	if ctx != nil {
+	if a.ctx != nil {
 		go a.broadcastSpectrum()
 	}
 }
@@ -117,6 +125,10 @@ func (a *App) broadcastSpectrum() {
 
 func (a *App) Shutdown(ctx context.Context) {
 	Log(LogInfo, "app", "=== Synapse shutdown ===")
+	if a.cancel != nil {
+		a.cancel()
+		a.cancel = nil
+	}
 	CleanupAudioEngine()
 	CloseLogger()
 }

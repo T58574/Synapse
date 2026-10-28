@@ -100,6 +100,10 @@ func TestAudioEngine(t *testing.T) {
 		t.Errorf("expected positive BPM, got %f", meta.BPM)
 	}
 
+	if meta.BPM != math.Round(meta.BPM) {
+		t.Errorf("expected strictly whole integer BPM, got %f", meta.BPM)
+	}
+
 	if meta.KeySignature == "" {
 		t.Errorf("expected non-empty key signature")
 	}
@@ -283,12 +287,8 @@ func TestLogFromJS(t *testing.T) {
 	logFile := filepath.Join(logDir, "player.log")
 
 	app := NewApp()
-	ctx := context.Background()
-
-	// We call Startup but wait, Startup also calls InitLogger and Log.
-	// We already called InitLogger, which is safe.
-	app.Startup(ctx)
-	defer app.Shutdown(ctx)
+	app.Startup(nil)
+	defer app.Shutdown(nil)
 
 	// Clear the log file so we only see our LogFromJS calls
 	os.WriteFile(logFile, []byte(""), 0600)
@@ -366,6 +366,10 @@ func TestAnalyzeFile(t *testing.T) {
 		t.Errorf("expected positive BPM, got %f", meta.BPM)
 	}
 
+	if meta.BPM != math.Round(meta.BPM) {
+		t.Errorf("expected strictly whole integer BPM, got %f", meta.BPM)
+	}
+
 	if meta.KeySignature == "" {
 		t.Errorf("expected non-empty key signature")
 	}
@@ -399,4 +403,53 @@ func TestDetermineMood(t *testing.T) {
 			t.Errorf("DetermineMood(%f, %s, %s) expected %s, got %s", tc.bpm, tc.key, tc.genre, tc.expect, res)
 		}
 	}
+}
+
+func TestDecoderLifetimeAndPlaybackStability(t *testing.T) {
+	tmpDir := t.TempDir()
+	wav1 := filepath.Join(tmpDir, "track1.wav")
+	wav2 := filepath.Join(tmpDir, "track2.wav")
+	if err := createTestWav(wav1); err != nil {
+		t.Fatalf("failed to create wav1: %v", err)
+	}
+	if err := createTestWav(wav2); err != nil {
+		t.Fatalf("failed to create wav2: %v", err)
+	}
+
+	ok := InitAudioEngine(44100, 2)
+	if !ok {
+		t.Fatalf("failed to initialize audio engine")
+	}
+	defer CleanupAudioEngine()
+
+	// 1. Load deck 0 and play
+	if !LoadTrack(0, wav1) {
+		t.Fatalf("failed to load track1 to deck 0")
+	}
+	PlayTrack(0)
+	time.Sleep(20 * time.Millisecond)
+
+	// 2. Load deck 1 and play while deck 0 is active
+	if !LoadTrack(1, wav2) {
+		t.Fatalf("failed to load track2 to deck 1")
+	}
+	PlayTrack(1)
+	time.Sleep(20 * time.Millisecond)
+
+	// 3. Hot-reload deck 0 while playing (verifies heap-allocated decoder cleanup & no dangling pointers)
+	if !LoadTrack(0, wav2) {
+		t.Fatalf("failed to hot-reload deck 0 with wav2")
+	}
+	PlayTrack(0)
+	SeekTrack(0, 0.1)
+	time.Sleep(20 * time.Millisecond)
+
+	// 4. Verify spectrum reading works without data race or crash
+	spec := GetTrackSpectrum(0, 64)
+	if len(spec) != 64 {
+		t.Errorf("expected 64 spectrum bins, got %d", len(spec))
+	}
+
+	PauseTrack(0)
+	PauseTrack(1)
 }

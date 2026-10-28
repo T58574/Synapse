@@ -24,7 +24,7 @@ void main() {
     vec2 uv = gl_FragCoord.xy / u_resolution.xy;
     float aspect = u_resolution.x / u_resolution.y;
     vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / min(u_resolution.x, u_resolution.y);
-    vec2 blobCenter = vec2(aspect * 0.4, -0.05);
+    vec2 blobCenter = vec2(aspect * 0.52, 0.25);
     vec2 warped = p - blobCenter;
     warped.x += sin(warped.y * 1.5 + u_phaseBass * 0.8) * 0.35;
     warped.y += cos(warped.x * 1.5 + u_phaseMid * 0.6) * 0.35;

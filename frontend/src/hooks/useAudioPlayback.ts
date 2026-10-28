@@ -182,7 +182,7 @@ export function useAudioPlayback({
                     artist: cachedTrack?.artist || meta.artist,
                     genre: cachedTrack?.genre || meta.genre,
                     durationSec: cachedTrack ? cachedTrack.durationSec : meta.durationSec,
-                    bpm: cachedTrack ? cachedTrack.bpm : meta.bpm,
+                    bpm: Math.round(cachedTrack ? cachedTrack.bpm : meta.bpm),
                     keySignature: cachedTrack ? cachedTrack.keySignature : meta.keySignature,
                     waveform: (cachedTrack && cachedTrack.waveform && cachedTrack.waveform.length > 0)
                         ? cachedTrack.waveform
@@ -491,7 +491,7 @@ export function useAudioPlayback({
                 if (updated[slot] && updated[slot]?.filePath === meta.filePath) {
                     updated[slot] = {
                         ...updated[slot]!,
-                        bpm: meta.bpm,
+                        bpm: Math.round(meta.bpm),
                         keySignature: meta.keySignature,
                         waveform: meta.waveform || []
                     };
