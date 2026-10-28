@@ -30,11 +30,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     return (
         <header className="app-header">
             <div className="header-left">
-                <button className="header-btn brand-btn" onClick={() => { setActiveTab('library'); }}>
+                <button className="header-btn brand-btn" onClick={() => { setActiveTab('library'); }} title="0xPlayer Core">
                     <BoltIcon />
+                    <span className="brand-text">0xHUD</span>
                 </button>
                 <button className={`header-btn ${activeTab === 'library' ? 'active' : ''}`} onClick={() => setActiveTab('library')}>
+                    <span className="btn-hud-bracket">[</span>
                     <span>{t('library')}</span>
+                    <span className="btn-hud-bracket">]</span>
                 </button>
                 <button className={`header-btn ${activeTab === 'musicians' ? 'active' : ''}`} onClick={() => setActiveTab('musicians')}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
@@ -56,19 +59,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
             <div className="header-center">
                 <div className="search-bar-container">
-                    <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
+                    <span className="search-prefix">&gt;</span>
                     <input 
                         type="text" 
-                        placeholder={t('searchPlaceholder')} 
+                        placeholder={`// ${t('searchPlaceholder').toUpperCase()}`} 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="search-input"
                     />
-                    {searchQuery && (
+                    {searchQuery ? (
                         <button className="clear-search-btn" onClick={() => setSearchQuery('')}>✕</button>
+                    ) : (
+                        <span className="search-shortcut">SYS::FND</span>
                     )}
                 </div>
             </div>

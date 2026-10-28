@@ -63,25 +63,26 @@ export const LibraryTable: React.FC<LibraryTableProps> = React.memo(({
     return (
         <div className="library-main-content">
             <div className="library-controls-bar">
-                <button className="hero-play-button" onClick={handleHeroPlayClick}>
+                <button className="hero-play-button cyber-play-btn" onClick={handleHeroPlayClick} title="INIT PLAYBACK">
+                    <span className="cyber-play-bracket left">&lt;</span>
                     {playing[activeSlot] && tracks[activeSlot] ? <PauseIcon /> : <PlayIcon />}
+                    <span className="cyber-play-bracket right">&gt;</span>
                 </button>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div className="controls-right-actions">
                     <button 
-                        className={`my-wave-btn ${isMyWave ? 'active' : ''}`}
+                        className={`my-wave-btn cyber-wave-btn ${isMyWave ? 'active' : ''}`}
                         onClick={onToggleMyWave}
                         title={isMyWave ? t('myWaveOn') : t('myWave')}
                     >
-                        <svg className="my-wave-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                            <line x1="4" y1="9" x2="4" y2="15" />
-                            <line x1="8" y1="6" x2="8" y2="18" />
-                            <line x1="12" y1="3" x2="12" y2="21" />
-                            <line x1="16" y1="6" x2="16" y2="18" />
-                            <line x1="20" y1="9" x2="20" y2="15" />
-                        </svg>
-                        <span>{isMyWave ? t('myWaveOn') : t('myWave')}</span>
+                        <div className="wave-cyber-indicator">
+                            <span className="wave-cyber-bar bar-1"></span>
+                            <span className="wave-cyber-bar bar-2"></span>
+                            <span className="wave-cyber-bar bar-3"></span>
+                            <span className="wave-cyber-bar bar-4"></span>
+                        </div>
+                        <span className="wave-text-label">{isMyWave ? 'NEURAL WAVE // ACTIVE' : 'NEURAL WAVE'}</span>
                     </button>
-                    <button className="sidebar-btn" onClick={OpenMusicDir}>
+                    <button className="sidebar-btn cyber-dir-btn" onClick={OpenMusicDir}>
                         <FolderIcon />
                         <span>{t('openMusicDir')}</span>
                     </button>

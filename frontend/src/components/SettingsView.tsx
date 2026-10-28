@@ -70,7 +70,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                                     </div>
                                 </div>
                                 <span className="theme-card-desc">
-                                    {tKey === 'saas' ? t('themeSaas') : 
+                                    {tKey === 'night_city' ? t('themeNightCity') :
+                                     tKey === 'arasaka' ? t('themeArasaka') :
+                                     tKey === 'netrunner' ? t('themeNetrunner') :
+                                     tKey === 'trauma_team' ? t('themeTraumaTeam') :
+                                     tKey === 'kang_tao' ? t('themeKangTao') :
+                                     tKey === 'saas' ? t('themeSaas') : 
                                      tKey === 'neutrals' ? t('themeNeutrals') : 
                                      tKey === 'fintech' ? t('themeFintech') : 
                                      tKey === 'trust' ? t('themeTrust') : 

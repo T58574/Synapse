@@ -19,11 +19,41 @@ interface Palette {
 }
 
 const PALETTES: Record<string, Palette> = {
+    night_city: {
+        bg: [8/255, 9/255, 13/255],
+        accent: [252/255, 238/255, 10/255],
+        surface: [17/255, 20/255, 29/255],
+        muted: [122/255, 136/255, 155/255]
+    },
+    arasaka: {
+        bg: [7/255, 7/255, 9/255],
+        accent: [255/255, 0/255, 60/255],
+        surface: [19/255, 17/255, 20/255],
+        muted: [142/255, 127/255, 133/255]
+    },
+    netrunner: {
+        bg: [4/255, 9/255, 12/255],
+        accent: [0/255, 255/255, 102/255],
+        surface: [11/255, 23/255, 26/255],
+        muted: [90/255, 143/255, 120/255]
+    },
+    trauma_team: {
+        bg: [9/255, 13/255, 18/255],
+        accent: [0/255, 240/255, 255/255],
+        surface: [18/255, 26/255, 34/255],
+        muted: [108/255, 131/255, 148/255]
+    },
+    kang_tao: {
+        bg: [10/255, 10/255, 12/255],
+        accent: [255/255, 153/255, 0/255],
+        surface: [23/255, 22/255, 24/255],
+        muted: [135/255, 126/255, 117/255]
+    },
     saas: {
-        bg: [11/255, 13/255, 16/255],
-        accent: [0/255, 255/255, 194/255],
-        surface: [21/255, 26/255, 33/255],
-        muted: [138/255, 153/255, 173/255]
+        bg: [8/255, 9/255, 13/255],
+        accent: [252/255, 238/255, 10/255],
+        surface: [17/255, 20/255, 29/255],
+        muted: [122/255, 136/255, 155/255]
     },
     neutrals: {
         bg: [240/255, 238/255, 233/255],
@@ -52,12 +82,12 @@ const PALETTES: Record<string, Palette> = {
 };
 
 const MOOD_TO_PALETTE: Record<string, string> = {
-    energetic: 'saas',
-    dark: 'fintech',
-    chill: 'eco',
-    happy: 'neutrals',
-    calm: 'trust',
-    peaceful: 'trust'
+    energetic: 'night_city',
+    dark: 'arasaka',
+    chill: 'netrunner',
+    happy: 'trauma_team',
+    calm: 'trauma_team',
+    peaceful: 'kang_tao'
 };
 
 const getTrackPalette = (filePath: string, isLight: boolean): Palette => {

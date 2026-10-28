@@ -47,7 +47,10 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = React.memo(({
     const { t } = useTranslation(language);
 
     return (
-        <aside className="library-sidebar">
+        <aside className="library-sidebar cyber-sidebar">
+            <div className="sidebar-hud-header">
+                <span className="sidebar-telemetry-tag">SYS_BUS // 0xNODE</span>
+            </div>
             <button
                 className={`sidebar-playlist-item-btn home-library-sidebar-btn ${(!selectedPlaylist && !selectedArtist && !selectedGenre) ? 'active' : ''}`}
                 onClick={() => {
@@ -56,23 +59,8 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = React.memo(({
                     setSelectedGenre(null);
                     setActiveTab('library');
                 }}
-                style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 12px',
-                    borderRadius: '6px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-color)',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    marginBottom: '16px',
-                    transition: 'all 0.2s ease',
-                }}
             >
+                <span className="sidebar-node-index">01</span>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
@@ -82,7 +70,10 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = React.memo(({
 
             <div className="playlists-sidebar-section">
                 <div className="playlists-sidebar-header">
-                    <span className="theme-section-title">{t('playlists')}</span>
+                    <div className="sidebar-section-title-wrap">
+                        <span className="sidebar-section-prefix">02 //</span>
+                        <span className="theme-section-title">{t('playlists')}</span>
+                    </div>
                     <button 
                         className="create-playlist-sidebar-btn" 
                         onClick={() => setIsCreatingPlaylist(!isCreatingPlaylist)}
@@ -138,7 +129,10 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = React.memo(({
 
             <div className="categories-sidebar-section">
                 <div className="categories-sidebar-header">
-                    <span className="theme-section-title">{t('artists')}</span>
+                    <div className="sidebar-section-title-wrap">
+                        <span className="sidebar-section-prefix">03 //</span>
+                        <span className="theme-section-title">{t('artists')}</span>
+                    </div>
                     {selectedArtist && (
                         <button className="clear-filter-btn" onClick={() => setSelectedArtist(null)}>{t('clearFilter')}</button>
                     )}
@@ -162,7 +156,10 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = React.memo(({
 
             <div className="categories-sidebar-section">
                 <div className="categories-sidebar-header">
-                    <span className="theme-section-title">{t('genres')}</span>
+                    <div className="sidebar-section-title-wrap">
+                        <span className="sidebar-section-prefix">04 //</span>
+                        <span className="theme-section-title">{t('genres')}</span>
+                    </div>
                     {selectedGenre && (
                         <button className="clear-filter-btn" onClick={() => setSelectedGenre(null)}>{t('clearFilter')}</button>
                     )}

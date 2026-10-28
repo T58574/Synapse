@@ -27,23 +27,35 @@ export const LibraryHero: React.FC<LibraryHeroProps> = React.memo(({
     const pathText = selectedArtist ? `${t('artistTag')}: ${selectedArtist}` : (selectedPlaylist ? `${t('customPlaylistTag')}: ${selectedPlaylist}` : musicDir);
 
     return (
-        <header className="library-hero">
+        <header className="library-hero cyber-hero-hud">
             {isArtist && (
-                <div style={{ width: '130px', height: '130px', flexShrink: 0, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                <div className="hero-artist-container">
                     <ArtistShape name={selectedArtist} />
                 </div>
             )}
             <div className="hero-content">
-                <span className="hero-tag">{tagText}</span>
+                <div className="hero-status-row">
+                    <span className="hero-status-dot"></span>
+                    <span className="hero-tag">[ SYS_STREAM // {tagText} ]</span>
+                    <span className="hero-telemetry-badge">REV.2077</span>
+                </div>
                 <h1 className="hero-title">{titleText}</h1>
-                <div className="hero-stats">
+                <div className="hero-stats cyber-tech-mono">
                     <span className="hero-author">0xPlayer</span>
-                    <span className="hero-dot">•</span>
-                    <span>{getPluralTracks(currentPlaylistTracks.length, language)}</span>
-                    <span className="hero-dot">•</span>
+                    <span className="hero-separator">/</span>
+                    <span className="hero-stat-highlight">{getPluralTracks(currentPlaylistTracks.length, language)}</span>
+                    <span className="hero-separator">/</span>
                     <span>{totalDurationStr}</span>
                 </div>
-                <p className="hero-path">{pathText}</p>
+                <div className="hero-mount-container cyber-tech-mono">
+                    <span className="hero-mount-prefix">&gt; MOUNT:</span>
+                    <span className="hero-path">{pathText}</span>
+                </div>
+            </div>
+            <div className="hero-hud-decorations">
+                <div className="hud-corner-bracket top-right"></div>
+                <div className="hud-corner-bracket bottom-right"></div>
+                <div className="hud-barcode-lines"></div>
             </div>
         </header>
     );

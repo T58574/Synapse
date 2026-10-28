@@ -2,74 +2,76 @@ import { useState, useEffect } from 'react';
 import { ThemeConfig } from '../types';
 
 export const THEMES: Record<string, ThemeConfig> = {
-    saas: {
-        accent: '#00FFC2',
-        dark: '#00B388',
-        hover: '#33FFCE',
-        bg: '#0B0D10',
-        surface: '#151A21',
-        text: '#E9EEF5',
-        mutedText: '#8A99AD',
-        border: '#273140',
-        accentText: '#0B0D10'
+    night_city: {
+        accent: '#FCEE0A',       // Cyberpunk iconic yellow
+        dark: '#D8CA00',
+        hover: '#FFF04D',
+        bg: '#08090D',          // Void Obsidian
+        surface: '#11141D',     // Carbon Panel
+        text: '#F2F5F8',
+        mutedText: '#7A889B',
+        border: '#232D3F',
+        accentText: '#08090D'
     },
-    neutrals: {
-        accent: '#635BFF',
-        dark: '#4E45E0',
-        hover: '#827BFF',
-        bg: '#F0EEE9',
-        surface: '#FFFFFF',
-        text: '#141414',
-        mutedText: '#626875',
-        border: '#D2CEC4',
+    arasaka: {
+        accent: '#FF003C',       // Arasaka blood crimson
+        dark: '#C80030',
+        hover: '#FF3366',
+        bg: '#070709',          // Monolithic black
+        surface: '#131114',     // Dark red tinted carbon
+        text: '#F5F5F7',
+        mutedText: '#8E7F85',
+        border: '#3D1520',
         accentText: '#FFFFFF'
     },
-    fintech: {
-        accent: '#00E5E5',
-        dark: '#00B2B2',
-        hover: '#33EBEB',
-        bg: '#07070A',
-        surface: '#11101E',
-        text: '#F3F0FF',
-        mutedText: '#8884A4',
-        border: '#2C2B47',
-        accentText: '#07070A'
+    netrunner: {
+        accent: '#00FF66',       // Terminal phosphor green
+        dark: '#00CC52',
+        hover: '#33FF85',
+        bg: '#04090C',          // Deep matrix void
+        surface: '#0B171A',     // Cyan-green tinted terminal surface
+        text: '#E0FFF0',
+        mutedText: '#5A8F78',
+        border: '#103F35',
+        accentText: '#04090C'
     },
-    trust: {
-        accent: '#1A73E8',
-        dark: '#1152A3',
-        hover: '#3B8AF3',
-        bg: '#F8FAFC',
-        surface: '#FFFFFF',
-        text: '#1E293B',
-        mutedText: '#64748B',
-        border: '#E2E8F0',
-        accentText: '#FFFFFF'
+    trauma_team: {
+        accent: '#00F0FF',       // Trauma cyan
+        dark: '#00B8C4',
+        hover: '#33F3FF',
+        bg: '#090D12',          // Cold tactical slate
+        surface: '#121A22',
+        text: '#EEF6FA',
+        mutedText: '#6C8394',
+        border: '#1D3545',
+        accentText: '#090D12'
     },
-    eco: {
-        accent: '#316263',
-        dark: '#224445',
-        hover: '#417F80',
-        bg: '#E7D8C6',
-        surface: '#FAF6F0',
-        text: '#101417',
-        mutedText: '#6A5F50',
-        border: '#D6C8B7',
-        accentText: '#FFFFFF'
+    kang_tao: {
+        accent: '#FF9900',       // Industrial hazard amber
+        dark: '#CC7A00',
+        hover: '#FFAD33',
+        bg: '#0A0A0C',
+        surface: '#171618',
+        text: '#F7F4F0',
+        mutedText: '#877E75',
+        border: '#382D1D',
+        accentText: '#0A0A0C'
     }
 };
 
 export function useThemeEngine() {
     const [currentTheme, setCurrentTheme] = useState<string>(() => {
         try {
-            return (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('soundplayer_theme')) || 'saas';
+            const saved = (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('soundplayer_theme'));
+            if (saved && THEMES[saved]) return saved;
+            return 'night_city';
         } catch {
-            return 'saas';
+            return 'night_city';
         }
     });
 
     useEffect(() => {
-        const theme = THEMES[currentTheme] || THEMES.saas;
+        const theme = THEMES[currentTheme] || THEMES.night_city;
         const root = document.documentElement;
         root.style.setProperty('--accent-color', theme.accent);
         root.style.setProperty('--accent-color-dark', theme.dark);
@@ -80,9 +82,15 @@ export function useThemeEngine() {
         root.style.setProperty('--text-color', theme.text);
         root.style.setProperty('--muted-text-color', theme.mutedText);
         root.style.setProperty('--border-color', theme.border);
-        root.style.setProperty('--accent-bg-glow', theme.accent + '1c');
-        root.style.setProperty('--accent-row-active', theme.accent + '0f');
+        root.style.setProperty('--accent-bg-glow', theme.accent + '26');
+        root.style.setProperty('--accent-row-active', theme.accent + '14');
         root.style.setProperty('--hover-color', theme.text + '0f');
+        // Cyberpunk HUD global constants
+        root.style.setProperty('--cyber-yellow', '#FCEE0A');
+        root.style.setProperty('--cyber-cyan', '#00F0FF');
+        root.style.setProperty('--cyber-crimson', '#FF003C');
+        root.style.setProperty('--cyber-green', '#00FF66');
+        root.style.setProperty('--cyber-amber', '#FF9900');
 
         try {
             if (typeof window !== 'undefined' && window.localStorage) {
