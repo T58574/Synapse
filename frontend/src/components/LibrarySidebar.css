@@ -1,0 +1,325 @@
+/* ==========================================================================
+   CYBERPUNK LIBRARY SIDEBAR (PLAYLISTS & CATEGORIES)
+   ========================================================================== */
+
+.library-sidebar {
+    width: 240px;
+    background: rgba(5, 7, 10, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 14px;
+    gap: 22px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.sidebar-hud-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-telemetry-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--muted-text-color);
+    letter-spacing: 1.5px;
+    opacity: 0.7;
+}
+
+.sidebar-node-index {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent-color);
+    margin-right: 6px;
+    opacity: 0.8;
+}
+
+.home-library-sidebar-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+
+.home-library-sidebar-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.home-library-sidebar-btn.active {
+    background: linear-gradient(90deg, var(--accent-bg-glow) 0%, transparent 100%);
+    border-left: 3px solid var(--accent-color);
+    border-color: var(--accent-color) transparent transparent transparent;
+    color: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-bg-glow);
+}
+
+.sidebar-section-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sidebar-section-prefix {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent-color);
+    opacity: 0.7;
+}
+
+.sidebar-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted-text-color);
+    border: 1px solid var(--border-color);
+    padding: 10px 16px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebar-btn:hover {
+    color: var(--text-color);
+    background: var(--hover-color);
+    border-color: var(--border-color);
+}
+
+/* Playlists Section */
+.playlists-sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex: 1;
+    overflow: hidden;
+}
+
+.playlists-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.create-playlist-sidebar-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--muted-text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    clip-path: polygon(0 3px, 3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px));
+    transition: all 0.2s ease;
+}
+
+.create-playlist-sidebar-btn:hover {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    background: var(--accent-bg-glow);
+}
+
+.sidebar-playlist-input-container {
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border-color);
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+    padding: 6px 10px;
+}
+
+.sidebar-playlist-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-color);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    width: 100%;
+}
+
+.sidebar-playlist-submit-btn {
+    background: transparent;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.sidebar-playlists-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.sidebar-playlist-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 2px solid transparent;
+    padding-right: 8px;
+    transition: all 0.15s ease;
+}
+
+.sidebar-playlist-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+    border-left-color: var(--border-color);
+}
+
+.sidebar-playlist-row.active {
+    background: linear-gradient(90deg, var(--accent-bg-glow) 0%, transparent 100%);
+    border-left-color: var(--accent-color);
+}
+
+.sidebar-playlist-row.active .sidebar-playlist-item-btn {
+    color: var(--accent-color);
+    font-weight: 700;
+}
+
+.sidebar-playlist-item-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    color: var(--muted-text-color);
+    padding: 7px 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    text-align: left;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: all 0.15s ease;
+}
+
+.sidebar-playlist-item-btn:hover {
+    color: var(--text-color);
+}
+
+.sidebar-playlist-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-delete-playlist-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted-text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.15s ease;
+    padding: 4px;
+}
+
+.sidebar-playlist-row:hover .sidebar-delete-playlist-btn {
+    opacity: 1;
+}
+
+.sidebar-delete-playlist-btn:hover {
+    color: var(--cyber-crimson, #FF003C);
+}
+
+/* Categories Section */
+.categories-sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.categories-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-categories-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.sidebar-category-item-btn {
+    background: transparent;
+    border: none;
+    border-left: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    color: var(--muted-text-color);
+    padding: 6px 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.sidebar-category-item-btn:hover {
+    color: var(--text-color);
+    background: rgba(255, 255, 255, 0.02);
+    border-left-color: var(--border-color);
+}
+
+.sidebar-category-item-btn.active {
+    color: var(--accent-color);
+    border-left-color: var(--accent-color);
+    background: linear-gradient(90deg, var(--accent-bg-glow) 0%, transparent 100%);
+}
+
+.clear-filter-btn {
+    background: transparent;
+    border: none;
+    color: var(--cyber-crimson, #FF003C);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.clear-filter-btn:hover {
+    color: #ff4d6d;
+}

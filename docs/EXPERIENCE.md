@@ -123,3 +123,11 @@
 ### Cue (Symptom): Unstyled white Windows native scrollbar cuts across dark application interface
 - **Lesson (Takeaway)**: Standard CSS scoped scrollbars on specific containers (like `.sidebar::-webkit-scrollbar`) leave `body`, `.content-panel`, and main tables unstyled, prompting Windows to render glaring white tracks. Always define universal `*::-webkit-scrollbar` rules with `scrollbar-width: thin`.
 - **Evidence**: Fixed in `frontend/src/App.css:8-70`.
+
+### Cue (Symptom): CSS syntax errors pass unit tests but crash production Vite builds (`Unexpected }`)
+- **Lesson (Takeaway)**: JSDOM unit test runners (Vitest) mock or ignore CSS imports and do not parse PostCSS stylesheets. Always include `tsc && vite build` as an automated stage in test suites to catch PostCSS syntax, Rollup asset errors, and type check breaks before deployment.
+- **Evidence**: Integrated into `scripts/build-menu.js:handleAction('7')`.
+
+### Cue (Symptom): Monolithic CSS "god file" (>3000 lines) causes selector conflicts and merge collisions
+- **Lesson (Takeaway)**: Decompose monolithic stylesheets by component domain (`AppHeader.css`, `PlaybackBar.css`, `CyberSelect.css`, `AudioEffectsModal.css`, `theme.css`) imported into a clean master manifest. Keeps all modules within 100-450 lines and eliminates dead duplicate rules.
+- **Evidence**: Decomposed `frontend/src/App.css` (3138 lines -> 35 lines) into 11 modular CSS files, shrinking output CSS bundle by ~3KB.

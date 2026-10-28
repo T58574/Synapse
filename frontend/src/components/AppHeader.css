@@ -1,0 +1,195 @@
+/* ==========================================================================
+   CYBERPUNK APP HEADER & SEARCH BAR
+   ========================================================================== */
+
+.app-header {
+    height: 60px;
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    position: relative;
+    z-index: 10;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-btn {
+    border-color: var(--accent-color) !important;
+    background: var(--accent-bg-glow) !important;
+    color: var(--accent-color) !important;
+}
+
+.brand-btn svg {
+    color: var(--accent-color);
+    filter: drop-shadow(0 0 8px var(--accent-color));
+}
+
+.brand-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: var(--accent-color);
+}
+
+.header-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted-text-color);
+    border: 1px solid var(--border-color);
+    padding: 7px 14px;
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+    font-family: 'Rajdhani', 'JetBrains Mono', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.header-btn:hover {
+    color: var(--text-color);
+    background: var(--hover-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-bg-glow);
+    text-shadow: -1px 0 var(--cyber-crimson, #FF003C), 1px 0 var(--cyber-cyan, #00F0FF);
+}
+
+.header-btn.active {
+    background: var(--accent-bg-glow);
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 12px var(--accent-bg-glow);
+}
+
+.btn-hud-bracket {
+    color: var(--accent-color);
+    opacity: 0.6;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}
+
+.header-center {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted-text-color);
+    border: 1px solid var(--border-color);
+    width: 36px;
+    height: 36px;
+    clip-path: polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px));
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.settings-toggle-btn:hover {
+    color: var(--text-color);
+    background: var(--hover-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-bg-glow);
+}
+
+.settings-toggle-btn.active {
+    color: var(--accent-color);
+    background: var(--accent-bg-glow);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 12px var(--accent-bg-glow);
+}
+
+/* Header Search Bar */
+.search-bar-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--border-color);
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    padding: 6px 14px;
+    width: 250px;
+    transition: all 0.2s ease;
+    gap: 8px;
+}
+
+.search-bar-container:focus-within {
+    width: 320px;
+    background: rgba(0, 0, 0, 0.7);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px var(--accent-bg-glow);
+}
+
+.search-prefix {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    color: var(--accent-color);
+    font-size: 12px;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-color);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    width: 100%;
+}
+
+.search-input::placeholder {
+    color: var(--muted-text-color);
+    opacity: 0.6;
+}
+
+.search-shortcut {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--muted-text-color);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 5px;
+    letter-spacing: 0.8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.clear-search-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted-text-color);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px;
+    margin-left: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease;
+}
+
+.clear-search-btn:hover {
+    color: var(--text-color);
+}

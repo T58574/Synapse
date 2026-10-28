@@ -1,0 +1,268 @@
+/* ==========================================================================
+   CYBERPUNK THEME FOUNDATION: FONTS, SCROLLBARS, CRT SCANLINES & HUD GRIDS
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=JetBrains+Mono:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Rajdhani:wght@500;600;700&family=Unbounded:wght@400;500;700;800;900&display=swap');
+
+/* Global Reset & Cyber Scrollbar */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-color, #FCEE0A) rgba(8, 9, 13, 0.95);
+}
+
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+div::-webkit-scrollbar,
+main::-webkit-scrollbar,
+aside::-webkit-scrollbar,
+section::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+    background: rgba(8, 9, 13, 0.95);
+}
+
+*::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+div::-webkit-scrollbar-track,
+main::-webkit-scrollbar-track,
+aside::-webkit-scrollbar-track,
+section::-webkit-scrollbar-track {
+    background: rgba(6, 7, 10, 0.95);
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+*::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+div::-webkit-scrollbar-thumb,
+main::-webkit-scrollbar-thumb,
+aside::-webkit-scrollbar-thumb,
+section::-webkit-scrollbar-thumb {
+    background: var(--accent-color, #FCEE0A);
+    box-shadow: 0 0 8px var(--accent-bg-glow);
+    border-radius: 0px !important;
+}
+
+*::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+div::-webkit-scrollbar-thumb:hover,
+main::-webkit-scrollbar-thumb:hover,
+aside::-webkit-scrollbar-thumb:hover,
+section::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-color-hover, #FFF04D);
+    box-shadow: 0 0 12px var(--accent-color, #FCEE0A);
+}
+
+::-webkit-scrollbar-corner {
+    background: rgba(6, 7, 10, 0.95);
+}
+
+/* Base Body */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Chakra Petch', 'Rajdhani', 'JetBrains Mono', sans-serif;
+    overflow: hidden;
+    user-select: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    letter-spacing: 0.25px;
+}
+
+/* Main Container Shell */
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background: var(--bg-color);
+    transition: background-color 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Cyberpunk CRT Scanline Layer */
+.container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.012), rgba(0, 255, 0, 0.008), rgba(0, 0, 255, 0.012));
+    background-size: 100% 3px, 6px 100%;
+    z-index: 99;
+    opacity: 0.6;
+}
+
+/* Cyberpunk Tactical HUD Background Grid */
+.container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+}
+
+/* App Main Layout Structure */
+.app-main-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+.library-body-layout {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.library-main-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+}
+
+.content-panel {
+    flex: 1;
+    background: transparent;
+}
+
+/* Reusable Cyberpunk Utilities */
+.cyber-chamfer {
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.cyber-chamfer-btn {
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    border: 1px solid var(--border-color);
+    transition: all 0.15s ease-out;
+}
+
+.cyber-chamfer-btn:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 12px var(--accent-bg-glow);
+    text-shadow: -1px 0 var(--cyber-crimson, #FF003C), 1px 0 var(--cyber-cyan, #00F0FF);
+}
+
+.cyber-tech-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+.hud-corner-bracket {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--accent-color);
+}
+
+.hud-corner-bracket.top-right {
+    border-left: none;
+    border-bottom: none;
+}
+
+.hud-corner-bracket.bottom-right {
+    border-left: none;
+    border-top: none;
+}
+
+.hud-barcode-lines {
+    width: 70px;
+    height: 16px;
+    background: repeating-linear-gradient(
+        90deg,
+        var(--accent-color) 0px,
+        var(--accent-color) 2px,
+        transparent 2px,
+        transparent 4px,
+        var(--accent-color) 4px,
+        var(--accent-color) 7px,
+        transparent 7px,
+        transparent 8px
+    );
+    opacity: 0.5;
+}
+
+/* Range Track Cross-Browser Resets */
+.slider::-webkit-slider-thumb,
+.volume-slider::-webkit-slider-thumb {
+    transition: transform 0.15s ease;
+}
+
+.slider:hover::-webkit-slider-thumb,
+.volume-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.3);
+    background: var(--text-color) !important;
+}
+
+.slider::-webkit-slider-runnable-track,
+.progress-slider::-webkit-slider-runnable-track,
+.volume-slider::-webkit-slider-runnable-track {
+    background: transparent !important;
+    border: none;
+    -webkit-appearance: none;
+}
+
+.slider::-moz-range-track,
+.progress-slider::-moz-range-track,
+.volume-slider::-moz-range-track {
+    background: transparent !important;
+    border: none;
+}
+
+/* Toast Notifications */
+.toast-notification {
+    position: fixed;
+    bottom: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(8, 10, 16, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--accent-color);
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    color: var(--text-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 15px var(--accent-bg-glow);
+    padding: 10px 22px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    animation: toast-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-icon {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+@keyframes toast-fade-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
