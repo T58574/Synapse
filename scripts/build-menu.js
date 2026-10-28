@@ -67,8 +67,42 @@ function augmentPathWithGoBins() {
     }
 }
 
+// Augment PATH with common Windows GCC compiler locations
+function augmentPathWithGcc() {
+    if (process.platform !== 'win32') return;
+
+    const userHome = os.homedir() || '';
+    const localAppData = process.env.LOCALAPPDATA || (userHome ? path.join(userHome, 'AppData', 'Local') : '');
+
+    const candidates = [
+        'C:\\msys64\\mingw64\\bin',
+        'C:\\msys64\\ucrt64\\bin',
+        'C:\\mingw64\\bin',
+        'C:\\TDM-GCC-64\\bin',
+        'C:\\ProgramData\\chocolatey\\bin',
+        'C:\\tools\\msys64\\mingw64\\bin',
+        userHome ? path.join(userHome, 'scoop', 'apps', 'gcc', 'current', 'bin') : '',
+        userHome ? path.join(userHome, 'scoop', 'shims') : '',
+        localAppData ? path.join(localAppData, 'Programs', 'w64devkit', 'bin') : ''
+    ];
+
+    for (const dir of candidates) {
+        if (dir && fs.existsSync(dir)) {
+            const gccExe = path.join(dir, 'gcc.exe');
+            if (fs.existsSync(gccExe)) {
+                const currentPath = process.env.PATH || '';
+                if (!currentPath.toLowerCase().includes(dir.toLowerCase())) {
+                    process.env.PATH = `${dir}${path.delimiter}${currentPath}`;
+                }
+                break;
+            }
+        }
+    }
+}
+
 // Augment PATH immediately on load
 augmentPathWithGoBins();
+augmentPathWithGcc();
 
 function printHeader() {
     console.log(`\n${colors.cyan}${colors.bold}======================================================================${colors.reset}`);
@@ -186,6 +220,41 @@ function ensureWailsAvailable() {
     return installed;
 }
 
+function ensureCompilerAvailable() {
+    augmentPathWithGcc();
+    const check = checkTool('gcc', ['--version']);
+    if (check.ok) return true;
+
+    console.log(`\n${colors.red}${colors.bold}[!] C/C++ Compiler (GCC) not found in PATH.${colors.reset}`);
+    console.log(`${colors.yellow}0xPlay uses Cgo to compile the high-performance C++ audio engine (miniaudio & Signalsmith).${colors.reset}`);
+    console.log(`To fix this on Windows, install MinGW-w64 GCC using one of the following:\n`);
+    console.log(`  ${colors.bold}${colors.green}Option 1 (Automated via WinGet):${colors.reset}`);
+    console.log(`    Select option ${colors.bold}[g]${colors.reset} in this menu or run:`);
+    console.log(`    ${colors.cyan}winget install -e --id BrechtSanders.winlibs-mingw-w64${colors.reset}\n`);
+    console.log(`  ${colors.bold}${colors.green}Option 2 (Scoop):${colors.reset}`);
+    console.log(`    ${colors.cyan}scoop install gcc${colors.reset}\n`);
+    console.log(`  ${colors.bold}${colors.green}Option 3 (Chocolatey):${colors.reset}`);
+    console.log(`    ${colors.cyan}choco install mingw${colors.reset}\n`);
+    console.log(`  ${colors.bold}${colors.green}Option 4 (MSYS2):${colors.reset}`);
+    console.log(`    ${colors.cyan}pacman -S mingw-w64-x86_64-gcc${colors.reset}\n`);
+    return false;
+}
+
+function installGccWinget() {
+    if (process.platform !== 'win32') {
+        console.log(`${colors.yellow}Automatic WinGet GCC install is only supported on Windows.${colors.reset}`);
+        return false;
+    }
+    console.log(`\n${colors.cyan}${colors.bold}Installing MinGW-w64 GCC via WinGet...${colors.reset}\n`);
+    const ok = executeCommand('winget', ['install', '-e', '--id', 'BrechtSanders.winlibs-mingw-w64']);
+    if (ok) {
+        augmentPathWithGcc();
+        console.log(`\n${colors.green}${colors.bold}[SUCCESS] MinGW-w64 installed! You may need to restart your terminal for PATH changes.${colors.reset}\n`);
+        return true;
+    }
+    return false;
+}
+
 function executeCommand(command, args = [], cwd = ROOT_DIR, env = process.env) {
     augmentPathWithGoBins();
 
@@ -265,6 +334,7 @@ function printMenu() {
     console.log(`  ${colors.yellow}[8]${colors.reset} ${colors.bold}Clean Build Artifacts (bin / dist)${colors.reset}          ${colors.dim}[remove artifacts]${colors.reset}`);
     console.log(`  ${colors.magenta}[9]${colors.reset} ${colors.bold}Pre-flight Doctor / Dependency Check${colors.reset}       ${colors.dim}[verify toolchain]${colors.reset}`);
     console.log(`  ${colors.blue}[w]${colors.reset} ${colors.bold}Install / Update Wails CLI${colors.reset}                 ${colors.dim}[go install wails@latest]${colors.reset}`);
+    console.log(`  ${colors.blue}[g]${colors.reset} ${colors.bold}Install MinGW-w64 GCC (Windows)${colors.reset}           ${colors.dim}[winget winlibs-mingw-w64]${colors.reset}`);
     console.log(`  ${colors.red}[0]${colors.reset} ${colors.bold}Exit${colors.reset}\n`);
 }
 
@@ -272,35 +342,35 @@ async function handleAction(choice) {
     const act = choice.trim().toLowerCase();
     switch (act) {
         case '1': {
-            if (!ensureWailsAvailable()) return;
+            if (!ensureWailsAvailable() || !ensureCompilerAvailable()) return;
             console.log(`\n${colors.bold}Starting Production Build for current platform...${colors.reset}\n`);
             const ok = executeCommand('wails', ['build', '-clean']);
             if (ok) printBinaryArtifacts();
             break;
         }
         case '2': {
-            if (!ensureWailsAvailable()) return;
+            if (!ensureWailsAvailable() || !ensureCompilerAvailable()) return;
             console.log(`\n${colors.bold}Starting Windows x64 Build...${colors.reset}\n`);
             const ok = executeCommand('wails', ['build', '-platform', 'windows/amd64', '-clean']);
             if (ok) printBinaryArtifacts();
             break;
         }
         case '3': {
-            if (!ensureWailsAvailable()) return;
+            if (!ensureWailsAvailable() || !ensureCompilerAvailable()) return;
             console.log(`\n${colors.bold}Starting Linux x64 Build...${colors.reset}\n`);
             const ok = executeCommand('wails', ['build', '-platform', 'linux/amd64', '-clean']);
             if (ok) printBinaryArtifacts();
             break;
         }
         case '4': {
-            if (!ensureWailsAvailable()) return;
+            if (!ensureWailsAvailable() || !ensureCompilerAvailable()) return;
             console.log(`\n${colors.bold}Starting Production Build with UPX compression...${colors.reset}\n`);
             const ok = executeCommand('wails', ['build', '-clean', '-upx']);
             if (ok) printBinaryArtifacts();
             break;
         }
         case '5': {
-            if (!ensureWailsAvailable()) return;
+            if (!ensureWailsAvailable() || !ensureCompilerAvailable()) return;
             console.log(`\n${colors.bold}Starting Debug Build (with Web Inspector)...${colors.reset}\n`);
             const ok = executeCommand('wails', ['build', '-debug']);
             if (ok) printBinaryArtifacts();
@@ -331,6 +401,10 @@ async function handleAction(choice) {
             installWailsCLI();
             break;
         }
+        case 'g': {
+            installGccWinget();
+            break;
+        }
         case '0':
         case 'q':
         case 'exit': {
@@ -338,7 +412,7 @@ async function handleAction(choice) {
             process.exit(0);
         }
         default: {
-            console.log(`\n${colors.red}Invalid option "${choice}". Choose between 0-9 or 'w'.${colors.reset}\n`);
+            console.log(`\n${colors.red}Invalid option "${choice}". Choose between 0-9, 'w', or 'g'.${colors.reset}\n`);
             break;
         }
     }
@@ -351,7 +425,7 @@ async function startInteractiveLoop() {
     });
 
     const ask = () => {
-        rl.question(`${colors.bold}${colors.green}Select an action [0-9, w]: ${colors.reset}`, async (answer) => {
+        rl.question(`${colors.bold}${colors.green}Select an action [0-9, w, g]: ${colors.reset}`, async (answer) => {
             await handleAction(answer);
             console.log(`${colors.dim}----------------------------------------------------------------------${colors.reset}`);
             printMenu();
