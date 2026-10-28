@@ -113,8 +113,3 @@ func (a *App) SetAudioDevice(deviceID string) error
 
 ---
 
-## 7. GitHub Actions CI/CD Release Management
-
-* **Trigger**: Manually started from the GitHub Actions tab (`workflow_dispatch`).
-* **Execution**: Runs on `windows-latest`, installs MSYS2 (mingw-w64 GCC), Go, Node, and Wails CLI.
-* **Artifact**: Compiles production target and uploads `soundplayer-windows-amd64.zip` to a new GitHub Release tagged via `mathieudutour/github-tag-action`.
