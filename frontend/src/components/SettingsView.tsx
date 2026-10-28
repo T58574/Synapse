@@ -1,6 +1,7 @@
 import React from 'react';
 import { ThemeConfig } from '../types';
 import { Language, useTranslation } from '../localization';
+import { CyberSelect, CyberSelectOption } from './CyberSelect';
 
 interface AudioDevice {
     name: string;
@@ -95,14 +96,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         <span className="settings-item-desc">{t('appLanguageDesc')}</span>
                     </div>
                     <div className="settings-item-control">
-                        <select
+                        <CyberSelect
                             value={language}
-                            onChange={(e) => setLanguage(e.target.value as Language)}
-                            className="settings-device-select"
-                        >
-                            <option value="en">English (EN)</option>
-                            <option value="ru">Русский (RU)</option>
-                        </select>
+                            onChange={(val) => setLanguage(val as Language)}
+                            prefix="LANG"
+                            options={[
+                                { value: 'ru', label: 'Русский (RU)', badge: 'CYR' },
+                                { value: 'en', label: 'English (EN)', badge: 'LAT' }
+                            ]}
+                        />
                     </div>
                 </div>
             </section>
@@ -137,17 +139,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         <span className="settings-item-desc">{t('audioOutputDeviceDesc')}</span>
                     </div>
                     <div className="settings-item-control">
-                        <select
+                        <CyberSelect
                             value={selectedDevice}
-                            onChange={(e) => handleDeviceChange(e.target.value)}
-                            className="settings-device-select"
-                        >
-                            {audioDevices.map((d) => (
-                                <option key={d.id} value={d.id}>
-                                    {d.id === 'default' && language === 'ru' ? 'Устройство по умолчанию' : d.name}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => handleDeviceChange(val)}
+                            prefix="DEVICE"
+                            options={audioDevices.map((d) => ({
+                                value: d.id,
+                                label: (d.id === 'default' && language === 'ru') ? 'Устройство по умолчанию' : d.name,
+                                badge: d.isDefault ? 'SYS_DEFAULT' : undefined
+                            }))}
+                        />
                     </div>
                 </div>
             </section>

@@ -248,20 +248,49 @@ export const LibraryTable: React.FC<LibraryTableProps> = React.memo(({
                     </table>
                 </div>
             ) : (
-                <div className="empty-library">
-                    <div className="empty-card">
-                        <MusicIcon />
-                        <h3>{t('libraryEmptyTitle')}</h3>
-                        <p>{t('libraryEmptyDesc')}</p>
-                        <div className="empty-actions">
-                            <button className="btn-primary" onClick={OpenMusicDir}>
-                                <FolderIcon />
-                                <span>{t('openDirectory')}</span>
-                            </button>
-                            <button className="btn-secondary" onClick={() => handleSelectAndLoad(activeSlot)}>
-                                <LoadIcon />
-                                <span>{t('selectFileDirectly')}</span>
-                            </button>
+                <div className="empty-library cyber-empty-terminal">
+                    <div className="cyber-terminal-card">
+                        <div className="terminal-header-bar">
+                            <div className="terminal-title-group">
+                                <span className="terminal-beacon red"></span>
+                                <span className="terminal-title">SYS_STATUS // NO_MEDIA_FEED</span>
+                            </div>
+                            <span className="terminal-code">ERR::0x00_EMPTY</span>
+                        </div>
+                        <div className="terminal-body">
+                            <div className="terminal-radar-icon">
+                                <div className="radar-sweep"></div>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="48" height="48">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <circle cx="12" cy="12" r="6" />
+                                    <circle cx="12" cy="12" r="2" />
+                                    <line x1="12" y1="2" x2="12" y2="4" />
+                                    <line x1="12" y1="20" x2="12" y2="22" />
+                                    <line x1="2" y1="12" x2="4" y2="12" />
+                                    <line x1="20" y1="12" x2="22" y2="12" />
+                                </svg>
+                            </div>
+                            <h3 className="terminal-main-heading">{t('libraryEmptyTitle').toUpperCase()}</h3>
+                            <div className="terminal-log-output cyber-tech-mono">
+                                <p>&gt; SCAN_TARGET: %USERPROFILE%\.0xplayer</p>
+                                <p>&gt; DETECTED_AUDIO_STREAMS: 0</p>
+                                <p>&gt; PROMPT: {t('libraryEmptyDesc')}</p>
+                            </div>
+                            <div className="empty-actions">
+                                <button className="btn-primary cyber-terminal-btn" onClick={OpenMusicDir}>
+                                    <FolderIcon />
+                                    <span>[ {t('openDirectory').toUpperCase()} ]</span>
+                                </button>
+                                <button className="btn-secondary cyber-terminal-btn" onClick={() => handleSelectAndLoad(activeSlot)}>
+                                    <LoadIcon />
+                                    <span>[ {t('selectFileDirectly').toUpperCase()} ]</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="terminal-footer-line cyber-tech-mono">
+                            <span>PORT::LOCAL_IO</span>
+                            <span>SYS_BUS::OK</span>
+                            <span>BUFFER::STANDBY</span>
                         </div>
                     </div>
                 </div>
