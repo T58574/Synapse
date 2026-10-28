@@ -14,7 +14,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
 
     const [eqValues, setEQValues] = useState<[number, number, number]>(() => {
         try {
-            const val = localStorage.getItem('soundplayer_eq');
+            const val = localStorage.getItem('synapse_eq') || localStorage.getItem('soundplayer_eq');
             if (val) {
                 const parsed = JSON.parse(val);
                 if (Array.isArray(parsed) && parsed.length === 3) {
@@ -27,7 +27,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
 
     const [eq10Values, setEQ10Values] = useState<[number, number, number, number, number, number, number, number, number, number]>(() => {
         try {
-            const val = localStorage.getItem('soundplayer_eq10');
+            const val = localStorage.getItem('synapse_eq10') || localStorage.getItem('soundplayer_eq10');
             if (val) {
                 const parsed = JSON.parse(val);
                 if (Array.isArray(parsed) && parsed.length === 10) {
@@ -48,7 +48,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
 
     useEffect(() => {
         try {
-            const val = localStorage.getItem('soundplayer_dsp');
+            const val = localStorage.getItem('synapse_dsp') || localStorage.getItem('soundplayer_dsp');
             if (val) {
                 const parsed = JSON.parse(val);
                 if (parsed && typeof parsed === 'object') {
@@ -66,7 +66,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
 
     const [customPresets, setCustomPresets] = useState<Record<string, number[]>>(() => {
         try {
-            const val = localStorage.getItem('soundplayer_custom_presets');
+            const val = localStorage.getItem('synapse_custom_presets') || localStorage.getItem('soundplayer_custom_presets');
             if (val) {
                 return JSON.parse(val);
             }
@@ -86,7 +86,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
             uiLog('ERROR', `Failed to SetEQ: ${String(err)}`);
         }
         try {
-            localStorage.setItem('soundplayer_eq', JSON.stringify(newEq));
+            localStorage.setItem('synapse_eq', JSON.stringify(newEq));
         } catch {}
     };
 
@@ -102,7 +102,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
             uiLog('ERROR', `Failed to SetEQ10: ${String(err)}`);
         }
         try {
-            localStorage.setItem('soundplayer_eq10', JSON.stringify(newEq));
+            localStorage.setItem('synapse_eq10', JSON.stringify(newEq));
         } catch {}
     };
 
@@ -118,7 +118,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
             uiLog('ERROR', `Failed to SetEQ10 whole: ${String(err)}`);
         }
         try {
-            localStorage.setItem('soundplayer_eq10', JSON.stringify(newEq));
+            localStorage.setItem('synapse_eq10', JSON.stringify(newEq));
         } catch {}
     };
 
@@ -133,7 +133,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
                 uiLog('ERROR', `Failed to SetDSP deck1: ${String(err)}`);
             });
             try {
-                localStorage.setItem('soundplayer_dsp', JSON.stringify(updated));
+                localStorage.setItem('synapse_dsp', JSON.stringify(updated));
             } catch {}
             return updated;
         });
@@ -143,7 +143,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
         const updated = { ...customPresets, [name]: bands };
         setCustomPresets(updated);
         try {
-            localStorage.setItem('soundplayer_custom_presets', JSON.stringify(updated));
+            localStorage.setItem('synapse_custom_presets', JSON.stringify(updated));
         } catch {}
         uiLog('INFO', `Saved custom preset: ${name}`);
     };
@@ -153,7 +153,7 @@ export function useEqualizer(uiLog: (level: 'INFO' | 'WARN' | 'ERROR', msg: stri
         delete updated[name];
         setCustomPresets(updated);
         try {
-            localStorage.setItem('soundplayer_custom_presets', JSON.stringify(updated));
+            localStorage.setItem('synapse_custom_presets', JSON.stringify(updated));
         } catch {}
         uiLog('INFO', `Deleted custom preset: ${name}`);
     };

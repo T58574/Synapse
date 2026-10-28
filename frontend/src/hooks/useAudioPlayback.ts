@@ -50,7 +50,7 @@ export function useAudioPlayback({
     const [positions, setPositions] = useState<[number, number]>([0, 0]);
     const [volumes, setVolumes] = useState<[number, number]>(() => {
         try {
-            const val = localStorage.getItem('soundplayer_volume');
+            const val = localStorage.getItem('synapse_volume') || localStorage.getItem('soundplayer_volume');
             if (val) {
                 const parsed = JSON.parse(val);
                 if (Array.isArray(parsed) && parsed.length === 2) {
@@ -387,7 +387,7 @@ export function useAudioPlayback({
         uiLog('INFO', `handleVolume slot=${slot} vol=${val.toFixed(2)}`);
         await SetVolume(slot, val);
         try {
-            localStorage.setItem('soundplayer_volume', JSON.stringify(updated));
+            localStorage.setItem('synapse_volume', JSON.stringify(updated));
         } catch {}
     };
 

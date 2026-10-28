@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 0xPlay (0xSoundPlayer) — Interactive Build Console
+ * Synapse — Interactive Build Console
  * Zero external dependencies: uses built-in Node.js modules only.
  */
 
@@ -144,7 +144,7 @@ augmentLinuxAudioLibs();
 
 function printHeader() {
     console.log(`\n${colors.cyan}${colors.bold}======================================================================${colors.reset}`);
-    console.log(`${colors.cyan}${colors.bold}   0xPlay (0xSoundPlayer) — Build Console & Orchestrator             ${colors.reset}`);
+    console.log(`${colors.cyan}${colors.bold}   Synapse — Cyberpunk Audio Workstation Build Console & Orchestrator${colors.reset}`);
     console.log(`${colors.cyan}${colors.bold}======================================================================${colors.reset}`);
     console.log(`${colors.gray} OS: ${os.type()} ${os.release()} (${os.arch()}) | Root: ${ROOT_DIR}${colors.reset}\n`);
 }
@@ -312,7 +312,7 @@ function ensureCompilerAvailable() {
     if (check.ok) return true;
 
     console.log(`\n${colors.red}${colors.bold}[!] C/C++ Compiler (GCC) not found in PATH.${colors.reset}`);
-    console.log(`${colors.yellow}0xPlay requires GCC with Cgo to compile the C++ audio engine (miniaudio & Signalsmith).${colors.reset}`);
+    console.log(`${colors.yellow}Synapse requires GCC with Cgo to compile the C++ audio engine (miniaudio & Signalsmith).${colors.reset}`);
     console.log(`Attempting automatic download of portable MinGW-w64 GCC (w64devkit ~15MB)...\n`);
     const ok = installPortableGcc();
     return ok;

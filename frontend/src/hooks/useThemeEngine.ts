@@ -62,7 +62,7 @@ export const THEMES: Record<string, ThemeConfig> = {
 export function useThemeEngine() {
     const [currentTheme, setCurrentTheme] = useState<string>(() => {
         try {
-            const saved = (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('soundplayer_theme'));
+            const saved = (typeof window !== 'undefined' && window.localStorage && (localStorage.getItem('synapse_theme') || localStorage.getItem('soundplayer_theme')));
             if (saved && THEMES[saved]) return saved;
             return 'night_city';
         } catch {
@@ -94,7 +94,7 @@ export function useThemeEngine() {
 
         try {
             if (typeof window !== 'undefined' && window.localStorage) {
-                localStorage.setItem('soundplayer_theme', currentTheme);
+                localStorage.setItem('synapse_theme', currentTheme);
             }
         } catch {
             // Ignore

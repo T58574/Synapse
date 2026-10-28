@@ -279,7 +279,7 @@ func TestLogFromJS(t *testing.T) {
 
 	InitLogger()
 
-	logDir := filepath.Join(tempHome, ".0xplayer")
+	logDir := filepath.Join(tempHome, ".synapse")
 	logFile := filepath.Join(logDir, "player.log")
 
 	app := NewApp()

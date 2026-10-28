@@ -30,9 +30,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     return (
         <header className="app-header">
             <div className="header-left">
-                <button className="header-btn brand-btn" onClick={() => { setActiveTab('library'); }} title="0xPlayer Core">
+                <button className="header-btn brand-btn" onClick={() => { setActiveTab('library'); }} title="Synapse Core">
                     <BoltIcon />
-                    <span className="brand-text">0xHUD</span>
+                    <span className="brand-text">SYNAPSE</span>
                 </button>
                 <button className={`header-btn ${activeTab === 'library' ? 'active' : ''}`} onClick={() => setActiveTab('library')}>
                     <span className="btn-hud-bracket">[</span>

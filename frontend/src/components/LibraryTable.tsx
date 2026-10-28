@@ -272,7 +272,7 @@ export const LibraryTable: React.FC<LibraryTableProps> = React.memo(({
                             </div>
                             <h3 className="terminal-main-heading">{t('libraryEmptyTitle')}</h3>
                             <div className="terminal-log-output cyber-tech-mono">
-                                <p>&gt; SCAN_TARGET: %USERPROFILE%\.0xplayer</p>
+                                <p>&gt; SCAN_TARGET: %USERPROFILE%\.synapse</p>
                                 <p>&gt; DETECTED_AUDIO_STREAMS: 0</p>
                                 <p>&gt; PROMPT: {t('libraryEmptyDesc')}</p>
                             </div>

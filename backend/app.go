@@ -49,7 +49,7 @@ func NewApp() *App {
 
 func (a *App) Startup(ctx context.Context) {
 	InitLogger()
-	Log(LogInfo, "app", "=== 0xSoundPlayer startup ===")
+	Log(LogInfo, "app", "=== Synapse startup ===")
 	a.ctx = ctx
 	Log(LogInfo, "app", "init audio engine: sampleRate=44100 channels=2")
 	InitAudioEngine(44100, 2)
@@ -116,7 +116,7 @@ func (a *App) broadcastSpectrum() {
 }
 
 func (a *App) Shutdown(ctx context.Context) {
-	Log(LogInfo, "app", "=== 0xSoundPlayer shutdown ===")
+	Log(LogInfo, "app", "=== Synapse shutdown ===")
 	CleanupAudioEngine()
 	CloseLogger()
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 
-	"SoundPlayer/backend"
+	"Synapse/backend"
 )
 
 //go:embed all:frontend/dist
@@ -19,7 +19,7 @@ func main() {
 	app := backend.NewApp()
 
 	err := wailsRun(&options.App{
-		Title:  "SoundPlayer",
+		Title:  "Synapse",
 		Width:  1280,
 		Height: 800,
 		AssetServer: &assetserver.Options{

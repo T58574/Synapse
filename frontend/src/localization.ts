@@ -37,7 +37,7 @@ export const translations = {
         removeFromPlaylist: "Remove from Playlist",
         noPlaylistsCreated: "No playlists created",
         libraryEmptyTitle: "Your library is empty",
-        libraryEmptyDesc: "Drop audio files into `.0xplayer` directory under your home folder.",
+        libraryEmptyDesc: "Drop audio files into `.synapse` directory under your home folder.",
         selectFileDirectly: "Select File Directly",
         openDirectory: "Open Directory",
         unknownArtist: "Unknown Artist",
@@ -49,7 +49,7 @@ export const translations = {
 
         // Settings
         appSettings: "App Settings",
-        appSettingsDesc: "Customize your 0xSoundPlayer experience and theme styles",
+        appSettingsDesc: "Customize your Synapse experience and theme styles",
         colorPaletteTheme: "Color Palette Theme",
         audioTransitions: "Audio & Transitions",
         automixCrossfade: "Auto-Mix Crossfade Duration",
@@ -144,7 +144,7 @@ export const translations = {
         removeFromPlaylist: "Удалить из плейлиста",
         noPlaylistsCreated: "Нет созданных плейлистов",
         libraryEmptyTitle: "Ваша библиотека пуста",
-        libraryEmptyDesc: "Переместите аудиофайлы в директорию `.0xplayer` в вашей домашней папке.",
+        libraryEmptyDesc: "Переместите аудиофайлы в директорию `.synapse` в вашей домашней папке.",
         selectFileDirectly: "Выбрать файл напрямую",
         openDirectory: "Открыть папку",
         unknownArtist: "Неизвестный исполнитель",
@@ -156,7 +156,7 @@ export const translations = {
 
         // Settings
         appSettings: "Настройки приложения",
-        appSettingsDesc: "Персонализация интерфейса и стилей тем 0xSoundPlayer",
+        appSettingsDesc: "Персонализация интерфейса и стилей тем Synapse",
         colorPaletteTheme: "Цветовая схема темы",
         audioTransitions: "Звук и переходы",
         automixCrossfade: "Длительность кроссфейда автомикса",

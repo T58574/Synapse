@@ -15,7 +15,7 @@ export function useAudioDevices(
     const [audioDevices, setAudioDevices] = useState<AudioDevice[]>([]);
     const [selectedDevice, setSelectedDevice] = useState<string>(() => {
         try {
-            return localStorage.getItem('soundplayer_device') || 'default';
+            return localStorage.getItem('synapse_device') || localStorage.getItem('soundplayer_device') || 'default';
         } catch {
             return 'default';
         }
@@ -41,7 +41,7 @@ export function useAudioDevices(
         if (ok) {
             setSelectedDevice(deviceId);
             try {
-                localStorage.setItem('soundplayer_device', deviceId);
+                localStorage.setItem('synapse_device', deviceId);
             } catch {}
             const defaultDevName = language === 'ru' ? 'Устройство по умолчанию' : 'Default Device';
             const name = audioDevices.find(d => d.id === deviceId)?.name || defaultDevName;

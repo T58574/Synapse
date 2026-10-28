@@ -41,7 +41,7 @@ export const LibraryHero: React.FC<LibraryHeroProps> = React.memo(({
                 </div>
                 <h1 className="hero-title">{titleText}</h1>
                 <div className="hero-stats cyber-tech-mono">
-                    <span className="hero-author">0xPlayer</span>
+                    <span className="hero-author">Synapse</span>
                     <span className="hero-separator">/</span>
                     <span className="hero-stat-highlight">{getPluralTracks(currentPlaylistTracks.length, language)}</span>
                     <span className="hero-separator">/</span>

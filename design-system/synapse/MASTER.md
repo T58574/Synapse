@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** 0xSoundPlayer
+**Project:** Synapse
 **Generated:** 2026-06-19 04:04:06
 **Category:** Music Streaming
 

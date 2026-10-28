@@ -71,7 +71,7 @@ describe('App Component', () => {
 
         await waitFor(() => {
             expect(screen.getByText('App Settings')).toBeInTheDocument();
-            expect(screen.getByText('Customize your 0xSoundPlayer experience and theme styles')).toBeInTheDocument();
+            expect(screen.getByText('Customize your Synapse experience and theme styles')).toBeInTheDocument();
         });
     });
 

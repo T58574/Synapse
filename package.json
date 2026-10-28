@@ -1,8 +1,8 @@
 {
-  "name": "soundplayer-root",
+  "name": "synapse-root",
   "version": "1.0.0",
   "private": true,
-  "description": "0xPlay / 0xSoundPlayer desktop application build workspace",
+  "description": "Synapse desktop application build workspace",
   "scripts": {
     "build:menu": "node scripts/build-menu.js",
     "build": "node scripts/build-menu.js --build",

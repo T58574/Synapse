@@ -45,7 +45,7 @@ func TestLogger(t *testing.T) {
 	// 2. Test InitLogger
 	InitLogger()
 
-	logDir := filepath.Join(tempHome, ".0xplayer")
+	logDir := filepath.Join(tempHome, ".synapse")
 	logFile := filepath.Join(logDir, "player.log")
 
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
@@ -156,8 +156,8 @@ func TestInitLogger_MkdirError(t *testing.T) {
 	defer os.Setenv("USERPROFILE", origUserProfile)
 	os.Setenv("USERPROFILE", tempHome)
 
-	// Create a file where the .0xplayer directory should be
-	dir := filepath.Join(tempHome, ".0xplayer")
+	// Create a file where the .synapse directory should be
+	dir := filepath.Join(tempHome, ".synapse")
 	if err := os.WriteFile(dir, []byte("file instead of dir"), 0644); err != nil {
 		t.Fatalf("Failed to create obstructing file: %v", err)
 	}
@@ -200,7 +200,7 @@ func TestInitLogger_OpenFileError(t *testing.T) {
 	defer os.Setenv("USERPROFILE", origUserProfile)
 	os.Setenv("USERPROFILE", tempHome)
 
-	dir := filepath.Join(tempHome, ".0xplayer")
+	dir := filepath.Join(tempHome, ".synapse")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatalf("Failed to create dir: %v", err)
 	}
@@ -275,7 +275,7 @@ func TestRotateAndCleanupLogs(t *testing.T) {
 	defer os.Setenv("USERPROFILE", origUserProfile)
 	os.Setenv("USERPROFILE", tempHome)
 
-	dir := filepath.Join(tempHome, ".0xplayer")
+	dir := filepath.Join(tempHome, ".synapse")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatalf("Failed to create dir: %v", err)
 	}

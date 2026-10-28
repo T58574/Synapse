@@ -29,7 +29,7 @@ static std::wstring utf8_to_wstring(const std::string& str) {
 }
 #endif
 
-// Простой лог в stderr + файл (~/.0xplayer/engine.log) для отладки C++ движка.
+// Простой лог в stderr + файл (~/.synapse/engine.log) для отладки C++ движка.
 static FILE* g_log_file = nullptr;
 
 static void engine_log_open() {
@@ -37,7 +37,7 @@ static void engine_log_open() {
     const char* home = std::getenv("USERPROFILE");
     if (!home) home = std::getenv("HOME");
     if (!home) return;
-    std::string path = std::string(home) + "/.0xplayer/engine.log";
+    std::string path = std::string(home) + "/.synapse/engine.log";
 #ifdef _WIN32
     std::wstring wpath = utf8_to_wstring(path);
     g_log_file = _wfopen(wpath.c_str(), L"a");

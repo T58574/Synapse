@@ -12,7 +12,7 @@ import (
 
 // Глобальный логгер приложения. Пишет одновременно в stdout (видно в консоли
 // разработки wails) и в файл player.log рядом с музыкальной библиотекой
-// (~/.0xplayer/player.log). Это позволяет отслеживать все действия: загрузку
+// (~/.synapse/player.log). Это позволяет отслеживать все действия: загрузку
 // треков, запуск/паузу, seek, переключение дорожек, ошибки движка и т.д.
 var (
 	appLogger     *log.Logger
@@ -32,14 +32,14 @@ const (
 	LogError LogLevel = "ERROR"
 )
 
-// RotateAndCleanupLogs checks ~/.0xplayer/player.log and engine.log files.
+// RotateAndCleanupLogs checks ~/.synapse/player.log and engine.log files.
 // It deletes files older than 7 days, or larger than 5 MB, to save disk space.
 func RotateAndCleanupLogs() {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return
 	}
-	dir := filepath.Join(home, ".0xplayer")
+	dir := filepath.Join(home, ".synapse")
 	maxAge := 7 * 24 * time.Hour
 	maxSize := int64(5 * 1024 * 1024) // 5 MB
 
@@ -69,7 +69,7 @@ func InitLogger() {
 			Log(LogWarn, "logger", "не удалось определить home dir: %v", err)
 			return
 		}
-		dir := filepath.Join(home, ".0xplayer")
+		dir := filepath.Join(home, ".synapse")
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			Log(LogWarn, "logger", "не удалось создать dir %s: %v", dir, err)
 			return

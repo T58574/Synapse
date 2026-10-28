@@ -1,4 +1,4 @@
-module SoundPlayer
+module Synapse
 
 go 1.25.0
 

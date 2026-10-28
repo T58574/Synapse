@@ -32,7 +32,7 @@ func (a *App) GetMusicDir() (string, error) {
 		Log(LogError, "app", "GetMusicDir: home dir error: %v", err)
 		return "", err
 	}
-	dir := filepath.Join(home, ".0xplayer")
+	dir := filepath.Join(home, ".synapse")
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = osMkdirAll(dir, 0755)
 		if err != nil {

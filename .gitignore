@@ -24,6 +24,8 @@ desktop.ini
 node_modules/
 
 # --- GO & APP ARTIFACTS ---
+synapse
+Synapse
 SoundPlayer
 coverage.out
 coverage
@@ -61,6 +63,8 @@ coverage.xml
 dmypy.json
 .pyre/
 .ruff_cache/
+synapse.exe
+Synapse.exe
 SoundPlayer.exe
 build/
 .agent/

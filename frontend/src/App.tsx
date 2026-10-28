@@ -25,7 +25,7 @@ import { getFilename, formatTime } from './utils';
 function App() {
     const [language, setLanguage] = useState<Language>(() => {
         try {
-            return (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('soundplayer_lang') as Language) || 'en';
+            return (typeof window !== 'undefined' && window.localStorage && (localStorage.getItem('synapse_lang') || localStorage.getItem('soundplayer_lang')) as Language) || 'en';
         } catch {
             return 'en';
         }
@@ -35,7 +35,7 @@ function App() {
     useEffect(() => {
         try {
             if (typeof window !== 'undefined' && window.localStorage) {
-                localStorage.setItem('soundplayer_lang', language);
+                localStorage.setItem('synapse_lang', language);
             }
         } catch {}
     }, [language]);
@@ -44,7 +44,7 @@ function App() {
 
     const [visualizerEnabled, setVisualizerEnabled] = useState<boolean>(() => {
         try {
-            const val = localStorage.getItem('soundplayer_visualizer_enabled');
+            const val = localStorage.getItem('synapse_visualizer_enabled') ?? localStorage.getItem('soundplayer_visualizer_enabled');
             return val !== null ? val === 'true' : true;
         } catch {
             return true;
@@ -54,7 +54,7 @@ function App() {
     const handleSetVisualizerEnabled = (enabled: boolean) => {
         setVisualizerEnabled(enabled);
         try {
-            localStorage.setItem('soundplayer_visualizer_enabled', String(enabled));
+            localStorage.setItem('synapse_visualizer_enabled', String(enabled));
         } catch {}
     };
 

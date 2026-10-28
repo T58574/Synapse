@@ -1,4 +1,4 @@
-# 0xSoundPlayer Architecture & Design Specification
+# Synapse Architecture & Design Specification
 
 > [!IMPORTANT]
 > **DEVELOPER PROTOCOL**: To inspect the recent modification history and git commit logs of this project, execute:
@@ -110,6 +110,4 @@ func (a *App) SetAudioDevice(deviceID string) error
 * **Mood Engine**: Determines track color aura using `DetermineMood(bpm, key, genre)`.
 * **Track Hashing**: Dynamic color palettes (4-color HSL) generated deterministically using a string hash of the track's local `filePath`.
 * **Rendering Loop**: Throttled to 30 FPS, canvas downsampled by 3x (rendered via bilinear CSS stretch) to reduce CPU/GPU overhead. Space-warping uses momentum-based phase integration for smooth animations.
-
----
 
