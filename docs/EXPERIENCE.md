@@ -91,3 +91,13 @@
 ### Cue (Symptom): Lax TypeScript typing (`: any`) on event buses and timers
 - **Lesson (Takeaway)**: Replace loose `any` signatures with explicit interface contracts (`TrackInfo`, `{ deck0?: number[]; deck1?: number[] }`) and `ReturnType<typeof setTimeout>`. This ensures type safety across IPC events and timers without runtime overhead.
 - **Evidence**: Fixed `any` signatures in `useLibrary.ts`, `useAudioPlayback.ts`, and `AudioEffectsModal.tsx`.
+
+## UI/UX & Webview Rendering
+
+### Cue (Symptom): Native HTML `<select>` triggers ugly, unstyled Windows OS dropdowns in Wails WebView
+- **Lesson (Takeaway)**: Never rely on native `<select>` tags in dark or stylized desktop webviews. Build custom accessible dropdown components (`CyberSelect`) with synthetic popup menus, chamfered polygon clip-paths, and theme CSS variable inheritance.
+- **Evidence**: Resolved in `frontend/src/components/CyberSelect.tsx` and `SettingsView.tsx`.
+
+### Cue (Symptom): Unstyled white Windows native scrollbar cuts across dark application interface
+- **Lesson (Takeaway)**: Standard CSS scoped scrollbars on specific containers (like `.sidebar::-webkit-scrollbar`) leave `body`, `.content-panel`, and main tables unstyled, prompting Windows to render glaring white tracks. Always define universal `*::-webkit-scrollbar` rules with `scrollbar-width: thin`.
+- **Evidence**: Fixed in `frontend/src/App.css:8-70`.
