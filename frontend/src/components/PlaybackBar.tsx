@@ -1,7 +1,8 @@
-import React from 'react';
-import { ShuffleIcon, PrevIcon, PauseIcon, PlayIcon, NextIcon, RepeatIcon, BoltIcon, LightningIcon, VolumeIcon } from './Icons';
+import React, { useState } from 'react';
+import { ShuffleIcon, PrevIcon, PauseIcon, PlayIcon, NextIcon, RepeatIcon, BoltIcon, LightningIcon, VolumeIcon, QueueIcon } from './Icons';
 import { TrackInfo } from '../types';
 import { Language, useTranslation } from '../localization';
+import { getFilename, formatTime } from '../utils';
 
 interface PlaybackBarProps {
     tracks: [TrackInfo | null, TrackInfo | null];
@@ -22,10 +23,12 @@ interface PlaybackBarProps {
     handleVolume: (slot: number, val: number) => void;
     autoMix: boolean;
     handleToggleAutoMix: () => void;
-    formatTime: (sec: number) => string;
-    getFilename: (path: string) => string;
     copyToClipboard?: (text: string, label: string) => void;
     language: Language;
+    currentCover?: string | null;
+    queue?: TrackInfo[];
+    removeFromQueue?: (index: number) => void;
+    clearQueue?: () => void;
 }
 
 export const PlaybackBar: React.FC<PlaybackBarProps> = ({
@@ -47,12 +50,15 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
     handleVolume,
     autoMix,
     handleToggleAutoMix,
-    formatTime,
-    getFilename,
     copyToClipboard,
-    language
+    language,
+    currentCover,
+    queue = [],
+    removeFromQueue,
+    clearQueue
 }) => {
     const { t } = useTranslation(language);
+    const [isQueueOpen, setIsQueueOpen] = useState(false);
     const activeTrack = tracks[activeSlot];
     const duration = activeTrack?.durationSec ?? 0;
     const progress = dragPosition !== null ? dragPosition : (activeTrack && duration > 0 ? positions[activeSlot] / duration : 0);
@@ -62,7 +68,11 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             <div className="playback-left">
                 {activeTrack ? (
                     <div className="playing-meta">
-                        <span className="playing-spark"><BoltIcon /></span>
+                        {currentCover ? (
+                            <img src={currentCover} alt="cover" className="playing-cover-img" />
+                        ) : (
+                            <span className="playing-spark"><BoltIcon /></span>
+                        )}
                         <div className="meta-text">
                             <span 
                                 className="playing-title clickable-copy"
@@ -151,6 +161,50 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             </div>
 
             <div className="playback-right">
+                <div className="bar-queue-container" style={{ position: 'relative' }}>
+                    <button 
+                        className={`nav-ctrl-btn ${isQueueOpen ? 'active' : ''}`}
+                        onClick={() => setIsQueueOpen(!isQueueOpen)}
+                        title={t('queueTitle')}
+                        style={{ position: 'relative', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <QueueIcon />
+                        {queue.length > 0 && (
+                            <span className="queue-badge">{queue.length}</span>
+                        )}
+                    </button>
+                    {isQueueOpen && (
+                        <div className="queue-popover">
+                            <div className="queue-header">
+                                <span style={{ fontWeight: 600 }}>{t('queueTitle')} ({queue.length})</span>
+                                {queue.length > 0 && clearQueue && (
+                                    <button className="clear-queue-btn" onClick={clearQueue}>
+                                        {t('clearQueue')}
+                                    </button>
+                                )}
+                            </div>
+                            <div className="queue-list">
+                                {queue.length === 0 ? (
+                                    <div className="queue-empty">{t('emptyQueue')}</div>
+                                ) : (
+                                    queue.map((tItem, qIdx) => (
+                                        <div key={`${tItem.filePath}-${qIdx}`} className="queue-item">
+                                            <span className="queue-item-num">{qIdx + 1}</span>
+                                            <div className="queue-item-meta">
+                                                <span className="queue-item-title">{tItem.title || getFilename(tItem.filePath)}</span>
+                                                <span className="queue-item-artist">{tItem.artist || 'Unknown Artist'}</span>
+                                            </div>
+                                            {removeFromQueue && (
+                                                <button className="queue-item-remove" onClick={() => removeFromQueue(qIdx)}>✕</button>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <div className="bar-automix">
                     <span className="bar-automix-label">{t('automixLabel')}</span>
                     <button 

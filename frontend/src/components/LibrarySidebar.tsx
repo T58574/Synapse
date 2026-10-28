@@ -24,7 +24,7 @@ interface LibrarySidebarProps {
     language: Language;
 }
 
-export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
+export const LibrarySidebar: React.FC<LibrarySidebarProps> = React.memo(({
     playlists,
     selectedPlaylist,
     setSelectedPlaylist,
@@ -185,4 +185,4 @@ export const LibrarySidebar: React.FC<LibrarySidebarProps> = ({
             </div>
         </aside>
     );
-};
+});

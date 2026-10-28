@@ -64,7 +64,7 @@ export const AudioEffectsModal: React.FC<AudioEffectsModalProps> = ({
         window.addEventListener('keydown', handleEscape);
 
         // Subscribe to spectrum events for real-time visualization
-        const cancel = EventsOn("spectrum", (data: any) => {
+        const cancel = EventsOn("spectrum", (data: { deck0?: number[]; deck1?: number[] }) => {
             const deckKey = activeSlot === 0 ? "deck0" : "deck1";
             if (data && data[deckKey]) {
                 spectrumRef.current = new Float32Array(data[deckKey]);

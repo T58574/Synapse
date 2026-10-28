@@ -1206,7 +1206,7 @@ void set_track_dsp(int slot, float limiter_boost, float stereo_width, float reve
 int get_track_spectrum(int slot, float* out_buffer, int max_size) {
     if (slot < 0 || slot > 1 || max_size <= 0) return 0;
     TrackState& ts = g_tracks[slot];
-    std::vector<float> samples(1024, 0.0f);
+    static thread_local std::vector<float> samples(1024, 0.0f);
     {
         std::lock_guard<std::mutex> lock(ts.mtx);
         if (!ts.has_decoder || !ts.is_playing || ts.recent_samples.size() != 1024) {
@@ -1219,7 +1219,7 @@ int get_track_spectrum(int slot, float* out_buffer, int max_size) {
         }
     }
 
-    std::vector<std::complex<double>> fft_in(1024);
+    static thread_local std::vector<std::complex<double>> fft_in(1024);
     for (int i = 0; i < 1024; i++) {
         double w = 0.5 * (1.0 - cos(2.0 * M_PI * i / 1023.0));
         fft_in[i] = std::complex<double>(samples[i] * w, 0.0);

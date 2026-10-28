@@ -96,6 +96,12 @@ export const translations = {
         savePreset: "Save Preset",
         presetName: "Preset Name",
         eq10: "10-Band Graphic EQ",
+        addToQueue: "Add to Queue",
+        queueTitle: "Playback Queue",
+        emptyQueue: "Queue is empty. Click + on any track to add it here.",
+        clearQueue: "Clear Queue",
+        addedToQueue: 'Added to queue: "{title}"',
+        nowPlayingQueue: "Up Next",
     },
     ru: {
         // AppHeader
@@ -192,6 +198,12 @@ export const translations = {
         savePreset: "Сохранить пресет",
         presetName: "Название пресета",
         eq10: "10-полосный эквалайзер",
+        addToQueue: "В очередь",
+        queueTitle: "Очередь воспроизведения",
+        emptyQueue: "Очередь пуста. Нажмите на значок очереди в строке трека.",
+        clearQueue: "Очистить очередь",
+        addedToQueue: 'Добавлено в очередь: "{title}"',
+        nowPlayingQueue: "Далее в очереди",
     }
 };
 

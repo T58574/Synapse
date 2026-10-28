@@ -46,13 +46,6 @@ export const LightningIcon = () => (
     </svg>
 );
 
-export const ResetIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12">
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-        <polyline points="3 3 3 8 8 8" />
-    </svg>
-);
-
 export const NextIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
         <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
@@ -62,22 +55,6 @@ export const NextIcon = () => (
 export const PrevIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
         <path d="M11.5 12L20 18V6l-8.5 6zM6 6h2v12H6V6z" />
-    </svg>
-);
-
-export const LibraryIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-        <path d="M12 20h9M3 20h4M3 10h18M3 5h18" />
-    </svg>
-);
-
-export const DecksIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-        <circle cx="6" cy="12" r="3" />
-        <circle cx="18" cy="12" r="3" />
-        <line x1="6" y1="9" x2="6" y2="3" />
-        <line x1="18" y1="9" x2="18" y2="3" />
-        <path d="M6 3h12" />
     </svg>
 );
 
@@ -150,13 +127,6 @@ export const MusicIconSmall = () => (
     </svg>
 );
 
-export const SearchIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-        <circle cx="11" cy="11" r="8" />
-        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-);
-
 export const SlidersIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
         <line x1="4" y1="21" x2="4" y2="14" />
@@ -168,6 +138,17 @@ export const SlidersIcon = () => (
         <line x1="1" y1="14" x2="7" y2="14" />
         <line x1="9" y1="8" x2="15" y2="8" />
         <line x1="17" y1="16" x2="23" y2="16" />
+    </svg>
+);
+
+export const QueueIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
     </svg>
 );
 

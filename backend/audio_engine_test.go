@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"math"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 func createTestWav(path string) error {
@@ -158,8 +158,6 @@ func TestAudioEngine(t *testing.T) {
 
 	app.OpenMusicDir()
 }
-
-
 
 func TestAppMocks(t *testing.T) {
 	app := NewApp()

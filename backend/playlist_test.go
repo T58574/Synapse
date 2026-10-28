@@ -3,10 +3,10 @@ package backend
 import (
 	"context"
 	"fmt"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"os"
 	"path/filepath"
 	"testing"
-	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 func TestPlaylists(t *testing.T) {

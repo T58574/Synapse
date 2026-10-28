@@ -12,7 +12,7 @@ interface LibraryHeroProps {
     language: Language;
 }
 
-export const LibraryHero: React.FC<LibraryHeroProps> = ({
+export const LibraryHero: React.FC<LibraryHeroProps> = React.memo(({
     selectedPlaylist,
     selectedArtist,
     currentPlaylistTracks,
@@ -47,4 +47,4 @@ export const LibraryHero: React.FC<LibraryHeroProps> = ({
             </div>
         </header>
     );
-};
+});

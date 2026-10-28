@@ -14,7 +14,7 @@ interface MusiciansViewProps {
     language: Language;
 }
 
-export const MusiciansView: React.FC<MusiciansViewProps> = ({
+export const MusiciansView: React.FC<MusiciansViewProps> = React.memo(({
     libraryTracks,
     setActiveTab,
     setSelectedArtist,
@@ -139,4 +139,4 @@ export const MusiciansView: React.FC<MusiciansViewProps> = ({
             )}
         </div>
     );
-};
+});

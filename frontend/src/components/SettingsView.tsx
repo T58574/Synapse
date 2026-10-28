@@ -21,6 +21,8 @@ interface SettingsViewProps {
     language: Language;
     setLanguage: (lang: Language) => void;
     handleOpenDir: () => void;
+    visualizerEnabled: boolean;
+    setVisualizerEnabled: (enabled: boolean) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -35,7 +37,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     handleDeviceChange,
     language,
     setLanguage,
-    handleOpenDir
+    handleOpenDir,
+    visualizerEnabled,
+    setVisualizerEnabled
 }) => {
     const { t } = useTranslation(language);
 
@@ -139,6 +143,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                                 </option>
                             ))}
                         </select>
+                    </div>
+                </div>
+            </section>
+
+            <section className="settings-section">
+                <h3 className="settings-section-title">{language === 'ru' ? 'Производительность и визуализация' : 'Performance & Visualizer'}</h3>
+                <div className="settings-item">
+                    <div className="settings-item-info">
+                        <span className="settings-item-label">{language === 'ru' ? 'Живой WebGL-визуализатор волны' : 'Live WebGL Wave Visualizer'}</span>
+                        <span className="settings-item-desc">
+                            {language === 'ru'
+                                ? 'В фоне и при сворачивании плеер автоматически глушит рендер (0% CPU). Отключите полностью для максимального энергосбережения.'
+                                : 'Automatically pauses when minimized (0% CPU). Disable completely for maximum battery life.'}
+                        </span>
+                    </div>
+                    <div className="settings-item-control">
+                        <button
+                            className={`bar-automix-toggle ${visualizerEnabled ? 'active' : ''}`}
+                            onClick={() => setVisualizerEnabled(!visualizerEnabled)}
+                            style={{ minWidth: '70px', justifyContent: 'center' }}
+                        >
+                            <span>{visualizerEnabled ? (language === 'ru' ? 'ВКЛ' : 'ON') : (language === 'ru' ? 'ВЫКЛ' : 'OFF')}</span>
+                        </button>
                     </div>
                 </div>
             </section>

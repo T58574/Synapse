@@ -1,9 +1,9 @@
 # 0xSoundPlayer Architecture & Design Specification
 
 > [!IMPORTANT]
-> **DEVELOPER PROTOCOL**: To inspect the recent modification history and git commit logs of this project, execute the following command in PowerShell:
-> `powershell -ExecutionPolicy Bypass -File .agent/show_history.ps1`
-> Always check the history before starting tasks to understand the latest state.
+> **DEVELOPER PROTOCOL**: To inspect the recent modification history and git commit logs of this project, execute:
+> `git log -n 10 --oneline`
+> Always check the history and `docs/EXPERIENCE.md` before starting tasks to understand the latest state.
 
 ---
 

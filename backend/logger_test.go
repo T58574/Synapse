@@ -309,4 +309,3 @@ func TestRotateAndCleanupLogs(t *testing.T) {
 		t.Error("Outdated engine.log was not deleted")
 	}
 }
-

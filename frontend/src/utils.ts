@@ -12,3 +12,16 @@ export const splitArtists = (artistStr: string | undefined): string[] => {
         
     return artists.length > 0 ? artists : ['Unknown Artist'];
 };
+
+export const getFilename = (path: string): string => {
+    if (!path) return '';
+    const parts = path.split(/[/\\]/);
+    return parts[parts.length - 1];
+};
+
+export const formatTime = (sec: number): string => {
+    if (isNaN(sec) || sec < 0) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+};

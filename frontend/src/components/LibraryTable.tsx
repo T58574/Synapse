@@ -1,7 +1,7 @@
 import React from 'react';
-import { PlayIcon, PauseIcon, RowPlayIcon, RowPauseIcon, PlusIcon, MusicIcon, FolderIcon, LoadIcon } from './Icons';
+import { PlayIcon, PauseIcon, RowPlayIcon, RowPauseIcon, PlusIcon, MusicIcon, FolderIcon, LoadIcon, QueueIcon } from './Icons';
 import { TrackInfo, PlaylistInfo } from '../types';
-import { splitArtists } from '../utils';
+import { splitArtists, getFilename, formatTime } from '../utils';
 import { Language, useTranslation } from '../localization';
 
 interface LibraryTableProps {
@@ -19,8 +19,6 @@ interface LibraryTableProps {
     selectedPlaylist: string | null;
     handleRemoveTrackFromPlaylist: (plName: string, trackPath: string) => void;
     handleAddTrackToPlaylist: (plName: string, trackPath: string) => void;
-    getFilename: (path: string) => string;
-    formatTime: (sec: number) => string;
     OpenMusicDir: () => void;
     handleSelectAndLoad: (slot: 0 | 1) => void;
     onSelectArtist?: (artistName: string) => void;
@@ -30,9 +28,10 @@ interface LibraryTableProps {
     language: Language;
     onEditTrack?: (track: TrackInfo) => void;
     onDeleteTrack?: (track: TrackInfo) => void;
+    onAddToQueue?: (track: TrackInfo) => void;
 }
 
-export const LibraryTable: React.FC<LibraryTableProps> = ({
+export const LibraryTable: React.FC<LibraryTableProps> = React.memo(({
     playing,
     activeSlot,
     tracks,
@@ -47,8 +46,6 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
     selectedPlaylist,
     handleRemoveTrackFromPlaylist,
     handleAddTrackToPlaylist,
-    getFilename,
-    formatTime,
     OpenMusicDir,
     handleSelectAndLoad,
     onSelectArtist,
@@ -57,7 +54,8 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
     onToggleMyWave,
     language,
     onEditTrack,
-    onDeleteTrack
+    onDeleteTrack,
+    onAddToQueue
 }) => {
     const { t } = useTranslation(language);
     const sortedTracks = filteredTracks;
@@ -188,6 +186,13 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
                                                     🗑️
                                                 </button>
                                                 <button 
+                                                    className="track-action-btn queue-btn"
+                                                    onClick={() => onAddToQueue && onAddToQueue(track)}
+                                                    title={t('addToQueue')}
+                                                >
+                                                    <QueueIcon />
+                                                </button>
+                                                <button 
                                                     className="track-action-btn add-btn"
                                                     onClick={() => setActivePlaylistMenuTrack(activePlaylistMenuTrack === track.filePath ? null : track.filePath)}
                                                     title={t('addToPlaylist')}
@@ -262,4 +267,4 @@ export const LibraryTable: React.FC<LibraryTableProps> = ({
             )}
         </div>
     );
-};
+});

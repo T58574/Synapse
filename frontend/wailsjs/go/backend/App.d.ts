@@ -20,6 +20,8 @@ export function GetPosition(arg1:number):Promise<number>;
 
 export function GetSpectrum(arg1:number):Promise<Array<number>>;
 
+export function GetTrackCover(arg1:string):Promise<string>;
+
 export function IsPlaying(arg1:number):Promise<boolean>;
 
 export function LoadTrack(arg1:number,arg2:string):Promise<backend.TrackMetadata>;
@@ -55,6 +57,8 @@ export function SetEQ10(arg1:number,arg2:Array<number>):Promise<void>;
 export function SetPitch(arg1:number,arg2:number):Promise<void>;
 
 export function SetTempo(arg1:number,arg2:number):Promise<void>;
+
+export function SetVisualizerActive(arg1:boolean):Promise<void>;
 
 export function SetVolume(arg1:number,arg2:number):Promise<void>;
 

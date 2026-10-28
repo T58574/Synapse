@@ -1,0 +1,16 @@
+{
+  "name": "soundplayer-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "0xPlay / 0xSoundPlayer desktop application build workspace",
+  "scripts": {
+    "build:menu": "node scripts/build-menu.js",
+    "build": "node scripts/build-menu.js --build",
+    "build:windows": "node scripts/build-menu.js --windows",
+    "build:linux": "node scripts/build-menu.js --linux",
+    "build:frontend": "node scripts/build-menu.js --frontend",
+    "test": "node scripts/build-menu.js --test",
+    "doctor": "node scripts/build-menu.js --doctor",
+    "clean": "node scripts/build-menu.js --clean"
+  }
+}

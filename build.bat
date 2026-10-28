@@ -1,8 +1,11 @@
 @echo off
 setlocal enabledelayedexpansion
 
+if "%1"=="" goto run_menu
+if "%1"=="menu" goto run_menu
+
 echo ===================================================
-echo   0xSoundPlayer Windows Build System
+echo   0xSoundPlayer Windows Build System (Direct Mode)
 echo ===================================================
 
 echo [1/3] Running Go backend tests...
@@ -27,7 +30,7 @@ echo [SUCCESS] Frontend tests passed.
 
 echo.
 echo [3/3] Compiling standalone application via Wails...
-wails build -platform windows/amd64
+wails build -platform windows/amd64 -clean
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Wails compilation failed!
     exit /b %ERRORLEVEL%
@@ -39,3 +42,8 @@ echo   BUILD SUCCESSFUL!
 echo   Executable generated at: build\bin\soundplayer.exe
 echo ===================================================
 pause
+exit /b 0
+
+:run_menu
+node scripts\build-menu.js
+exit /b %ERRORLEVEL%

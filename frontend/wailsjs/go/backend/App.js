@@ -38,6 +38,10 @@ export function GetSpectrum(arg1) {
   return window['go']['backend']['App']['GetSpectrum'](arg1);
 }
 
+export function GetTrackCover(arg1) {
+  return window['go']['backend']['App']['GetTrackCover'](arg1);
+}
+
 export function IsPlaying(arg1) {
   return window['go']['backend']['App']['IsPlaying'](arg1);
 }
@@ -108,6 +112,10 @@ export function SetPitch(arg1, arg2) {
 
 export function SetTempo(arg1, arg2) {
   return window['go']['backend']['App']['SetTempo'](arg1, arg2);
+}
+
+export function SetVisualizerActive(arg1) {
+  return window['go']['backend']['App']['SetVisualizerActive'](arg1);
 }
 
 export function SetVolume(arg1, arg2) {

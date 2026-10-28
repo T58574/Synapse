@@ -8,6 +8,7 @@ interface VisualizerContainerProps {
     tracks: [TrackInfo | null, TrackInfo | null];
     playing: [boolean, boolean];
     currentTheme: string;
+    enabled?: boolean;
 }
 
 interface Palette {
@@ -104,8 +105,11 @@ export const VisualizerContainer: React.FC<VisualizerContainerProps> = ({
     activeSlot,
     tracks,
     playing,
-    currentTheme
+    currentTheme,
+    enabled = true
 }) => {
+    if (!enabled) return null;
+
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const audioStateRef = useRef({ activeSlot, playing });
     const spectrumDataRef = useRef<number[]>(new Array(64).fill(0));
@@ -116,6 +120,9 @@ export const VisualizerContainer: React.FC<VisualizerContainerProps> = ({
 
     useEffect(() => {
         const unsubscribe = EventsOn("spectrum", (data: { deck0: number[], deck1: number[] }) => {
+            if (typeof document !== 'undefined' && document.hidden) {
+                return;
+            }
             const currentActiveSlot = audioStateRef.current.activeSlot;
             const currentPlaying = audioStateRef.current.playing[currentActiveSlot];
             if (currentPlaying) {
@@ -218,8 +225,13 @@ export const VisualizerContainer: React.FC<VisualizerContainerProps> = ({
         const fpsLimit = 30;
         const interval = 1000 / fpsLimit;
         let lastDrawTime = performance.now();
+        let isPaused = typeof document !== 'undefined' && document.hidden;
 
         const render = (now: number) => {
+            if (isPaused) {
+                return;
+            }
+
             animationFrameId = requestAnimationFrame(render);
 
             const elapsed = now - lastDrawTime;
@@ -287,11 +299,36 @@ export const VisualizerContainer: React.FC<VisualizerContainerProps> = ({
             gl.drawArrays(gl.TRIANGLES, 0, 6);
         };
 
-        animationFrameId = requestAnimationFrame(render);
+        const handleVisibilityChange = () => {
+            if (typeof document === 'undefined') return;
+            if (document.hidden) {
+                isPaused = true;
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = 0;
+                }
+            } else {
+                if (isPaused) {
+                    isPaused = false;
+                    lastTime = performance.now();
+                    lastDrawTime = performance.now();
+                    animationFrameId = requestAnimationFrame(render);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        if (!isPaused) {
+            animationFrameId = requestAnimationFrame(render);
+        }
 
         return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('resize', resizeCanvas);
-            cancelAnimationFrame(animationFrameId);
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
             gl.deleteBuffer(positionBuffer);
             gl.deleteProgram(program);
         };

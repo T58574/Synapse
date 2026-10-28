@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:menu": "node ../scripts/build-menu.js",
     "preview": "vite preview",
     "test": "vitest run"
   },
