@@ -75,6 +75,8 @@ function augmentPathWithGcc() {
     const localAppData = process.env.LOCALAPPDATA || (userHome ? path.join(userHome, 'AppData', 'Local') : '');
 
     const candidates = [
+        path.join(ROOT_DIR, 'tools', 'w64devkit', 'bin'),
+        'C:\\w64devkit\\bin',
         'C:\\msys64\\mingw64\\bin',
         'C:\\msys64\\ucrt64\\bin',
         'C:\\mingw64\\bin',
@@ -220,39 +222,64 @@ function ensureWailsAvailable() {
     return installed;
 }
 
+function installPortableGcc() {
+    if (process.platform !== 'win32') {
+        console.log(`${colors.yellow}Portable w64devkit is only supported on Windows.${colors.reset}`);
+        return false;
+    }
+
+    const toolsDir = path.join(ROOT_DIR, 'tools');
+    const destDir = path.join(toolsDir, 'w64devkit');
+    const sfxFile = path.join(toolsDir, 'w64devkit.exe');
+
+    console.log(`\n${colors.cyan}${colors.bold}Downloading portable MinGW-w64 GCC (w64devkit ~15MB)...${colors.reset}`);
+    console.log(`${colors.gray}Zero system installation required. Placed into ./tools/w64devkit/${colors.reset}\n`);
+
+    if (!fs.existsSync(toolsDir)) {
+        fs.mkdirSync(toolsDir, { recursive: true });
+    }
+
+    const psCommand = [
+        `$ErrorActionPreference = 'Stop'`,
+        `$url = 'https://github.com/skeeto/w64devkit/releases/download/v2.10.1/w64devkit-x64-2.10.1.7z.exe'`,
+        `$dest = '${sfxFile.replace(/'/g, "''")}'`,
+        `Write-Host 'Downloading portable compiler (~15MB)...'`,
+        `[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12`,
+        `Invoke-WebRequest -Uri $url -OutFile $dest`,
+        `Write-Host 'Extracting toolchain into ./tools/...'`,
+        `Start-Process -FilePath $dest -ArgumentList '-y', '-o${toolsDir.replace(/'/g, "''")}' -Wait -NoNewWindow`,
+        `if (Test-Path $dest) { Remove-Item -Force $dest }`,
+        `Write-Host 'Extraction complete!'`
+    ].join('; ');
+
+    const res = spawnSync('powershell', ['-NoProfile', '-Command', `"${psCommand}"`], {
+        stdio: 'inherit',
+        shell: true
+    });
+
+    augmentPathWithGcc();
+    const check = checkTool('gcc', ['--version']);
+    if (check.ok) {
+        console.log(`\n${colors.green}${colors.bold}[SUCCESS] Portable GCC installed and ready: ${check.version}${colors.reset}\n`);
+        return true;
+    } else {
+        console.log(`\n${colors.yellow}Could not verify gcc.exe. You can manually download from:${colors.reset}`);
+        console.log(`https://github.com/skeeto/w64devkit/releases/download/v2.10.1/w64devkit-x64-2.10.1.7z.exe`);
+        console.log(`and extract it into the 'tools' folder.\n`);
+        return false;
+    }
+}
+
 function ensureCompilerAvailable() {
     augmentPathWithGcc();
     const check = checkTool('gcc', ['--version']);
     if (check.ok) return true;
 
     console.log(`\n${colors.red}${colors.bold}[!] C/C++ Compiler (GCC) not found in PATH.${colors.reset}`);
-    console.log(`${colors.yellow}0xPlay uses Cgo to compile the high-performance C++ audio engine (miniaudio & Signalsmith).${colors.reset}`);
-    console.log(`To fix this on Windows, install MinGW-w64 GCC using one of the following:\n`);
-    console.log(`  ${colors.bold}${colors.green}Option 1 (Automated via WinGet):${colors.reset}`);
-    console.log(`    Select option ${colors.bold}[g]${colors.reset} in this menu or run:`);
-    console.log(`    ${colors.cyan}winget install -e --id BrechtSanders.winlibs-mingw-w64${colors.reset}\n`);
-    console.log(`  ${colors.bold}${colors.green}Option 2 (Scoop):${colors.reset}`);
-    console.log(`    ${colors.cyan}scoop install gcc${colors.reset}\n`);
-    console.log(`  ${colors.bold}${colors.green}Option 3 (Chocolatey):${colors.reset}`);
-    console.log(`    ${colors.cyan}choco install mingw${colors.reset}\n`);
-    console.log(`  ${colors.bold}${colors.green}Option 4 (MSYS2):${colors.reset}`);
-    console.log(`    ${colors.cyan}pacman -S mingw-w64-x86_64-gcc${colors.reset}\n`);
-    return false;
-}
-
-function installGccWinget() {
-    if (process.platform !== 'win32') {
-        console.log(`${colors.yellow}Automatic WinGet GCC install is only supported on Windows.${colors.reset}`);
-        return false;
-    }
-    console.log(`\n${colors.cyan}${colors.bold}Installing MinGW-w64 GCC via WinGet...${colors.reset}\n`);
-    const ok = executeCommand('winget', ['install', '-e', '--id', 'BrechtSanders.winlibs-mingw-w64']);
-    if (ok) {
-        augmentPathWithGcc();
-        console.log(`\n${colors.green}${colors.bold}[SUCCESS] MinGW-w64 installed! You may need to restart your terminal for PATH changes.${colors.reset}\n`);
-        return true;
-    }
-    return false;
+    console.log(`${colors.yellow}0xPlay requires GCC with Cgo to compile the C++ audio engine (miniaudio & Signalsmith).${colors.reset}`);
+    console.log(`Attempting automatic download of portable MinGW-w64 GCC (w64devkit ~15MB)...\n`);
+    const ok = installPortableGcc();
+    return ok;
 }
 
 function executeCommand(command, args = [], cwd = ROOT_DIR, env = process.env) {
@@ -334,7 +361,7 @@ function printMenu() {
     console.log(`  ${colors.yellow}[8]${colors.reset} ${colors.bold}Clean Build Artifacts (bin / dist)${colors.reset}          ${colors.dim}[remove artifacts]${colors.reset}`);
     console.log(`  ${colors.magenta}[9]${colors.reset} ${colors.bold}Pre-flight Doctor / Dependency Check${colors.reset}       ${colors.dim}[verify toolchain]${colors.reset}`);
     console.log(`  ${colors.blue}[w]${colors.reset} ${colors.bold}Install / Update Wails CLI${colors.reset}                 ${colors.dim}[go install wails@latest]${colors.reset}`);
-    console.log(`  ${colors.blue}[g]${colors.reset} ${colors.bold}Install MinGW-w64 GCC (Windows)${colors.reset}           ${colors.dim}[winget winlibs-mingw-w64]${colors.reset}`);
+    console.log(`  ${colors.blue}[g]${colors.reset} ${colors.bold}Download Portable GCC (w64devkit ~15MB)${colors.reset}    ${colors.dim}[zero-install toolchain]${colors.reset}`);
     console.log(`  ${colors.red}[0]${colors.reset} ${colors.bold}Exit${colors.reset}\n`);
 }
 
@@ -402,7 +429,7 @@ async function handleAction(choice) {
             break;
         }
         case 'g': {
-            installGccWinget();
+            installPortableGcc();
             break;
         }
         case '0':

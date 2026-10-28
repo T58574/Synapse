@@ -1,6 +1,7 @@
 build/bin
 node_modules
 frontend/dist
+tools/
 
 # --- SYSTEM & OS ---
 .DS_Store
