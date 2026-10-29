@@ -55,14 +55,24 @@ export component MainWindow inherits Window {
     in-out property <float> master_volume: 0.8;
     in-out property <bool> is_muted: false;
     in property <[float]> spectrum_data: [
-        0.05, 0.12, 0.25, 0.40, 0.55, 0.70, 0.85, 0.65,
-        0.50, 0.45, 0.38, 0.52, 0.68, 0.75, 0.60, 0.48,
-        0.35, 0.30, 0.42, 0.58, 0.62, 0.55, 0.45, 0.35,
-        0.28, 0.32, 0.40, 0.48, 0.52, 0.46, 0.38, 0.30,
-        0.25, 0.28, 0.35, 0.42, 0.45, 0.38, 0.32, 0.26,
-        0.22, 0.25, 0.30, 0.36, 0.38, 0.32, 0.28, 0.22,
-        0.18, 0.20, 0.24, 0.28, 0.30, 0.26, 0.20, 0.16,
-        0.14, 0.16, 0.18, 0.22, 0.24, 0.18, 0.12, 0.08
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    ];
+    in property <[float]> spectrum_peaks: [
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     ];
 
     // EQ & DSP State
@@ -109,7 +119,7 @@ export component MainWindow inherits Window {
 
             // ================= 1. APP HEADER =================
             Rectangle {
-                height: 48px;
+                height: 50px;
                 background: #0A0D14;
 
                 Rectangle {
@@ -121,12 +131,12 @@ export component MainWindow inherits Window {
                 HorizontalLayout {
                     padding-left: 16px;
                     padding-right: 16px;
-                    spacing: 12px;
+                    spacing: 14px;
                     alignment: space-between;
 
                     // Header Left: Brand Logo with Version Badge & Navigation
                     HorizontalLayout {
-                        spacing: 10px;
+                        spacing: 12px;
                         alignment: start;
 
                         // Brand Logo Container with v0.2.0 Badge
@@ -139,7 +149,7 @@ export component MainWindow inherits Window {
                                 alignment: start;
 
                                 logo_btn := Rectangle {
-                                    height: 30px;
+                                    height: 32px;
                                     background: logo_touch.has-hover ? #FCEE0A22 : CyberTheme.surface;
                                     border-width: 1px;
                                     border-color: logo_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
@@ -191,6 +201,7 @@ export component MainWindow inherits Window {
                                 // Version Badge
                                 Rectangle {
                                     height: 20px;
+                                    y: (parent.height - self.height) / 2;
                                     background: #111824;
                                     border-width: 1px;
                                     border-color: CyberTheme.border;
@@ -215,9 +226,10 @@ export component MainWindow inherits Window {
                         // Navigation Buttons: [ LIBRARY ], MUSICIANS, SETTINGS
                         HorizontalLayout {
                             spacing: 6px;
-                            alignment: start;
+                            alignment: center;
 
                             CyberButton {
+                                height: 32px;
                                 text: root.active_tab == 0 ? "[ LIBRARY ]" : "LIBRARY";
                                 active: root.active_tab == 0;
                                 compact: true;
@@ -225,6 +237,7 @@ export component MainWindow inherits Window {
                             }
 
                             CyberButton {
+                                height: 32px;
                                 text: root.active_tab == 1 ? "[ MUSICIANS ]" : "MUSICIANS";
                                 active: root.active_tab == 1;
                                 compact: true;
@@ -232,6 +245,7 @@ export component MainWindow inherits Window {
                             }
 
                             CyberButton {
+                                height: 32px;
                                 text: root.active_tab == 2 ? "[ SETTINGS ]" : "SETTINGS";
                                 active: root.active_tab == 2;
                                 compact: true;
@@ -242,10 +256,12 @@ export component MainWindow inherits Window {
                         }
                     }
 
-                    // Header Center: Sleek Audio Telemetry Status & Spectrum Visualizer
+                    // Header Center: Wide Cyber-Winamp Spectrum Visualizer (Single unified display)
                     HorizontalLayout {
-                        width: 290px;
-                        height: 30px;
+                        horizontal-stretch: 1;
+                        min-width: 440px;
+                        max-width: 680px;
+                        height: 36px;
                         alignment: center;
 
                         Rectangle {
@@ -270,40 +286,40 @@ export component MainWindow inherits Window {
                             Path {
                                 x: 0px;
                                 y: 0px;
-                                width: 5px;
-                                height: 5px;
+                                width: 6px;
+                                height: 6px;
                                 viewbox-x: 0;
                                 viewbox-y: 0;
-                                viewbox-width: 5;
-                                viewbox-height: 5;
+                                viewbox-width: 6;
+                                viewbox-height: 6;
                                 fill: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.muted;
                                 opacity: 0.6;
-                                commands: "M 0 0 L 5 0 L 0 5 Z";
+                                commands: "M 0 0 L 6 0 L 0 6 Z";
                             }
                             Path {
-                                x: parent.width - 5px;
-                                y: parent.height - 5px;
-                                width: 5px;
-                                height: 5px;
+                                x: parent.width - 6px;
+                                y: parent.height - 6px;
+                                width: 6px;
+                                height: 6px;
                                 viewbox-x: 0;
                                 viewbox-y: 0;
-                                viewbox-width: 5;
-                                viewbox-height: 5;
+                                viewbox-width: 6;
+                                viewbox-height: 6;
                                 fill: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.muted;
                                 opacity: 0.6;
-                                commands: "M 0 5 L 5 5 L 5 0 Z";
+                                commands: "M 0 6 L 6 6 L 6 0 Z";
                             }
 
                             // When playing: Live Audio Spectrum with Live Badge
                             if (root.is_playing) : HorizontalLayout {
-                                padding-left: 8px;
-                                padding-right: 8px;
-                                padding-top: 3px;
-                                padding-bottom: 3px;
-                                spacing: 8px;
+                                padding-left: 10px;
+                                padding-right: 10px;
+                                padding-top: 4px;
+                                padding-bottom: 4px;
+                                spacing: 10px;
 
                                 HorizontalLayout {
-                                    spacing: 4px;
+                                    spacing: 5px;
                                     alignment: center;
 
                                     Rectangle {
@@ -311,6 +327,7 @@ export component MainWindow inherits Window {
                                         height: 6px;
                                         border-radius: 3px;
                                         background: CyberTheme.cyber_green;
+                                        y: (parent.height - self.height) / 2;
                                     }
 
                                     Text {
@@ -328,6 +345,7 @@ export component MainWindow inherits Window {
                                     height: 100%;
                                     SpectrumView {
                                         magnitudes: root.spectrum_data;
+                                        peaks: root.spectrum_peaks;
                                         is_active: true;
                                         bar_spacing: 1px;
                                         min_bar_height: 2px;
@@ -337,8 +355,8 @@ export component MainWindow inherits Window {
 
                             // When idle: audio telemetry status
                             if (!root.is_playing) : HorizontalLayout {
-                                padding-left: 10px;
-                                padding-right: 10px;
+                                padding-left: 12px;
+                                padding-right: 12px;
                                 spacing: 8px;
                                 alignment: space-between;
 
@@ -347,14 +365,15 @@ export component MainWindow inherits Window {
                                     alignment: center;
 
                                     Rectangle {
-                                        width: 5px;
-                                        height: 5px;
+                                        width: 6px;
+                                        height: 6px;
                                         background: CyberTheme.cyber_cyan;
                                         opacity: 0.7;
+                                        y: (parent.height - self.height) / 2;
                                     }
 
                                     Text {
-                                        text: "AUDIO ENGINE // 44.1kHz 24-BIT";
+                                        text: "AUDIO ENGINE // 44.1kHz 24-BIT [ 64 BANDS ]";
                                         font-family: CyberTheme.font_mono;
                                         font-size: 9px;
                                         font-weight: 700;
@@ -379,9 +398,10 @@ export component MainWindow inherits Window {
                     // Header Right: Quick Buttons (Vector Icons, zero emojis)
                     HorizontalLayout {
                         spacing: 8px;
-                        alignment: end;
+                        alignment: center;
 
                         CyberButton {
+                            height: 32px;
                             compact: true;
                             clicked => { root.open_directory(); }
                             IconFolder {
@@ -392,6 +412,7 @@ export component MainWindow inherits Window {
                         }
 
                         CyberButton {
+                            height: 32px;
                             compact: true;
                             clicked => { root.scan_directory(); }
                             IconScan {
@@ -402,6 +423,7 @@ export component MainWindow inherits Window {
                         }
 
                         CyberButton {
+                            height: 32px;
                             active: root.show_equalizer;
                             compact: true;
                             clicked => { root.show_equalizer = !root.show_equalizer; }
@@ -656,7 +678,6 @@ export component MainWindow inherits Window {
                 duration_formatted: root.total_time_str;
                 volume <=> root.master_volume;
                 is_muted <=> root.is_muted;
-                mini_spectrum: root.spectrum_data;
 
                 play_pause_clicked => { root.toggle_play(); }
                 prev_clicked => { root.prev_track(); }

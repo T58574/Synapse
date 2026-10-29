@@ -1298,19 +1298,35 @@ int get_track_spectrum(int slot, float* out_buffer, int max_size) {
 
     fft(fft_in);
 
-    int num_bins = 512;
-    int bin_step = num_bins / max_size;
-    if (bin_step < 1) bin_step = 1;
+    double f_min = 35.0;
+    double f_max = 18000.0;
+    double sr = (g_sample_rate > 0) ? (double)g_sample_rate : 44100.0;
+    double hz_per_bin = sr / 1024.0;
 
     for (int i = 0; i < max_size; i++) {
+        double f_start = f_min * pow(f_max / f_min, (double)i / (double)max_size);
+        double f_end = f_min * pow(f_max / f_min, (double)(i + 1) / (double)max_size);
+
+        int b_start = (int)(f_start / hz_per_bin);
+        int b_end = (int)(f_end / hz_per_bin);
+        if (b_start < 1) b_start = 1;
+        if (b_end <= b_start) b_end = b_start + 1;
+        if (b_end > 512) b_end = 512;
+
         double max_mag = 0.0;
-        for (int j = 0; j < bin_step; j++) {
-            int idx = i * bin_step + j;
-            if (idx >= num_bins) break;
-            double mag = std::abs(fft_in[idx]);
+        for (int b = b_start; b < b_end; b++) {
+            double mag = std::abs(fft_in[b]);
             if (mag > max_mag) max_mag = mag;
         }
-        out_buffer[i] = (float)max_mag;
+
+        // High frequency tilt: compensate for natural 1/f music rolloff
+        double tilt = 1.0 + 2.4 * ((double)i / (double)max_size);
+        double scaled = max_mag * 0.06 * tilt;
+
+        // Dynamic range power-law curve (brings out medium details without clipping)
+        double compressed = pow(std::max(0.0, scaled), 0.68);
+        if (compressed > 1.0) compressed = 1.0;
+        out_buffer[i] = (float)compressed;
     }
     return max_size;
 }

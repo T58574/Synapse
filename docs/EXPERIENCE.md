@@ -205,3 +205,21 @@
   3. Ensure all icons take `in property <color> icon_color` and `in property <length> size: 16px` for razor-sharp, resolution-independent vector scaling.
   4. For authentic cyberpunk chamfers, replace square corner rectangles with 45-degree angle corner notches (`Path` with triangular polygon commands like `"M 0 0 L 7 0 L 7 7 Z"`).
 - **Evidence**: Created `ui/components/icons.slint` with 17 custom vector components; updated `button.slint`, `playback_bar.slint`, `sidebar.slint`, `library_table.slint`, `main.slint`, `equalizer.slint`, `settings.slint`, and `modal.slint`. Verified with `cargo check` and 14/14 unit tests passing.
+
+### Cue (Symptom): Linear FFT binning leaves upper frequency visualizer bars dead and motionless
+- **Lesson (Takeaway)**: Linear FFT binning (`bin_step = 512 / N`) concentrates 80% of musical energy in the first few bins (bass/low-mids), leaving upper bins empty and flat. Use logarithmic frequency binning from 35 Hz to 18,000 Hz (`f(i) = f_min * (f_max / f_min)^(i/N)`), apply pink-noise tilt compensation (`tilt = 1.0 + 2.4 * (i/N)`) to balance the natural 1/f rolloff of music, and apply power-law dynamic compression (`pow(mag, 0.68)`) to animate all 64 bands vividly.
+- **Evidence**: `cpp/audio_engine.cpp:get_track_spectrum`, verified full 64-band activity.
+
+### Cue (Symptom): Spectrum visualizer jumps erratically instead of smooth Winamp-style ballistics
+- **Lesson (Takeaway)**: Raw FFT values refreshed every frame produce chaotic visual jitter. Implement dual-state ballistics:
+  1. Main bar smoothing: fast attack (`val * 0.85 + prev * 0.15`) and exponential decay (`prev * 0.82`).
+  2. Winamp falling peak dots ("падающие частички"): store peak positions, hold for ~165ms (5 ticks) on peak rise, then drop with gravitational acceleration (`vel += 0.007; peak -= vel`) until landing on the current bar.
+  3. On pause/stop, smoothly decay both to zero over ~15 frames before halting ticker updates for zero idle CPU.
+- **Evidence**: `src/ui_bridge.rs:720-775`, `ui/visualizer/spectrum.slint`, verified with 14 passing tests.
+
+### Cue (Symptom): Cramped playback seeker and misaligned table column headers
+- **Lesson (Takeaway)**:
+  1. Avoid duplicating visualizers across header and playback dock. Removing redundant mini-spectrums frees over 300px in the bottom dock, allowing the seeker slider to expand to `horizontal-stretch: 1` (>620px width).
+  2. Unify transport button heights (`height: 34px`) across Prev, Play/Pause, Next, and Automix to prevent jagged vertical misalignment.
+  3. In virtualized tables, match explicit column widths and `horizontal-alignment` (left, center, right) identically between header `Text` and row data cells (centering Artist, BPM, Key, Duration, and Action icons).
+- **Evidence**: `ui/views/playback_bar.slint`, `ui/views/library_table.slint`, `ui/main.slint`.

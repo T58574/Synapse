@@ -716,6 +716,12 @@ pub fn setup_ui_bridge(
     let audio_clone = audio.clone();
     let player_clone = Arc::clone(&player);
     let next_track_fn = handle_next_track.clone();
+
+    // Winamp-style spectrum ballistics state
+    let mut smoothed_spectrum = [0.0f32; 64];
+    let mut peak_spectrum = [0.0f32; 64];
+    let mut peak_holds = [0u8; 64];
+    let mut peak_velocities = [0.0f32; 64];
     let mut is_idle_zeroed = false;
 
     timer.start(
@@ -733,9 +739,28 @@ pub fn setup_ui_bridge(
 
             if !is_playing {
                 if !is_idle_zeroed {
-                    is_idle_zeroed = true;
-                    let zero_spectrum = vec![0.0f32; 64];
-                    win.set_spectrum_data(Rc::new(VecModel::from(zero_spectrum)).into());
+                    let mut any_active = false;
+                    for i in 0..64 {
+                        smoothed_spectrum[i] *= 0.75;
+                        if peak_spectrum[i] > 0.005 {
+                            peak_velocities[i] += 0.008;
+                            peak_spectrum[i] = (peak_spectrum[i] - peak_velocities[i]).max(0.0);
+                        } else {
+                            peak_spectrum[i] = 0.0;
+                        }
+                        if smoothed_spectrum[i] > 0.005 || peak_spectrum[i] > 0.005 {
+                            any_active = true;
+                        }
+                    }
+
+                    if !any_active {
+                        is_idle_zeroed = true;
+                        smoothed_spectrum = [0.0f32; 64];
+                        peak_spectrum = [0.0f32; 64];
+                    }
+
+                    win.set_spectrum_data(Rc::new(VecModel::from(smoothed_spectrum.to_vec())).into());
+                    win.set_spectrum_peaks(Rc::new(VecModel::from(peak_spectrum.to_vec())).into());
                 }
                 return;
             }
@@ -746,10 +771,36 @@ pub fn setup_ui_bridge(
             win.set_current_pos(pos as f32);
             win.set_current_time_str(SharedString::from(format_duration(pos)));
 
-            // Spectrum Visualizer (stack allocated, zero JSON IPC)
-            let mut spectrum = [0.0f32; 64];
-            let _count = audio_clone.get_spectrum(slot, &mut spectrum);
-            win.set_spectrum_data(Rc::new(VecModel::from(spectrum.to_vec())).into());
+            // Query C++ FFT spectrum (logarithmically distributed across 64 bands)
+            let mut raw_spectrum = [0.0f32; 64];
+            let _count = audio_clone.get_spectrum(slot, &mut raw_spectrum);
+
+            // Winamp ballistics: snappy attack, smooth decay, and falling peak dots
+            for i in 0..64 {
+                let raw = raw_spectrum[i].clamp(0.0, 1.0);
+                if raw >= smoothed_spectrum[i] {
+                    smoothed_spectrum[i] = raw * 0.85 + smoothed_spectrum[i] * 0.15;
+                } else {
+                    smoothed_spectrum[i] = smoothed_spectrum[i] * 0.82;
+                }
+
+                let current_bar = smoothed_spectrum[i];
+                if current_bar >= peak_spectrum[i] {
+                    peak_spectrum[i] = current_bar;
+                    peak_holds[i] = 5; // hold for ~165ms (5 ticks)
+                    peak_velocities[i] = 0.0;
+                } else {
+                    if peak_holds[i] > 0 {
+                        peak_holds[i] -= 1;
+                    } else {
+                        peak_velocities[i] += 0.007; // gravitational acceleration
+                        peak_spectrum[i] = (peak_spectrum[i] - peak_velocities[i]).max(current_bar);
+                    }
+                }
+            }
+
+            win.set_spectrum_data(Rc::new(VecModel::from(smoothed_spectrum.to_vec())).into());
+            win.set_spectrum_peaks(Rc::new(VecModel::from(peak_spectrum.to_vec())).into());
 
             // Detect Track End
             if current_dur > 0.0 && pos >= (current_dur - 0.25) {

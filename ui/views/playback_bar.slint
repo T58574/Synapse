@@ -1,7 +1,6 @@
 import { CyberTheme } from "../theme.slint";
 import { CyberButton } from "../components/button.slint";
 import { CyberSlider } from "../components/slider.slint";
-import { SpectrumView } from "../visualizer/spectrum.slint";
 import {
     IconPlay,
     IconPause,
@@ -29,10 +28,6 @@ export component PlaybackBar inherits Rectangle {
     in property <string> duration_formatted: "03:00";
     in-out property <float> volume: 0.8;
     in property <bool> is_muted: false;
-    in property <[float]> mini_spectrum: [
-        0.15, 0.35, 0.65, 0.85, 0.50, 0.40, 0.70, 0.90,
-        0.60, 0.45, 0.30, 0.55, 0.75, 0.80, 0.40, 0.20
-    ];
 
     callback play_pause_clicked();
     callback prev_clicked();
@@ -42,7 +37,7 @@ export component PlaybackBar inherits Rectangle {
     callback volume_changed(float);
     callback mute_toggled();
 
-    height: 78px;
+    height: 80px;
     background: #090C12;
     border-width: 1px;
     border-color: CyberTheme.border;
@@ -65,10 +60,9 @@ export component PlaybackBar inherits Rectangle {
         spacing: 16px;
         alignment: space-between;
 
-        // ================= LEFT: TRACK META & COVER =================
+        // ================= LEFT: TRACK META & COVER (width: ~300px) =================
         HorizontalLayout {
-            min-width: 260px;
-            max-width: 330px;
+            width: 300px;
             spacing: 12px;
             alignment: start;
 
@@ -76,6 +70,7 @@ export component PlaybackBar inherits Rectangle {
             cover_container := Rectangle {
                 width: 48px;
                 height: 48px;
+                y: (parent.height - self.height) / 2;
                 background: CyberTheme.surface;
                 border-width: 1px;
                 border-color: root.is_playing ? CyberTheme.accent : CyberTheme.border;
@@ -176,7 +171,7 @@ export component PlaybackBar inherits Rectangle {
 
                     // BPM Pill
                     Rectangle {
-                        height: 15px;
+                        height: 16px;
                         background: #111724;
                         border-width: 1px;
                         border-color: CyberTheme.border;
@@ -198,7 +193,7 @@ export component PlaybackBar inherits Rectangle {
 
                     // Key Badge (Tactical Chamfered Pill)
                     Rectangle {
-                        height: 15px;
+                        height: 16px;
                         background: #00F0FF14;
                         border-width: 1px;
                         border-color: #00F0FF66;
@@ -220,7 +215,7 @@ export component PlaybackBar inherits Rectangle {
 
                     // Mood Badge
                     if (root.track_mood != "") : Rectangle {
-                        height: 15px;
+                        height: 16px;
                         background: CyberTheme.active_row;
                         border-width: 1px;
                         border-color: CyberTheme.accent;
@@ -243,19 +238,21 @@ export component PlaybackBar inherits Rectangle {
             }
         }
 
-        // ================= CENTER: TRANSPORT & SEEKER =================
+        // ================= CENTER: TRANSPORT & WIDE SEEKER =================
         VerticalLayout {
             horizontal-stretch: 1;
             alignment: center;
-            spacing: 5px;
+            spacing: 6px;
 
             // Transport Buttons Row
             HorizontalLayout {
                 alignment: center;
-                spacing: 12px;
+                spacing: 10px;
 
                 // Previous Track Button
                 CyberButton {
+                    width: 36px;
+                    height: 34px;
                     compact: true;
                     clicked => { root.prev_clicked(); }
                     IconPrev {
@@ -266,8 +263,10 @@ export component PlaybackBar inherits Rectangle {
 
                 // Primary Play / Pause Button with Glowing State
                 CyberButton {
+                    width: 96px;
+                    height: 34px;
                     primary: true;
-                    compact: false;
+                    compact: true;
                     clicked => { root.play_pause_clicked(); }
 
                     if (!root.is_playing) : IconPlay {
@@ -284,6 +283,8 @@ export component PlaybackBar inherits Rectangle {
 
                 // Next Track Button
                 CyberButton {
+                    width: 36px;
+                    height: 34px;
                     compact: true;
                     clicked => { root.next_clicked(); }
                     IconNext {
@@ -294,6 +295,8 @@ export component PlaybackBar inherits Rectangle {
 
                 // Automix Toggle Button
                 CyberButton {
+                    width: 114px;
+                    height: 34px;
                     active: root.is_automix;
                     compact: true;
                     clicked => { root.automix_toggled(); }
@@ -307,23 +310,25 @@ export component PlaybackBar inherits Rectangle {
                 }
             }
 
-            // Seeker Row: Monospace timestamps + CyberSlider
+            // WIDE SEEKER ROW: Monospace timestamps + CyberSlider
             HorizontalLayout {
-                spacing: 8px;
+                spacing: 12px;
                 alignment: center;
 
                 Text {
                     text: root.time_formatted;
                     font-family: CyberTheme.font_mono;
                     font-size: 11px;
-                    color: CyberTheme.muted;
+                    font-weight: 700;
+                    color: CyberTheme.accent;
                     vertical-alignment: center;
-                    min-width: 40px;
+                    width: 44px;
                     horizontal-alignment: right;
                 }
 
                 CyberSlider {
                     horizontal-stretch: 1;
+                    height: 20px;
                     minimum: 0.0;
                     maximum: Math.max(1.0, root.total_duration);
                     value: root.current_position;
@@ -334,112 +339,75 @@ export component PlaybackBar inherits Rectangle {
                     text: root.duration_formatted;
                     font-family: CyberTheme.font_mono;
                     font-size: 11px;
+                    font-weight: 600;
                     color: CyberTheme.muted;
                     vertical-alignment: center;
-                    min-width: 40px;
+                    width: 44px;
                     horizontal-alignment: left;
                 }
             }
         }
 
-        // ================= RIGHT: MINI VISUALIZER & VOLUME =================
+        // ================= RIGHT: VOLUME CONTROL =================
         HorizontalLayout {
-            min-width: 230px;
-            max-width: 290px;
-            spacing: 12px;
+            width: 175px;
+            spacing: 10px;
             alignment: end;
 
-            // Mini Wave / Spectrum Preview with Idle HUD
-            Rectangle {
-                width: 76px;
-                height: 36px;
-                background: #05070A;
+            // Volume Mute Button
+            mute_btn := Rectangle {
+                width: 32px;
+                height: 32px;
+                y: (parent.height - self.height) / 2;
+                background: mute_touch.has-hover ? #182233 : CyberTheme.surface;
                 border-width: 1px;
-                border-color: root.is_playing ? CyberTheme.accent : CyberTheme.border;
-                border-radius: 1px;
-                clip: true;
+                border-color: mute_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
+                border-radius: CyberTheme.radius_sm;
 
-                if (root.is_playing) : SpectrumView {
-                    magnitudes: root.mini_spectrum;
-                    is_active: true;
-                    bar_spacing: 1px;
-                    min_bar_height: 2px;
+                if (!root.is_muted && root.volume > 0.0) : IconVolume {
+                    size: 15px;
+                    icon_color: mute_touch.has-hover ? CyberTheme.accent : CyberTheme.text;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
                 }
 
-                if (!root.is_playing) : Rectangle {
-                    width: 100%;
-                    height: 100%;
+                if (root.is_muted || root.volume == 0.0) : IconVolumeMute {
+                    size: 15px;
+                    icon_color: CyberTheme.cyber_crimson;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                }
 
-                    // Idle center line
-                    Rectangle {
-                        y: (parent.height - 1px) / 2;
-                        width: parent.width;
-                        height: 1px;
-                        background: #141C2A;
-                    }
-
-                    // Idle pulse bars pattern
-                    HorizontalLayout {
-                        padding-left: 10px;
-                        padding-right: 10px;
-                        spacing: 4px;
-                        alignment: center;
-
-                        Rectangle { width: 3px; height: 6px; background: CyberTheme.cyber_cyan; opacity: 0.25; border-radius: 1px; }
-                        Rectangle { width: 3px; height: 12px; background: CyberTheme.cyber_cyan; opacity: 0.35; border-radius: 1px; }
-                        Rectangle { width: 3px; height: 18px; background: CyberTheme.cyber_cyan; opacity: 0.45; border-radius: 1px; }
-                        Rectangle { width: 3px; height: 12px; background: CyberTheme.cyber_cyan; opacity: 0.35; border-radius: 1px; }
-                        Rectangle { width: 3px; height: 6px; background: CyberTheme.cyber_cyan; opacity: 0.25; border-radius: 1px; }
-                    }
-
-                    // Tactical corner notch
-                    Rectangle {
-                        x: 2px;
-                        y: 2px;
-                        width: 3px;
-                        height: 3px;
-                        background: CyberTheme.accent;
-                        opacity: 0.4;
-                    }
+                mute_touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.mute_toggled(); }
                 }
             }
 
-            // Volume Section
-            HorizontalLayout {
-                spacing: 6px;
-                alignment: center;
-
-                CyberButton {
-                    compact: true;
-                    active: root.is_muted;
-                    clicked => { root.mute_toggled(); }
-
-                    if (root.is_muted) : IconVolumeMute {
-                        size: 14px;
-                        icon_color: CyberTheme.cyber_crimson;
-                    }
-                    if (!root.is_muted) : IconVolume {
-                        size: 14px;
-                        icon_color: parent.icon_color;
-                    }
+            // Volume Slider
+            CyberSlider {
+                width: 90px;
+                height: 20px;
+                minimum: 0.0;
+                maximum: 1.0;
+                value: root.is_muted ? 0.0 : root.volume;
+                changed(val) => {
+                    root.volume = val;
+                    root.volume_changed(val);
                 }
+                y: (parent.height - self.height) / 2;
+            }
 
-                CyberSlider {
-                    width: 75px;
-                    minimum: 0.0;
-                    maximum: 1.0;
-                    value: root.is_muted ? 0.0 : root.volume;
-                    changed(val) => { root.volume_changed(val); }
-                }
-
-                Text {
-                    text: Math.round((root.is_muted ? 0.0 : root.volume) * 100) + "%";
-                    font-family: CyberTheme.font_mono;
-                    font-size: 10px;
-                    color: CyberTheme.muted;
-                    vertical-alignment: center;
-                    min-width: 34px;
-                }
+            // Volume Percentage Label
+            Text {
+                text: (root.is_muted ? 0 : Math.round(root.volume * 100)) + "%";
+                font-family: CyberTheme.font_mono;
+                font-size: 10px;
+                font-weight: 700;
+                color: root.is_muted ? CyberTheme.cyber_crimson : CyberTheme.muted;
+                vertical-alignment: center;
+                width: 34px;
+                horizontal-alignment: left;
             }
         }
     }
