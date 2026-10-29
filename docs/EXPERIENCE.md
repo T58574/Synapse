@@ -173,3 +173,10 @@
   3. In `build.rs`, pass `/EHsc` (C++ exception unwind model), `/utf-8` (UTF-8 source and execution charset for Cyrillic comments/strings), and `/permissive-` to `cc::Build`.
   4. Link `ole32`, `winmm`, `user32`, and `avrt` for WASAPI multimedia device threading.
 - **Evidence**: Fixed in `build.rs` and `cpp/audio_engine.cpp:1-20`.
+
+### Cue (Symptom): `winit` panics on Windows with `OleInitialize failed! Result was: RPC_E_CHANGED_MODE`
+- **Lesson (Takeaway)**: `miniaudio` defaults internal `CoInitializeEx` calls to `COINIT_MULTITHREADED` (0). If `AudioManager::new()` is invoked before GUI initialization on the main thread, the thread is locked into an MTA apartment. When `winit` (Slint's windowing backend) subsequently calls `OleInitialize()` (which strictly requires STA `COINIT_APARTMENTTHREADED`), Windows returns `RPC_E_CHANGED_MODE` and `winit` panics immediately.
+  To resolve:
+  1. Always instantiate `MainWindow::new()?` first on the main thread so `OleInitialize()` establishes STA cleanly.
+  2. Set `#define MA_COINIT_VALUE 2` (`COINIT_APARTMENTTHREADED`) in `audio_engine.cpp` and `build.rs` so miniaudio uses matching concurrency mode.
+- **Evidence**: Fixed in `src/main.rs`, `cpp/audio_engine.cpp`, and `build.rs`.

@@ -18,6 +18,7 @@ fn main() {
         build.define("WIN32_LEAN_AND_MEAN", None);
         build.define("_CRT_SECURE_NO_WARNINGS", None);
         build.define("_USE_MATH_DEFINES", None);
+        build.define("MA_COINIT_VALUE", "2");
 
         if target_env == "msvc" {
             build.flag("/EHsc");

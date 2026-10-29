@@ -11,6 +11,9 @@
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
 #endif
+#ifndef MA_COINIT_VALUE
+#define MA_COINIT_VALUE 2 // 2 = COINIT_APARTMENTTHREADED (matches Windows GUI winit/OleInitialize)
+#endif
 #endif
 
 #include <vector>
