@@ -1,17 +1,16 @@
 {
   "name": "synapse-root",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Synapse desktop application build workspace",
+  "description": "Synapse desktop application build workspace (Rust + Slint)",
   "scripts": {
     "build:menu": "node scripts/build-menu.js",
     "build": "node scripts/build-menu.js --build",
-    "build:windows": "node scripts/build-menu.js --windows",
-    "build:linux": "node scripts/build-menu.js --linux",
-    "build:frontend": "node scripts/build-menu.js --frontend",
+    "build:debug": "node scripts/build-menu.js --debug",
+    "start": "node scripts/build-menu.js --run",
     "test": "node scripts/build-menu.js --test",
     "doctor": "node scripts/build-menu.js --doctor",
     "clean": "node scripts/build-menu.js --clean",
-    "install:wails": "node scripts/build-menu.js --install-wails"
+    "ui:preview": "node scripts/build-menu.js --preview"
   }
 }
