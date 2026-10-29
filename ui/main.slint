@@ -9,6 +9,7 @@ import { LibrarySidebar, PlaylistRow } from "views/sidebar.slint";
 import { LibraryTable, TrackRow } from "views/library_table.slint";
 import { EqualizerView } from "views/equalizer.slint";
 import { SettingsView, AudioDeviceItem } from "views/settings.slint";
+import { IconBolt, IconFolder, IconScan, IconEqualizer } from "components/icons.slint";
 import { ScrollView } from "std-widgets.slint";
 
 export { CyberTheme, CyberColors } from "theme.slint";
@@ -144,22 +145,34 @@ export component MainWindow inherits Window {
                                     border-color: logo_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
                                     border-radius: CyberTheme.radius_sm;
 
-                                    // Top-right chamfer notch
-                                    Rectangle {
-                                        x: parent.width - 5px;
+                                    // Top-right 45-degree chamfer notch
+                                    Path {
+                                        x: parent.width - 6px;
                                         y: 0px;
-                                        width: 5px;
-                                        height: 5px;
-                                        background: CyberTheme.accent;
+                                        width: 6px;
+                                        height: 6px;
+                                        viewbox-x: 0;
+                                        viewbox-y: 0;
+                                        viewbox-width: 6;
+                                        viewbox-height: 6;
+                                        fill: CyberTheme.accent;
+                                        commands: "M 0 0 L 6 0 L 6 6 Z";
                                     }
 
                                     HorizontalLayout {
                                         padding-left: 10px;
                                         padding-right: 10px;
+                                        spacing: 6px;
                                         alignment: center;
 
+                                        IconBolt {
+                                            size: 14px;
+                                            icon_color: CyberTheme.accent;
+                                            y: (parent.height - self.height) / 2;
+                                        }
+
                                         Text {
-                                            text: "⚡ SYNAPSE";
+                                            text: "SYNAPSE";
                                             font-family: CyberTheme.font_display;
                                             font-size: 13px;
                                             font-weight: 800;
@@ -229,9 +242,9 @@ export component MainWindow inherits Window {
                         }
                     }
 
-                    // Header Center: Sleek HUD Status & Spectrum Visualizer
+                    // Header Center: Sleek Audio Telemetry Status & Spectrum Visualizer
                     HorizontalLayout {
-                        width: 250px;
+                        width: 290px;
                         height: 30px;
                         alignment: center;
 
@@ -253,22 +266,32 @@ export component MainWindow inherits Window {
                                 background: CyberTheme.cyber_cyan;
                             }
 
-                            // Cyber chamfer notches
-                            Rectangle {
+                            // Cyber 45-degree chamfer notches
+                            Path {
                                 x: 0px;
                                 y: 0px;
-                                width: 4px;
-                                height: 4px;
-                                background: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                                width: 5px;
+                                height: 5px;
+                                viewbox-x: 0;
+                                viewbox-y: 0;
+                                viewbox-width: 5;
+                                viewbox-height: 5;
+                                fill: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.muted;
                                 opacity: 0.6;
+                                commands: "M 0 0 L 5 0 L 0 5 Z";
                             }
-                            Rectangle {
-                                x: parent.width - 4px;
-                                y: parent.height - 4px;
-                                width: 4px;
-                                height: 4px;
-                                background: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                            Path {
+                                x: parent.width - 5px;
+                                y: parent.height - 5px;
+                                width: 5px;
+                                height: 5px;
+                                viewbox-x: 0;
+                                viewbox-y: 0;
+                                viewbox-width: 5;
+                                viewbox-height: 5;
+                                fill: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.muted;
                                 opacity: 0.6;
+                                commands: "M 0 5 L 5 5 L 5 0 Z";
                             }
 
                             // When playing: Live Audio Spectrum with Live Badge
@@ -291,7 +314,7 @@ export component MainWindow inherits Window {
                                     }
 
                                     Text {
-                                        text: "LIVE";
+                                        text: "LIVE 44.1kHz";
                                         font-family: CyberTheme.font_mono;
                                         font-size: 9px;
                                         font-weight: 700;
@@ -312,7 +335,7 @@ export component MainWindow inherits Window {
                                 }
                             }
 
-                            // When idle: subtle cyber grid status display (SYS_AUDIO // IDLE)
+                            // When idle: audio telemetry status
                             if (!root.is_playing) : HorizontalLayout {
                                 padding-left: 10px;
                                 padding-right: 10px;
@@ -331,9 +354,9 @@ export component MainWindow inherits Window {
                                     }
 
                                     Text {
-                                        text: "SYS_AUDIO // IDLE";
+                                        text: "AUDIO ENGINE // 44.1kHz 24-BIT";
                                         font-family: CyberTheme.font_mono;
-                                        font-size: 10px;
+                                        font-size: 9px;
                                         font-weight: 700;
                                         letter-spacing: 0.5px;
                                         color: CyberTheme.muted;
@@ -342,39 +365,51 @@ export component MainWindow inherits Window {
                                 }
 
                                 Text {
-                                    text: "[ STANDBY ]";
+                                    text: "[ READY ]";
                                     font-family: CyberTheme.font_mono;
                                     font-size: 9px;
                                     font-weight: 600;
-                                    color: CyberTheme.border;
+                                    color: CyberTheme.cyber_green;
                                     vertical-alignment: center;
                                 }
                             }
                         }
                     }
 
-                    // Header Right: Quick Buttons: 📁 OPEN, 🔄 SCAN, 🎛 EQUALIZER
+                    // Header Right: Quick Buttons (Vector Icons, zero emojis)
                     HorizontalLayout {
                         spacing: 8px;
                         alignment: end;
 
                         CyberButton {
-                            text: "📁 OPEN";
                             compact: true;
                             clicked => { root.open_directory(); }
+                            IconFolder {
+                                size: 14px;
+                                icon_color: parent.icon_color;
+                            }
+                            text: "OPEN";
                         }
 
                         CyberButton {
-                            text: "🔄 SCAN";
                             compact: true;
                             clicked => { root.scan_directory(); }
+                            IconScan {
+                                size: 14px;
+                                icon_color: parent.icon_color;
+                            }
+                            text: "SCAN";
                         }
 
                         CyberButton {
-                            text: "🎛 EQUALIZER";
                             active: root.show_equalizer;
                             compact: true;
                             clicked => { root.show_equalizer = !root.show_equalizer; }
+                            IconEqualizer {
+                                size: 14px;
+                                icon_color: parent.icon_color;
+                            }
+                            text: "EQUALIZER";
                         }
                     }
                 }

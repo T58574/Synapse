@@ -1,4 +1,5 @@
 import { CyberTheme } from "../theme.slint";
+import { IconCheck, IconChevronDown } from "./icons.slint";
 
 export struct SelectOption {
     id: string,
@@ -74,12 +75,10 @@ export component CyberSelect inherits Rectangle {
             }
         }
 
-        Text {
-            text: "▼";
-            font-family: CyberTheme.font_mono;
-            font-size: 10px;
-            color: touch.has-hover ? CyberTheme.accent : CyberTheme.muted;
-            vertical-alignment: center;
+        IconChevronDown {
+            size: 12px;
+            icon_color: touch.has-hover ? CyberTheme.accent : CyberTheme.muted;
+            y: (parent.height - self.height) / 2;
         }
     }
 
@@ -177,13 +176,24 @@ export component CyberSelect inherits Rectangle {
                             }
                         }
 
-                        if (idx == root.current_index) : Text {
-                            text: "✓ ACTIVE";
-                            font-family: CyberTheme.font_mono;
-                            font-size: 10px;
-                            font-weight: 700;
-                            color: CyberTheme.accent;
-                            vertical-alignment: center;
+                        if (idx == root.current_index) : HorizontalLayout {
+                            spacing: 4px;
+                            alignment: center;
+
+                            IconCheck {
+                                size: 10px;
+                                icon_color: CyberTheme.accent;
+                                y: (parent.height - self.height) / 2;
+                            }
+
+                            Text {
+                                text: "ACTIVE";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 10px;
+                                font-weight: 700;
+                                color: CyberTheme.accent;
+                                vertical-alignment: center;
+                            }
                         }
 
                         if (idx != root.current_index && opt.badge != "") : Text {

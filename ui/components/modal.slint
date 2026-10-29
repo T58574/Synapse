@@ -1,4 +1,5 @@
 import { CyberTheme } from "../theme.slint";
+import { IconClose } from "./icons.slint";
 
 export component CyberModal inherits Rectangle {
     in property <bool> is_open: false;
@@ -128,14 +129,11 @@ export component CyberModal inherits Rectangle {
                     border-width: 1px;
                     border-color: close_touch.has-hover ? CyberTheme.cyber_crimson : CyberTheme.border;
 
-                    Text {
-                        text: "✕";
-                        font-family: CyberTheme.font_mono;
-                        font-size: 14px;
-                        font-weight: 700;
-                        color: close_touch.has-hover ? #FFFFFF : CyberTheme.muted;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
+                    IconClose {
+                        size: 13px;
+                        icon_color: close_touch.has-hover ? #FFFFFF : CyberTheme.muted;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
                     }
 
                     close_touch := TouchArea {

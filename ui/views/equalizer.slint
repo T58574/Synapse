@@ -1,6 +1,7 @@
 import { CyberTheme } from "../theme.slint";
 import { CyberButton } from "../components/button.slint";
 import { CyberSlider } from "../components/slider.slint";
+import { IconScan } from "../components/icons.slint";
 
 export component EqualizerView inherits Rectangle {
     in-out property <[float]> bands: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
@@ -105,8 +106,12 @@ export component EqualizerView inherits Rectangle {
                 HorizontalLayout {
                     alignment: center;
                     CyberButton {
-                        text: "↺ RESET EQ (FLAT)";
                         clicked => { root.reset_eq(); }
+                        IconScan {
+                            size: 13px;
+                            icon_color: parent.icon_color;
+                        }
+                        text: "RESET EQ (FLAT)";
                     }
                 }
             }

@@ -2,6 +2,16 @@ import { CyberTheme } from "../theme.slint";
 import { CyberButton } from "../components/button.slint";
 import { CyberSlider } from "../components/slider.slint";
 import { SpectrumView } from "../visualizer/spectrum.slint";
+import {
+    IconPlay,
+    IconPause,
+    IconNext,
+    IconPrev,
+    IconVolume,
+    IconVolumeMute,
+    IconBolt,
+    IconDisc
+} from "../components/icons.slint";
 
 export component PlaybackBar inherits Rectangle {
     in property <image> cover_art;
@@ -32,19 +42,19 @@ export component PlaybackBar inherits Rectangle {
     callback volume_changed(float);
     callback mute_toggled();
 
-    height: 76px;
+    height: 78px;
     background: #090C12;
     border-width: 1px;
     border-color: CyberTheme.border;
 
-    // Top neon accent line
+    // Top neon accent line with playback reactivity
     Rectangle {
         x: 0px;
         y: 0px;
         width: parent.width;
         height: 1px;
-        background: CyberTheme.accent;
-        opacity: root.is_playing ? 0.9 : 0.3;
+        background: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.accent;
+        opacity: root.is_playing ? 0.9 : 0.25;
     }
 
     HorizontalLayout {
@@ -57,12 +67,12 @@ export component PlaybackBar inherits Rectangle {
 
         // ================= LEFT: TRACK META & COVER =================
         HorizontalLayout {
-            min-width: 240px;
-            max-width: 320px;
+            min-width: 260px;
+            max-width: 330px;
             spacing: 12px;
             alignment: start;
 
-            // Cover Art Container (48x48 px with chamfered neon frame)
+            // Cover Art Container (48x48 px with 45-degree chamfer brackets)
             cover_container := Rectangle {
                 width: 48px;
                 height: 48px;
@@ -72,20 +82,30 @@ export component PlaybackBar inherits Rectangle {
                 border-radius: CyberTheme.radius_sm;
                 clip: true;
 
-                // Chamfer corner notches
-                Rectangle {
-                    x: parent.width - 5px;
+                // 45-degree chamfer corner brackets
+                Path {
+                    x: parent.width - 6px;
                     y: 0px;
-                    width: 5px;
-                    height: 5px;
-                    background: root.is_playing ? CyberTheme.accent : CyberTheme.border;
+                    width: 6px;
+                    height: 6px;
+                    viewbox-x: 0;
+                    viewbox-y: 0;
+                    viewbox-width: 6;
+                    viewbox-height: 6;
+                    fill: root.is_playing ? CyberTheme.accent : CyberTheme.border;
+                    commands: "M 0 0 L 6 0 L 6 6 Z";
                 }
-                Rectangle {
+                Path {
                     x: 0px;
-                    y: parent.height - 5px;
-                    width: 5px;
-                    height: 5px;
-                    background: root.is_playing ? CyberTheme.accent : CyberTheme.border;
+                    y: parent.height - 6px;
+                    width: 6px;
+                    height: 6px;
+                    viewbox-x: 0;
+                    viewbox-y: 0;
+                    viewbox-width: 6;
+                    viewbox-height: 6;
+                    fill: root.is_playing ? CyberTheme.accent : CyberTheme.border;
+                    commands: "M 0 0 L 0 6 L 6 6 Z";
                 }
 
                 if (root.has_cover) : Image {
@@ -94,35 +114,41 @@ export component PlaybackBar inherits Rectangle {
                     height: 100%;
                 }
 
+                // Fallback: Tactical Vinyl Disc Reticle
                 if (!root.has_cover) : Rectangle {
                     width: 100%;
                     height: 100%;
-                    background: #0C101A;
+                    background: #0B0F18;
 
-                    // Subtle tactical crosshair / reticle
+                    // Subtle HUD crosshair
                     Rectangle {
-                        x: 6px;
-                        y: 6px;
-                        width: parent.width - 12px;
-                        height: parent.height - 12px;
-                        border-width: 1px;
-                        border-color: #172233;
+                        x: 4px;
+                        y: 23px;
+                        width: parent.width - 8px;
+                        height: 1px;
+                        background: #172233;
+                    }
+                    Rectangle {
+                        x: 23px;
+                        y: 4px;
+                        width: 1px;
+                        height: parent.height - 8px;
+                        background: #172233;
                     }
 
-                    Text {
-                        text: "⚡";
-                        font-size: 18px;
-                        color: root.is_playing ? CyberTheme.accent : CyberTheme.muted;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
+                    IconDisc {
+                        size: 26px;
+                        icon_color: root.is_playing ? CyberTheme.accent : CyberTheme.muted;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
                     }
                 }
             }
 
-            // Track Info Text with elision
+            // Track Info Text with badges
             VerticalLayout {
                 alignment: center;
-                spacing: 2px;
+                spacing: 3px;
                 horizontal-stretch: 1;
 
                 Text {
@@ -143,41 +169,48 @@ export component PlaybackBar inherits Rectangle {
                     overflow: elide;
                 }
 
+                // Metadata Badges: BPM Pill, Key Pill, Mood Badge
                 HorizontalLayout {
                     spacing: 6px;
                     alignment: start;
 
-                    Text {
-                        text: Math.round(root.bpm) + " BPM";
-                        font-family: CyberTheme.font_mono;
-                        font-size: 9px;
-                        font-weight: 600;
-                        color: CyberTheme.muted;
-                        vertical-alignment: center;
-                    }
-
-                    Text {
-                        text: "|";
-                        font-size: 9px;
-                        color: CyberTheme.border;
-                        vertical-alignment: center;
-                    }
-
-                    // Key Badge
+                    // BPM Pill
                     Rectangle {
-                        height: 14px;
-                        background: #00F0FF1A;
+                        height: 15px;
+                        background: #111724;
                         border-width: 1px;
-                        border-color: #00F0FF66;
-                        border-radius: 1px;
+                        border-color: CyberTheme.border;
+                        border-radius: 2px;
 
                         HorizontalLayout {
-                            padding-left: 4px;
-                            padding-right: 4px;
+                            padding-left: 5px;
+                            padding-right: 5px;
+                            Text {
+                                text: Math.round(root.bpm) + " BPM";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 9px;
+                                font-weight: 600;
+                                color: CyberTheme.muted;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+
+                    // Key Badge (Tactical Chamfered Pill)
+                    Rectangle {
+                        height: 15px;
+                        background: #00F0FF14;
+                        border-width: 1px;
+                        border-color: #00F0FF66;
+                        border-radius: 2px;
+
+                        HorizontalLayout {
+                            padding-left: 5px;
+                            padding-right: 5px;
                             Text {
                                 text: root.key_sig != "" ? root.key_sig : "--";
                                 font-family: CyberTheme.font_mono;
-                                font-size: 8px;
+                                font-size: 9px;
                                 font-weight: 700;
                                 color: CyberTheme.cyber_cyan;
                                 vertical-alignment: center;
@@ -185,18 +218,19 @@ export component PlaybackBar inherits Rectangle {
                         }
                     }
 
+                    // Mood Badge
                     if (root.track_mood != "") : Rectangle {
-                        height: 14px;
+                        height: 15px;
                         background: CyberTheme.active_row;
                         border-width: 1px;
                         border-color: CyberTheme.accent;
-                        border-radius: 1px;
+                        border-radius: 2px;
 
                         HorizontalLayout {
-                            padding-left: 4px;
-                            padding-right: 4px;
+                            padding-left: 5px;
+                            padding-right: 5px;
                             Text {
-                                text: root.track_mood;
+                                text: "[ " + root.track_mood + " ]";
                                 font-family: CyberTheme.font_mono;
                                 font-size: 8px;
                                 font-weight: 700;
@@ -213,41 +247,67 @@ export component PlaybackBar inherits Rectangle {
         VerticalLayout {
             horizontal-stretch: 1;
             alignment: center;
-            spacing: 4px;
+            spacing: 5px;
 
             // Transport Buttons Row
             HorizontalLayout {
                 alignment: center;
                 spacing: 12px;
 
+                // Previous Track Button
                 CyberButton {
-                    text: "|◀";
                     compact: true;
                     clicked => { root.prev_clicked(); }
+                    IconPrev {
+                        size: 14px;
+                        icon_color: parent.icon_color;
+                    }
                 }
 
+                // Primary Play / Pause Button with Glowing State
                 CyberButton {
-                    text: root.is_playing ? "⏸ PAUSE" : "▶ PLAY";
                     primary: true;
                     compact: false;
                     clicked => { root.play_pause_clicked(); }
+
+                    if (!root.is_playing) : IconPlay {
+                        size: 15px;
+                        icon_color: parent.icon_color;
+                    }
+                    if (root.is_playing) : IconPause {
+                        size: 15px;
+                        icon_color: parent.icon_color;
+                    }
+
+                    text: root.is_playing ? "PAUSE" : "PLAY";
                 }
 
+                // Next Track Button
                 CyberButton {
-                    text: "▶|";
                     compact: true;
                     clicked => { root.next_clicked(); }
+                    IconNext {
+                        size: 14px;
+                        icon_color: parent.icon_color;
+                    }
                 }
 
+                // Automix Toggle Button
                 CyberButton {
-                    text: root.is_automix ? "⚡ AUTOMIX: ON" : "⚡ AUTOMIX";
                     active: root.is_automix;
                     compact: true;
                     clicked => { root.automix_toggled(); }
+
+                    IconBolt {
+                        size: 13px;
+                        icon_color: root.is_automix ? CyberTheme.cyber_yellow : parent.icon_color;
+                    }
+
+                    text: root.is_automix ? "AUTOMIX: ON" : "AUTOMIX";
                 }
             }
 
-            // Seeker Row
+            // Seeker Row: Monospace timestamps + CyberSlider
             HorizontalLayout {
                 spacing: 8px;
                 alignment: center;
@@ -258,7 +318,8 @@ export component PlaybackBar inherits Rectangle {
                     font-size: 11px;
                     color: CyberTheme.muted;
                     vertical-alignment: center;
-                    min-width: 36px;
+                    min-width: 40px;
+                    horizontal-alignment: right;
                 }
 
                 CyberSlider {
@@ -275,15 +336,16 @@ export component PlaybackBar inherits Rectangle {
                     font-size: 11px;
                     color: CyberTheme.muted;
                     vertical-alignment: center;
-                    min-width: 36px;
+                    min-width: 40px;
+                    horizontal-alignment: left;
                 }
             }
         }
 
         // ================= RIGHT: MINI VISUALIZER & VOLUME =================
         HorizontalLayout {
-            min-width: 220px;
-            max-width: 280px;
+            min-width: 230px;
+            max-width: 290px;
             spacing: 12px;
             alignment: end;
 
@@ -348,10 +410,18 @@ export component PlaybackBar inherits Rectangle {
                 alignment: center;
 
                 CyberButton {
-                    text: root.is_muted ? "MUTED" : "VOL";
                     compact: true;
                     active: root.is_muted;
                     clicked => { root.mute_toggled(); }
+
+                    if (root.is_muted) : IconVolumeMute {
+                        size: 14px;
+                        icon_color: CyberTheme.cyber_crimson;
+                    }
+                    if (!root.is_muted) : IconVolume {
+                        size: 14px;
+                        icon_color: parent.icon_color;
+                    }
                 }
 
                 CyberSlider {
@@ -368,7 +438,7 @@ export component PlaybackBar inherits Rectangle {
                     font-size: 10px;
                     color: CyberTheme.muted;
                     vertical-alignment: center;
-                    min-width: 32px;
+                    min-width: 34px;
                 }
             }
         }

@@ -197,3 +197,11 @@
 ### Cue (Symptom): Row TouchArea intercepts clicks to nested action buttons in Slint virtualized lists
 - **Lesson (Takeaway)**: In Slint, elements declared later in markup have higher Z-order and intercept mouse clicks. When implementing table/list rows that are clickable as a whole but contain action buttons (`+`, `✕`), declare the background row `TouchArea` *before* the inner `HorizontalLayout` / action button components so buttons are stacked on top and receive user events cleanly. Also note that `vertical-alignment` is a text property and cannot be declared on `Rectangle`.
 - **Evidence**: Fixed in `ui/views/library_table.slint`, `ui/views/sidebar.slint`, and verified via `cargo check` & `cargo test --bin synapse`.
+
+### Cue (Symptom): Mobile emojis and text unicode icons cause platform font mismatches, blurry rendering, and unprofessional DAW aesthetics
+- **Lesson (Takeaway)**:
+  1. Do not use unicode emojis or fallback text symbols (`📁`, `🔄`, `🎛`, `⚡`, `▶`, `⏸`, `|◀`, `▶|`, `✕`, `✓`, `♬`, `◈`, `◎`) in high-performance cyber DAW interfaces. Mobile emoji fonts vary widely across Linux/Windows/macOS distributions, often rendering in clashing multi-color bitmap styles.
+  2. Implement an authentic vector iconography module in `ui/components/icons.slint` using Slint's `Path` primitive with fixed viewBoxes (`viewbox-width: 24; viewbox-height: 24`) and SVG path `commands`.
+  3. Ensure all icons take `in property <color> icon_color` and `in property <length> size: 16px` for razor-sharp, resolution-independent vector scaling.
+  4. For authentic cyberpunk chamfers, replace square corner rectangles with 45-degree angle corner notches (`Path` with triangular polygon commands like `"M 0 0 L 7 0 L 7 7 Z"`).
+- **Evidence**: Created `ui/components/icons.slint` with 17 custom vector components; updated `button.slint`, `playback_bar.slint`, `sidebar.slint`, `library_table.slint`, `main.slint`, `equalizer.slint`, `settings.slint`, and `modal.slint`. Verified with `cargo check` and 14/14 unit tests passing.

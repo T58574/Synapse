@@ -2,6 +2,7 @@ import { CyberTheme } from "../theme.slint";
 import { CyberButton } from "../components/button.slint";
 import { CyberSlider } from "../components/slider.slint";
 import { CyberSelect, SelectOption } from "../components/cyber_select.slint";
+import { IconFolder } from "../components/icons.slint";
 import { ScrollView } from "std-widgets.slint";
 
 export struct AudioDeviceItem {
@@ -533,9 +534,13 @@ export component SettingsView inherits Rectangle {
                         VerticalLayout {
                             alignment: end;
                             CyberButton {
-                                text: "📂 OPEN MUSIC DIRECTORY";
                                 primary: true;
                                 clicked => { root.open_music_dir(); }
+                                IconFolder {
+                                    size: 14px;
+                                    icon_color: parent.icon_color;
+                                }
+                                text: "OPEN MUSIC DIRECTORY";
                             }
                         }
                     }
