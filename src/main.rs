@@ -19,7 +19,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 2. Initialize Tokio runtime for async file scanning and background workers
     let rt = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(4)
+        .worker_threads(2)
+        .thread_stack_size(1024 * 1024)
         .enable_all()
         .build()?;
     let tokio_handle = rt.handle().clone();
@@ -48,6 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let lib_for_scan = library_manager.clone();
     tokio_handle.spawn(async move {
         let _ = lib_for_scan.scan_default().await;
+        lib_for_scan.shrink_memory();
     });
 
     // 8. Run Slint event loop

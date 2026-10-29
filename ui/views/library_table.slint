@@ -1,6 +1,6 @@
 import { CyberTheme } from "../theme.slint";
 import { CyberButton } from "../components/button.slint";
-import { ScrollView } from "std-widgets.slint";
+import { ListView } from "std-widgets.slint";
 
 export struct TrackRow {
     file_path: string,
@@ -57,15 +57,28 @@ export component LibraryTable inherits Rectangle {
                         vertical-alignment: center;
                     }
 
-                    search_input := TextInput {
-                        text <=> root.search_query;
-                        font-family: CyberTheme.font_mono;
-                        font-size: 12px;
-                        color: CyberTheme.text;
-                        vertical-alignment: center;
+                    Rectangle {
                         horizontal-stretch: 1;
-                        edited => {
-                            root.search_changed(self.text);
+
+                        if (search_input.text == "") : Text {
+                            text: "Search tracks, artists, genres, keys...";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 11px;
+                            color: CyberTheme.muted;
+                            vertical-alignment: center;
+                        }
+
+                        search_input := TextInput {
+                            width: 100%;
+                            height: 100%;
+                            text <=> root.search_query;
+                            font-family: CyberTheme.font_mono;
+                            font-size: 12px;
+                            color: CyberTheme.text;
+                            vertical-alignment: center;
+                            edited => {
+                                root.search_changed(self.text);
+                            }
                         }
                     }
 
@@ -113,7 +126,7 @@ export component LibraryTable inherits Rectangle {
             vertical-stretch: 1;
             spacing: 0px;
 
-            // Table Header Row
+            // Crisp Column Headers
             Rectangle {
                 height: 32px;
                 background: #0E121A;
@@ -174,7 +187,7 @@ export component LibraryTable inherits Rectangle {
                         vertical-alignment: center;
                     }
                     Text {
-                        text: "TIME";
+                        text: "DURATION";
                         width: 70px;
                         font-family: CyberTheme.font_mono;
                         font-size: 10px;
@@ -195,177 +208,206 @@ export component LibraryTable inherits Rectangle {
                 }
             }
 
-            // Scrollable Track Rows
-            ScrollView {
+            // Virtualized Track Rows via ListView
+            ListView {
                 vertical-stretch: 1;
 
-                VerticalLayout {
-                    spacing: 1px;
+                for track[idx] in root.tracks : Rectangle {
+                    height: 38px;
+                    background: track.is_playing ? CyberTheme.active_row :
+                                (row_touch.has-hover ? #121722 : (Math.mod(idx, 2) == 0 ? #090B10 : #06080C));
 
-                    for track[idx] in root.tracks : Rectangle {
-                        height: 38px;
-                        background: track.is_playing ? CyberTheme.active_row :
-                                    (row_touch.has-hover ? #121722 : (Math.mod(idx, 2) == 0 ? #090B10 : #06080C));
+                    // Active playing row: Glowing left neon border
+                    if (track.is_playing || root.active_index == idx) : Rectangle {
+                        x: 0px;
+                        y: 0px;
+                        width: 3px;
+                        height: parent.height;
+                        background: track.is_playing ? CyberTheme.cyber_green : CyberTheme.accent;
+                    }
 
-                        if (track.is_playing || root.active_index == idx) : Rectangle {
-                            x: 0px;
-                            y: 0px;
-                            width: 3px;
-                            height: parent.height;
-                            background: CyberTheme.accent;
+                    // Bottom divider line
+                    Rectangle {
+                        x: 0px;
+                        y: parent.height - 1px;
+                        width: parent.width;
+                        height: 1px;
+                        background: #111520;
+                    }
+
+                    // Background clickable touch area
+                    row_touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.track_clicked(idx, track.file_path);
                         }
+                    }
 
-                        HorizontalLayout {
-                            padding-left: 12px;
-                            padding-right: 12px;
-                            spacing: 8px;
+                    HorizontalLayout {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        spacing: 8px;
 
-                            // # or Play State Icon
-                            Rectangle {
-                                width: 40px;
-                                Text {
-                                    text: track.is_playing ? "▶" : (idx + 1);
+                        // # or Play State Icon
+                        Rectangle {
+                            width: 40px;
+                            HorizontalLayout {
+                                alignment: start;
+                                if (track.is_playing) : Text {
+                                    text: "▶";
                                     font-family: CyberTheme.font_mono;
                                     font-size: 11px;
-                                    font-weight: track.is_playing ? 700 : 500;
-                                    color: track.is_playing ? CyberTheme.cyber_green : CyberTheme.muted;
+                                    font-weight: 700;
+                                    color: CyberTheme.cyber_green;
+                                    vertical-alignment: center;
+                                }
+                                if (!track.is_playing) : Text {
+                                    text: (idx + 1);
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 11px;
+                                    font-weight: 500;
+                                    color: CyberTheme.muted;
                                     vertical-alignment: center;
                                 }
                             }
+                        }
 
-                            // Title
-                            Text {
-                                text: track.title;
-                                horizontal-stretch: 3;
-                                font-family: CyberTheme.font_mono;
-                                font-size: 12px;
-                                font-weight: track.is_playing ? 700 : 500;
-                                color: track.is_playing ? CyberTheme.accent : CyberTheme.text;
-                                overflow: elide;
-                                vertical-alignment: center;
-                            }
+                        // Title
+                        Text {
+                            text: track.title;
+                            horizontal-stretch: 3;
+                            font-family: CyberTheme.font_mono;
+                            font-size: 12px;
+                            font-weight: track.is_playing ? 700 : 500;
+                            color: track.is_playing ? CyberTheme.accent : (row_touch.has-hover ? #FFFFFF : CyberTheme.text);
+                            overflow: elide;
+                            vertical-alignment: center;
+                        }
 
-                            // Artist
-                            Text {
-                                text: track.artist;
-                                horizontal-stretch: 2;
-                                font-family: CyberTheme.font_mono;
-                                font-size: 11px;
-                                color: track.is_playing ? CyberTheme.accent : CyberTheme.muted;
-                                overflow: elide;
-                                vertical-alignment: center;
-                            }
+                        // Artist
+                        Text {
+                            text: track.artist;
+                            horizontal-stretch: 2;
+                            font-family: CyberTheme.font_mono;
+                            font-size: 11px;
+                            color: track.is_playing ? CyberTheme.accent : CyberTheme.muted;
+                            overflow: elide;
+                            vertical-alignment: center;
+                        }
 
-                            // BPM
-                            Text {
-                                text: Math.round(track.bpm);
-                                width: 70px;
-                                font-family: CyberTheme.font_mono;
-                                font-size: 11px;
-                                color: CyberTheme.text;
-                                vertical-alignment: center;
-                            }
+                        // BPM
+                        Text {
+                            text: Math.round(track.bpm);
+                            width: 70px;
+                            font-family: CyberTheme.font_mono;
+                            font-size: 11px;
+                            color: CyberTheme.text;
+                            vertical-alignment: center;
+                        }
 
-                            // Key
-                            Rectangle {
-                                width: 70px;
-                                HorizontalLayout {
-                                    alignment: start;
-                                    Rectangle {
-                                        height: 18px;
-                                        background: CyberTheme.active_row;
-                                        border-width: 1px;
-                                        border-color: CyberTheme.cyber_cyan;
-                                        border-radius: 1px;
-                                        HorizontalLayout {
-                                            padding-left: 4px;
-                                            padding-right: 4px;
-                                            Text {
-                                                text: track.key_sig != "" ? track.key_sig : "--";
-                                                font-family: CyberTheme.font_mono;
-                                                font-size: 9px;
-                                                font-weight: 700;
-                                                color: CyberTheme.cyber_cyan;
-                                                vertical-alignment: center;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Duration
-                            Text {
-                                text: track.duration;
-                                width: 70px;
-                                font-family: CyberTheme.font_mono;
-                                font-size: 11px;
-                                color: CyberTheme.muted;
-                                vertical-alignment: center;
-                            }
-
-                            // Actions
+                        // Key Badge with Camelot Distinct Colors
+                        Rectangle {
+                            width: 70px;
                             HorizontalLayout {
-                                width: 80px;
-                                spacing: 4px;
-                                alignment: center;
+                                alignment: start;
+                                key_badge := Rectangle {
+                                    property <color> badge_bg: (track.key_sig == "8A" || track.key_sig == "8B" || track.key_sig == "7A" || track.key_sig == "7B" || track.key_sig == "9A" || track.key_sig == "9B") ? #00FF6622 :
+                                                               (track.key_sig == "4A" || track.key_sig == "4B" || track.key_sig == "5A" || track.key_sig == "5B" || track.key_sig == "6A" || track.key_sig == "6B") ? #FF990022 :
+                                                               (track.key_sig == "" || track.key_sig == "--") ? #18202E : #00F0FF22;
+                                    property <color> badge_border: (track.key_sig == "8A" || track.key_sig == "8B" || track.key_sig == "7A" || track.key_sig == "7B" || track.key_sig == "9A" || track.key_sig == "9B") ? #00FF6677 :
+                                                                   (track.key_sig == "4A" || track.key_sig == "4B" || track.key_sig == "5A" || track.key_sig == "5B" || track.key_sig == "6A" || track.key_sig == "6B") ? #FF990077 :
+                                                                   (track.key_sig == "" || track.key_sig == "--") ? CyberTheme.border : #00F0FF77;
+                                    property <color> badge_fg: (track.key_sig == "8A" || track.key_sig == "8B" || track.key_sig == "7A" || track.key_sig == "7B" || track.key_sig == "9A" || track.key_sig == "9B") ? CyberTheme.cyber_green :
+                                                               (track.key_sig == "4A" || track.key_sig == "4B" || track.key_sig == "5A" || track.key_sig == "5B" || track.key_sig == "6A" || track.key_sig == "6B") ? CyberTheme.cyber_amber :
+                                                               (track.key_sig == "" || track.key_sig == "--") ? CyberTheme.muted : CyberTheme.cyber_cyan;
 
-                                // Add to Playlist
-                                add_btn := Rectangle {
-                                    width: 24px;
-                                    height: 24px;
-                                    background: add_t.has-hover ? CyberTheme.accent : CyberTheme.surface;
+                                    height: 18px;
+                                    background: self.badge_bg;
                                     border-width: 1px;
-                                    border-color: add_t.has-hover ? CyberTheme.accent : CyberTheme.border;
+                                    border-color: self.badge_border;
                                     border-radius: 1px;
 
-                                    Text {
-                                        text: "+";
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        color: add_t.has-hover ? CyberTheme.accent_text : CyberTheme.text;
-                                        horizontal-alignment: center;
-                                        vertical-alignment: center;
-                                    }
-
-                                    add_t := TouchArea {
-                                        mouse-cursor: pointer;
-                                        clicked => {
-                                            root.add_to_playlist_clicked(idx, track.file_path);
-                                        }
-                                    }
-                                }
-
-                                // Remove / Delete
-                                rem_btn := Rectangle {
-                                    width: 24px;
-                                    height: 24px;
-                                    background: rem_t.has-hover ? CyberTheme.cyber_crimson : CyberTheme.surface;
-                                    border-width: 1px;
-                                    border-color: rem_t.has-hover ? CyberTheme.cyber_crimson : CyberTheme.border;
-                                    border-radius: 1px;
-
-                                    Text {
-                                        text: "✕";
-                                        font-size: 10px;
-                                        color: rem_t.has-hover ? #FFFFFF : CyberTheme.muted;
-                                        horizontal-alignment: center;
-                                        vertical-alignment: center;
-                                    }
-
-                                    rem_t := TouchArea {
-                                        mouse-cursor: pointer;
-                                        clicked => {
-                                            root.remove_track_clicked(idx, track.file_path);
+                                    HorizontalLayout {
+                                        padding-left: 5px;
+                                        padding-right: 5px;
+                                        Text {
+                                            text: track.key_sig != "" ? track.key_sig : "--";
+                                            font-family: CyberTheme.font_mono;
+                                            font-size: 9px;
+                                            font-weight: 700;
+                                            color: key_badge.badge_fg;
+                                            vertical-alignment: center;
                                         }
                                     }
                                 }
                             }
                         }
 
-                        row_touch := TouchArea {
-                            mouse-cursor: pointer;
-                            clicked => {
-                                root.track_clicked(idx, track.file_path);
+                        // Duration
+                        Text {
+                            text: track.duration;
+                            width: 70px;
+                            font-family: CyberTheme.font_mono;
+                            font-size: 11px;
+                            color: CyberTheme.muted;
+                            vertical-alignment: center;
+                        }
+
+                        // Actions
+                        HorizontalLayout {
+                            width: 80px;
+                            spacing: 6px;
+                            alignment: center;
+
+                            // Add to Playlist Button
+                            add_btn := Rectangle {
+                                width: 24px;
+                                height: 24px;
+                                background: add_t.has-hover ? CyberTheme.accent : CyberTheme.surface;
+                                border-width: 1px;
+                                border-color: add_t.has-hover ? CyberTheme.accent : CyberTheme.border;
+                                border-radius: 1px;
+
+                                Text {
+                                    text: "+";
+                                    font-size: 12px;
+                                    font-weight: 700;
+                                    color: add_t.has-hover ? CyberTheme.accent_text : CyberTheme.text;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+
+                                add_t := TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        root.add_to_playlist_clicked(idx, track.file_path);
+                                    }
+                                }
+                            }
+
+                            // Remove Track Button
+                            rem_btn := Rectangle {
+                                width: 24px;
+                                height: 24px;
+                                background: rem_t.has-hover ? CyberTheme.cyber_crimson : CyberTheme.surface;
+                                border-width: 1px;
+                                border-color: rem_t.has-hover ? CyberTheme.cyber_crimson : CyberTheme.border;
+                                border-radius: 1px;
+
+                                Text {
+                                    text: "✕";
+                                    font-size: 10px;
+                                    color: rem_t.has-hover ? #FFFFFF : CyberTheme.muted;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+
+                                rem_t := TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        root.remove_track_clicked(idx, track.file_path);
+                                    }
+                                }
                             }
                         }
                     }

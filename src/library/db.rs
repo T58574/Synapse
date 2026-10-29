@@ -143,6 +143,10 @@ impl LibraryDb {
         let conn = self.conn.lock();
         conn.execute_batch(
             "PRAGMA foreign_keys = ON;
+            PRAGMA journal_mode = WAL;
+            PRAGMA synchronous = NORMAL;
+            PRAGMA cache_size = -1000;
+            PRAGMA temp_store = MEMORY;
 
             CREATE TABLE IF NOT EXISTS tracks (
                 file_path TEXT PRIMARY KEY,
@@ -257,7 +261,15 @@ impl LibraryDb {
         }
 
         tx.commit()?;
+        drop(conn);
+        self.shrink_memory();
         Ok(())
+    }
+
+    /// Reclaim memory held by SQLite statement caches, page cache, and schemas.
+    pub fn shrink_memory(&self) {
+        let conn = self.conn.lock();
+        let _ = conn.execute_batch("PRAGMA shrink_memory;");
     }
 
     pub fn get_all_tracks(&self) -> rusqlite::Result<Vec<TrackRecord>> {

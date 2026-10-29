@@ -243,6 +243,8 @@ impl LibraryScanner {
         }
 
         final_tracks.sort_by(|a, b| a.artist.cmp(&b.artist).then_with(|| a.title.cmp(&b.title)));
+        final_tracks.shrink_to_fit();
+        self.db.shrink_memory();
         Ok(final_tracks)
     }
 

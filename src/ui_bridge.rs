@@ -13,7 +13,7 @@ use tokio::runtime::Handle;
 
 pub struct UiState {
     pub all_tracks: Vec<TrackRecord>,
-    pub filtered_tracks: Vec<TrackRecord>,
+    pub filtered_indices: Vec<usize>,
     pub selected_playlist_id: i32,
     pub selected_nav: i32,
     pub search_query: String,
@@ -61,24 +61,25 @@ pub fn setup_ui_bridge(
     tokio_handle: Handle,
 ) {
     // 1. Initial Data Loading
-    let initial_tracks = library.get_all_tracks().unwrap_or_default();
+    let mut initial_tracks = library.get_all_tracks().unwrap_or_default();
+    library.shrink_memory();
+    for t in &mut initial_tracks {
+        t.waveform.clear();
+        t.waveform.shrink_to_fit();
+    }
+    initial_tracks.shrink_to_fit();
+
     let initial_playlists = library.get_playlists().unwrap_or_default();
     let initial_devices = audio.get_audio_devices();
 
-    let ui_state = Arc::new(Mutex::new(UiState {
-        all_tracks: initial_tracks.clone(),
-        filtered_tracks: initial_tracks.clone(),
-        selected_playlist_id: -1,
-        selected_nav: 0,
-        search_query: String::new(),
-        is_my_wave: false,
-    }));
+    let initial_indices: Vec<usize> = (0..initial_tracks.len()).collect();
 
     // Populate Slint Models
-    let track_rows: Vec<TrackRow> = initial_tracks
+    let mut track_rows: Vec<TrackRow> = initial_tracks
         .iter()
         .map(|t| create_track_row(t, false))
         .collect();
+    track_rows.shrink_to_fit();
     window.set_tracks(Rc::new(VecModel::from(track_rows)).into());
 
     let playlist_rows: Vec<PlaylistRow> = initial_playlists
@@ -101,6 +102,15 @@ pub fn setup_ui_bridge(
         .collect();
     window.set_audio_devices(Rc::new(VecModel::from(device_rows)).into());
 
+    let ui_state = Arc::new(Mutex::new(UiState {
+        all_tracks: initial_tracks,
+        filtered_indices: initial_indices,
+        selected_playlist_id: -1,
+        selected_nav: 0,
+        search_query: String::new(),
+        is_my_wave: false,
+    }));
+
     // Helper: Refresh displayed tracks
     let refresh_tracks_table = {
         let window_weak = window.as_weak();
@@ -119,40 +129,54 @@ pub fn setup_ui_bridge(
                 .as_ref()
                 .map(|t| t.file_path.clone());
 
-            let mut filtered = state.all_tracks.clone();
-
-            // Filter by playlist
-            if state.selected_playlist_id > 0 {
+            let playlist_filter = if state.selected_playlist_id > 0 {
                 let playlists = library.get_playlists().unwrap_or_default();
-                if let Some(pl) = playlists.iter().find(|p| p.id == state.selected_playlist_id as i64) {
-                    let set: HashSet<_> = pl.track_paths.iter().collect();
-                    filtered.retain(|t| set.contains(&t.file_path));
+                playlists
+                    .into_iter()
+                    .find(|p| p.id == state.selected_playlist_id as i64)
+                    .map(|pl| pl.track_paths.into_iter().collect::<HashSet<_>>())
+            } else {
+                None
+            };
+
+            let query_lower = if !state.search_query.is_empty() {
+                Some(state.search_query.to_lowercase())
+            } else {
+                None
+            };
+
+            let mut indices = Vec::with_capacity(state.all_tracks.len());
+            for (idx, t) in state.all_tracks.iter().enumerate() {
+                if let Some(ref set) = playlist_filter {
+                    if !set.contains(&t.file_path) {
+                        continue;
+                    }
                 }
+                if let Some(ref q) = query_lower {
+                    let matches = t.title.to_lowercase().contains(q)
+                        || t.artist.to_lowercase().contains(q)
+                        || t.genre.to_lowercase().contains(q)
+                        || t.key_signature.to_lowercase().contains(q);
+                    if !matches {
+                        continue;
+                    }
+                }
+                indices.push(idx);
             }
+            indices.shrink_to_fit();
 
-            // Filter by search query
-            if !state.search_query.is_empty() {
-                let q = state.search_query.to_lowercase();
-                filtered.retain(|t| {
-                    t.title.to_lowercase().contains(&q)
-                        || t.artist.to_lowercase().contains(&q)
-                        || t.genre.to_lowercase().contains(&q)
-                        || t.key_signature.to_lowercase().contains(&q)
-                });
+            let mut rows = Vec::with_capacity(indices.len());
+            for &idx in &indices {
+                let t = &state.all_tracks[idx];
+                let is_active = current_playing_path
+                    .as_ref()
+                    .map(|p| p == &t.file_path)
+                    .unwrap_or(false);
+                rows.push(create_track_row(t, is_active));
             }
+            rows.shrink_to_fit();
 
-            state.filtered_tracks = filtered.clone();
-
-            let rows: Vec<TrackRow> = filtered
-                .iter()
-                .map(|t| {
-                    let is_active = current_playing_path
-                        .as_ref()
-                        .map(|p| p == &t.file_path)
-                        .unwrap_or(false);
-                    create_track_row(t, is_active)
-                })
-                .collect();
+            state.filtered_indices = indices;
 
             win.set_tracks(Rc::new(VecModel::from(rows)).into());
         }
@@ -173,18 +197,18 @@ pub fn setup_ui_bridge(
             let state = ui_state.lock();
             let path_str = file_path.to_string();
 
-            let target_track = state
-                .filtered_tracks
-                .iter()
-                .find(|t| t.file_path == path_str)
-                .cloned()
-                .or_else(|| {
-                    if idx >= 0 && (idx as usize) < state.filtered_tracks.len() {
-                        Some(state.filtered_tracks[idx as usize].clone())
-                    } else {
-                        None
-                    }
-                });
+            let target_track = if idx >= 0 {
+                state
+                    .filtered_indices
+                    .get(idx as usize)
+                    .and_then(|&i| state.all_tracks.get(i))
+                    .cloned()
+            } else {
+                None
+            }
+            .or_else(|| {
+                state.all_tracks.iter().find(|t| t.file_path == path_str).cloned()
+            });
 
             let Some(track) = target_track else {
                 return;
@@ -308,23 +332,30 @@ pub fn setup_ui_bridge(
                 Some(queued)
             } else {
                 let state = ui_state.lock();
-                if state.filtered_tracks.is_empty() {
+                if state.filtered_indices.is_empty() {
                     None
                 } else if state.is_my_wave {
                     // Smart shuffle: pick random track from list
-                    let idx = (std::time::SystemTime::now()
+                    let rand_slot = (std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .unwrap_or_default()
                         .as_millis() as usize)
-                        % state.filtered_tracks.len();
-                    Some(record_to_item(&state.filtered_tracks[idx]))
+                        % state.filtered_indices.len();
+                    let track_idx = state.filtered_indices[rand_slot];
+                    Some(record_to_item(&state.all_tracks[track_idx]))
                 } else {
                     let current_path = p.current_track.as_ref().map(|t| &t.file_path);
-                    let current_idx = current_path
-                        .and_then(|path| state.filtered_tracks.iter().position(|t| &t.file_path == path))
+                    let current_pos = current_path
+                        .and_then(|path| {
+                            state
+                                .filtered_indices
+                                .iter()
+                                .position(|&idx| &state.all_tracks[idx].file_path == path)
+                        })
                         .unwrap_or(0);
-                    let next_idx = (current_idx + 1) % state.filtered_tracks.len();
-                    Some(record_to_item(&state.filtered_tracks[next_idx]))
+                    let next_slot = (current_pos + 1) % state.filtered_indices.len();
+                    let track_idx = state.filtered_indices[next_slot];
+                    Some(record_to_item(&state.all_tracks[track_idx]))
                 }
             };
 
@@ -625,7 +656,14 @@ pub fn setup_ui_bridge(
             let refresh = refresh_table.clone();
 
             tokio_handle_clone.spawn(async move {
-                if let Ok(scanned) = lib.scan_directory(&folder).await {
+                if let Ok(mut scanned) = lib.scan_directory(&folder).await {
+                    for t in &mut scanned {
+                        t.waveform.clear();
+                        t.waveform.shrink_to_fit();
+                    }
+                    scanned.shrink_to_fit();
+                    lib.shrink_memory();
+
                     let _ = slint::invoke_from_event_loop(move || {
                         let mut state = ui.lock();
                         state.all_tracks = scanned;
@@ -653,7 +691,14 @@ pub fn setup_ui_bridge(
             let refresh = refresh_table.clone();
 
             tokio_handle_clone.spawn(async move {
-                if let Ok(scanned) = lib.scan_default().await {
+                if let Ok(mut scanned) = lib.scan_default().await {
+                    for t in &mut scanned {
+                        t.waveform.clear();
+                        t.waveform.shrink_to_fit();
+                    }
+                    scanned.shrink_to_fit();
+                    lib.shrink_memory();
+
                     let _ = slint::invoke_from_event_loop(move || {
                         let mut state = ui.lock();
                         state.all_tracks = scanned;
@@ -671,6 +716,7 @@ pub fn setup_ui_bridge(
     let audio_clone = audio.clone();
     let player_clone = Arc::clone(&player);
     let next_track_fn = handle_next_track.clone();
+    let mut is_idle_zeroed = false;
 
     timer.start(
         slint::TimerMode::Repeated,
@@ -680,30 +726,34 @@ pub fn setup_ui_bridge(
                 return;
             };
             let p = player_clone.lock();
-            let slot = p.active_slot;
             let is_playing = p.is_playing;
+            let slot = p.active_slot;
             let current_dur = p.current_track.as_ref().map(|t| t.duration_sec).unwrap_or(0.0);
             drop(p);
 
-            if is_playing {
-                let pos = audio_clone.get_position(slot);
-                win.set_current_pos(pos as f32);
-                win.set_current_time_str(SharedString::from(format_duration(pos)));
-
-                // Spectrum Visualizer (stack allocated, zero JSON IPC)
-                let mut spectrum = [0.0f32; 64];
-                let _count = audio_clone.get_spectrum(slot, &mut spectrum);
-                win.set_spectrum_data(Rc::new(VecModel::from(spectrum.to_vec())).into());
-
-                // Detect Track End
-                if current_dur > 0.0 && pos >= (current_dur - 0.25) {
-                    next_track_fn();
+            if !is_playing {
+                if !is_idle_zeroed {
+                    is_idle_zeroed = true;
+                    let zero_spectrum = vec![0.0f32; 64];
+                    win.set_spectrum_data(Rc::new(VecModel::from(zero_spectrum)).into());
                 }
-            } else {
-                // Decay spectrum to zero smoothly when idle
-                let mut spectrum = [0.0f32; 64];
-                audio_clone.get_spectrum(slot, &mut spectrum);
-                win.set_spectrum_data(Rc::new(VecModel::from(spectrum.to_vec())).into());
+                return;
+            }
+
+            is_idle_zeroed = false;
+
+            let pos = audio_clone.get_position(slot);
+            win.set_current_pos(pos as f32);
+            win.set_current_time_str(SharedString::from(format_duration(pos)));
+
+            // Spectrum Visualizer (stack allocated, zero JSON IPC)
+            let mut spectrum = [0.0f32; 64];
+            let _count = audio_clone.get_spectrum(slot, &mut spectrum);
+            win.set_spectrum_data(Rc::new(VecModel::from(spectrum.to_vec())).into());
+
+            // Detect Track End
+            if current_dur > 0.0 && pos >= (current_dur - 0.25) {
+                next_track_fn();
             }
         },
     );
@@ -749,5 +799,39 @@ mod tests {
         assert_eq!(row.title.as_str(), "Cyber City");
         assert_eq!(row.duration.as_str(), "04:06");
         assert!(row.is_playing);
+    }
+
+    #[test]
+    fn test_ui_state_filtered_indices_and_waveform_trimming() {
+        let mut rec = TrackRecord {
+            file_path: "/music/track.mp3".to_string(),
+            title: "Neon".to_string(),
+            artist: "Cyber".to_string(),
+            genre: "EDM".to_string(),
+            mood: "energetic".to_string(),
+            bpm: 128.0,
+            key_signature: "11B".to_string(),
+            duration_sec: 180.0,
+            waveform: vec![0.1, 0.2, 0.3, 0.4],
+            size: 2048,
+            mod_time: 1700000001,
+        };
+
+        // Memory optimization: clear waveform for UI state
+        rec.waveform.clear();
+        rec.waveform.shrink_to_fit();
+        assert!(rec.waveform.is_empty());
+
+        let state = UiState {
+            all_tracks: vec![rec],
+            filtered_indices: vec![0],
+            selected_playlist_id: -1,
+            selected_nav: 0,
+            search_query: String::new(),
+            is_my_wave: false,
+        };
+
+        assert_eq!(state.filtered_indices.len(), 1);
+        assert_eq!(state.all_tracks[state.filtered_indices[0]].title, "Neon");
     }
 }

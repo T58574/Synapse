@@ -180,3 +180,20 @@
   1. Always instantiate `MainWindow::new()?` first on the main thread so `OleInitialize()` establishes STA cleanly.
   2. Set `#define MA_COINIT_VALUE 2` (`COINIT_APARTMENTTHREADED`) in `audio_engine.cpp` and `build.rs` so miniaudio uses matching concurrency mode.
 - **Evidence**: Fixed in `src/main.rs`, `cpp/audio_engine.cpp`, and `build.rs`.
+
+### Cue (Symptom): Idle CPU usage ~1% on 20-core CPU when playback is paused or stopped
+- **Lesson (Takeaway)**: Setting Slint reactive model properties (`win.set_spectrum_data`) inside a 33ms timer while idle marks Slint scene nodes dirty and forces the GPU backend to re-render all visualizer bars 30 FPS non-stop. Use an `is_idle_zeroed` state tracker: zero the spectrum model exactly once upon transitioning to pause/stop, then return early immediately with 0 allocations and 0 property updates while idle.
+- **Evidence**: `src/ui_bridge.rs:670-745`, verified idle CPU dropped to 0.0%.
+
+### Cue (Symptom): Excessive heap memory (~90 MB) from duplicated tracks and waveforms in UI state
+- **Lesson (Takeaway)**:
+  1. `UiState` should store filtered tracks as `Vec<usize>` indices into `all_tracks` rather than cloning the entire track list and all embedded waveform vectors.
+  2. Strip and shrink waveform vectors for in-memory UI track caches (`track.waveform.clear()`), fetching detailed waveforms from SQLite on demand.
+  3. Pre-allocate and `shrink_to_fit()` Slint `VecModel` rows before attaching to window properties.
+  4. Run `PRAGMA shrink_memory;` and tune SQLite cache (`cache_size = -1000`) after startup scans and directory indexing.
+  5. Reduce Tokio runtime worker threads from 4 to 2 with explicit 1MB stack size.
+- **Evidence**: `src/ui_bridge.rs`, `src/library/db.rs`, `src/library/scanner.rs`, and `src/main.rs`. All 14 tests passing.
+
+### Cue (Symptom): Row TouchArea intercepts clicks to nested action buttons in Slint virtualized lists
+- **Lesson (Takeaway)**: In Slint, elements declared later in markup have higher Z-order and intercept mouse clicks. When implementing table/list rows that are clickable as a whole but contain action buttons (`+`, `✕`), declare the background row `TouchArea` *before* the inner `HorizontalLayout` / action button components so buttons are stacked on top and receive user events cleanly. Also note that `vertical-alignment` is a text property and cannot be declared on `Rectangle`.
+- **Evidence**: Fixed in `ui/views/library_table.slint`, `ui/views/sidebar.slint`, and verified via `cargo check` & `cargo test --bin synapse`.

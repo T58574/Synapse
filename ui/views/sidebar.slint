@@ -51,11 +51,20 @@ export component LibrarySidebar inherits Rectangle {
 
         // ================= NEURAL WAVE (MY WAVE) =================
         my_wave_box := Rectangle {
-            height: 38px;
-            background: root.is_my_wave_active ? CyberTheme.active_row : CyberTheme.surface;
+            height: 40px;
+            background: root.is_my_wave_active ? #00F0FF14 : CyberTheme.surface;
             border-width: 1px;
             border-color: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.border;
             border-radius: CyberTheme.radius_sm;
+
+            // Cyber chamfer notches
+            if (root.is_my_wave_active) : Rectangle {
+                x: parent.width - 5px;
+                y: 0px;
+                width: 5px;
+                height: 5px;
+                background: CyberTheme.cyber_cyan;
+            }
 
             HorizontalLayout {
                 padding-left: 10px;
@@ -64,13 +73,32 @@ export component LibrarySidebar inherits Rectangle {
                 alignment: space-between;
 
                 HorizontalLayout {
-                    spacing: 6px;
+                    spacing: 8px;
                     alignment: start;
 
-                    // Neon wave bars
+                    // Neon audio wave icon (stepped equalizer bars)
                     HorizontalLayout {
                         spacing: 2px;
                         alignment: center;
+
+                        Rectangle {
+                            width: 3px;
+                            height: root.is_my_wave_active ? 12px : 6px;
+                            background: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                            border-radius: 1px;
+                        }
+                        Rectangle {
+                            width: 3px;
+                            height: root.is_my_wave_active ? 20px : 10px;
+                            background: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                            border-radius: 1px;
+                        }
+                        Rectangle {
+                            width: 3px;
+                            height: root.is_my_wave_active ? 26px : 14px;
+                            background: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                            border-radius: 1px;
+                        }
                         Rectangle {
                             width: 3px;
                             height: root.is_my_wave_active ? 16px : 8px;
@@ -79,13 +107,7 @@ export component LibrarySidebar inherits Rectangle {
                         }
                         Rectangle {
                             width: 3px;
-                            height: root.is_my_wave_active ? 22px : 12px;
-                            background: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
-                            border-radius: 1px;
-                        }
-                        Rectangle {
-                            width: 3px;
-                            height: root.is_my_wave_active ? 14px : 6px;
+                            height: root.is_my_wave_active ? 10px : 5px;
                             background: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
                             border-radius: 1px;
                         }
@@ -101,13 +123,26 @@ export component LibrarySidebar inherits Rectangle {
                     }
                 }
 
-                Text {
-                    text: root.is_my_wave_active ? "ACTIVE" : "OFF";
-                    font-family: CyberTheme.font_mono;
-                    font-size: 9px;
-                    font-weight: 700;
-                    color: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
-                    vertical-alignment: center;
+                // Active Status Badge
+                Rectangle {
+                    height: 18px;
+                    background: root.is_my_wave_active ? #00F0FF26 : #111622;
+                    border-width: 1px;
+                    border-color: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.border;
+                    border-radius: 2px;
+
+                    HorizontalLayout {
+                        padding-left: 5px;
+                        padding-right: 5px;
+                        Text {
+                            text: root.is_my_wave_active ? "ACTIVE" : "OFF";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 9px;
+                            font-weight: 700;
+                            color: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                            vertical-alignment: center;
+                        }
+                    }
                 }
             }
 
@@ -122,13 +157,14 @@ export component LibrarySidebar inherits Rectangle {
 
         // ================= NAVIGATION SECTION =================
         VerticalLayout {
-            spacing: 4px;
+            spacing: 6px;
 
             Text {
-                text: "01 // LIBRARY_NAV";
+                text: "// LIBRARY";
                 font-family: CyberTheme.font_mono;
-                font-size: 9px;
+                font-size: 10px;
                 font-weight: 700;
+                letter-spacing: 0.5px;
                 color: CyberTheme.muted;
             }
 
@@ -261,60 +297,45 @@ export component LibrarySidebar inherits Rectangle {
 
         // ================= PLAYLISTS SECTION =================
         VerticalLayout {
-            spacing: 6px;
+            spacing: 8px;
             vertical-stretch: 1;
 
-            // Section Header & Add Button
+            // Section Header & "+ NEW PLAYLIST" cyber button
             HorizontalLayout {
                 alignment: space-between;
 
                 Text {
-                    text: "02 // PLAYLISTS";
+                    text: "// PLAYLISTS";
                     font-family: CyberTheme.font_mono;
-                    font-size: 9px;
+                    font-size: 10px;
                     font-weight: 700;
+                    letter-spacing: 0.5px;
                     color: CyberTheme.muted;
                     vertical-alignment: center;
                 }
 
-                Rectangle {
-                    width: 20px;
-                    height: 20px;
-                    background: add_touch.has-hover ? CyberTheme.accent : CyberTheme.surface;
-                    border-width: 1px;
-                    border-color: add_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
-                    border-radius: 1px;
-
-                    Text {
-                        text: "+";
-                        font-size: 12px;
-                        font-weight: 700;
-                        color: add_touch.has-hover ? CyberTheme.accent_text : CyberTheme.text;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
-                    }
-
-                    add_touch := TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.is_creating_playlist = !root.is_creating_playlist;
-                        }
+                CyberButton {
+                    text: "+ NEW PLAYLIST";
+                    compact: true;
+                    active: root.is_creating_playlist;
+                    clicked => {
+                        root.is_creating_playlist = !root.is_creating_playlist;
                     }
                 }
             }
 
             // Create Playlist Input Row
             if (root.is_creating_playlist) : Rectangle {
-                height: 32px;
+                height: 34px;
                 background: CyberTheme.surface;
                 border-width: 1px;
                 border-color: CyberTheme.accent;
                 border-radius: CyberTheme.radius_sm;
 
                 HorizontalLayout {
-                    padding-left: 6px;
-                    padding-right: 4px;
-                    spacing: 4px;
+                    padding-left: 8px;
+                    padding-right: 6px;
+                    spacing: 6px;
 
                     input := TextInput {
                         text <=> root.new_playlist_name;
@@ -332,10 +353,13 @@ export component LibrarySidebar inherits Rectangle {
                         }
                     }
 
+                    // Submit Button
                     Rectangle {
                         width: 24px;
                         height: 24px;
-                        background: submit_touch.has-hover ? CyberTheme.accent : transparent;
+                        background: submit_touch.has-hover ? CyberTheme.accent : #141A26;
+                        border-width: 1px;
+                        border-color: submit_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
                         border-radius: 1px;
 
                         Text {
@@ -358,20 +382,64 @@ export component LibrarySidebar inherits Rectangle {
                             }
                         }
                     }
+
+                    // Cancel Button
+                    Rectangle {
+                        width: 24px;
+                        height: 24px;
+                        background: cancel_touch.has-hover ? CyberTheme.cyber_crimson : #141A26;
+                        border-width: 1px;
+                        border-color: cancel_touch.has-hover ? CyberTheme.cyber_crimson : CyberTheme.border;
+                        border-radius: 1px;
+
+                        Text {
+                            text: "✕";
+                            font-size: 10px;
+                            color: cancel_touch.has-hover ? #FFFFFF : CyberTheme.muted;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        cancel_touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.new_playlist_name = "";
+                                root.is_creating_playlist = false;
+                            }
+                        }
+                    }
                 }
             }
 
             // Playlists List
             VerticalLayout {
-                spacing: 2px;
+                spacing: 3px;
 
                 for pl in root.playlists : Rectangle {
-                    height: 30px;
+                    height: 32px;
                     background: (root.selected_playlist_id == pl.id) ? CyberTheme.active_row :
                                 (pl_touch.has-hover ? #121824 : transparent);
                     border-width: 1px;
                     border-color: (root.selected_playlist_id == pl.id) ? CyberTheme.accent : transparent;
                     border-radius: CyberTheme.radius_sm;
+
+                    // Active left glowing accent bar
+                    if (root.selected_playlist_id == pl.id) : Rectangle {
+                        x: 0px;
+                        y: 0px;
+                        width: 2px;
+                        height: parent.height;
+                        background: CyberTheme.accent;
+                    }
+
+                    // Background Click Area (placed first so delete button is on top)
+                    pl_touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.selected_playlist_id = pl.id;
+                            root.playlist_selected(pl.id, pl.name);
+                        }
+                    }
 
                     HorizontalLayout {
                         padding-left: 10px;
@@ -402,16 +470,42 @@ export component LibrarySidebar inherits Rectangle {
                             }
                         }
 
+                        // Track Count Badge
+                        Rectangle {
+                            height: 18px;
+                            background: (root.selected_playlist_id == pl.id) ? #FCEE0A22 : #111622;
+                            border-width: 1px;
+                            border-color: (root.selected_playlist_id == pl.id) ? CyberTheme.accent : CyberTheme.border;
+                            border-radius: 2px;
+
+                            HorizontalLayout {
+                                padding-left: 5px;
+                                padding-right: 5px;
+                                Text {
+                                    text: pl.track_count + " TRK";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 9px;
+                                    font-weight: 600;
+                                    color: (root.selected_playlist_id == pl.id) ? CyberTheme.accent : CyberTheme.muted;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
                         // Delete button
                         del_btn := Rectangle {
-                            width: 18px;
-                            height: 18px;
+                            width: 20px;
+                            height: 20px;
                             background: del_touch.has-hover ? CyberTheme.cyber_crimson : transparent;
+                            border-width: 1px;
+                            border-color: del_touch.has-hover ? CyberTheme.cyber_crimson : transparent;
                             border-radius: 1px;
 
                             Text {
                                 text: "✕";
+                                font-family: CyberTheme.font_mono;
                                 font-size: 10px;
+                                font-weight: 700;
                                 color: del_touch.has-hover ? #FFFFFF : CyberTheme.muted;
                                 horizontal-alignment: center;
                                 vertical-alignment: center;
@@ -423,14 +517,6 @@ export component LibrarySidebar inherits Rectangle {
                                     root.playlist_deleted(pl.id, pl.name);
                                 }
                             }
-                        }
-                    }
-
-                    pl_touch := TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.selected_playlist_id = pl.id;
-                            root.playlist_selected(pl.id, pl.name);
                         }
                     }
                 }

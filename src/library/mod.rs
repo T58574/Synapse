@@ -82,6 +82,10 @@ impl LibraryManager {
     ) -> rusqlite::Result<()> {
         self.db.remove_track_from_playlist(playlist_name, track_path)
     }
+
+    pub fn shrink_memory(&self) {
+        self.db.shrink_memory();
+    }
 }
 
 #[cfg(test)]
