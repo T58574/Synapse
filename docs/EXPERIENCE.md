@@ -165,3 +165,11 @@
 ### Cue (Symptom): IPC serialisation bottleneck and frame drops on 60 FPS spectrum visualizer
 - **Lesson (Takeaway)**: Replace WebView OS pipes and JSON string serialization with direct native `slint::Timer` polling at 30 FPS. Pass stack-allocated `[f32; 64]` buffers directly into C++ FFI and update Slint reactive models in process memory with zero JSON overhead.
 - **Evidence**: Implemented in `src/ui_bridge.rs` and benchmarked with 13 passing unit tests.
+
+### Cue (Symptom): Windows MSVC `cl.exe` exit code 2 when compiling C++ audio engine via `cc-rs`
+- **Lesson (Takeaway)**: When compiling `audio_engine.cpp` with MSVC (`cl.exe`):
+  1. `<windows.h>` defines `min` and `max` macros that break standard `std::min` / `std::max` in template headers like `signalsmith-stretch.h`. Always define `NOMINMAX`, `WIN32_LEAN_AND_MEAN`, and `_USE_MATH_DEFINES` before any header inclusion.
+  2. Always include standard C++ headers (`<vector>`, `<string>`, `<cmath>`, `<complex>`, `<algorithm>`) *before* `miniaudio.h` and `signalsmith-stretch.h`.
+  3. In `build.rs`, pass `/EHsc` (C++ exception unwind model), `/utf-8` (UTF-8 source and execution charset for Cyrillic comments/strings), and `/permissive-` to `cc::Build`.
+  4. Link `ole32`, `winmm`, `user32`, and `avrt` for WASAPI multimedia device threading.
+- **Evidence**: Fixed in `build.rs` and `cpp/audio_engine.cpp:1-20`.

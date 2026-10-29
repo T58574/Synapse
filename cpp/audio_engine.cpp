@@ -1,8 +1,18 @@
-#define MINIAUDIO_IMPLEMENTATION
-#include "miniaudio.h"
-#include "signalsmith-stretch.h"
-#include "signalsmith-linear/fft.h"
-#include "audio_engine.h"
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
+#endif
+
 #include <vector>
 #include <string>
 #include <cmath>
@@ -28,6 +38,12 @@ static std::wstring utf8_to_wstring(const std::string& str) {
     return wstrTo;
 }
 #endif
+
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+#include "signalsmith-stretch.h"
+#include "signalsmith-linear/fft.h"
+#include "audio_engine.h"
 
 // Простой лог в stderr + файл (~/.synapse/engine.log) для отладки C++ движка.
 static FILE* g_log_file = nullptr;
