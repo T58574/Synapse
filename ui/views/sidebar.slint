@@ -1,0 +1,440 @@
+import { CyberTheme } from "../theme.slint";
+import { CyberButton } from "../components/button.slint";
+
+export struct PlaylistRow {
+    id: int,
+    name: string,
+    track_count: int,
+}
+
+export component LibrarySidebar inherits Rectangle {
+    in property <[PlaylistRow]> playlists: [];
+    in-out property <int> selected_nav: 0; // 0: All Tracks, 1: Artists, 2: Genres
+    in-out property <int> selected_playlist_id: -1;
+    in-out property <bool> is_my_wave_active: false;
+    in-out property <bool> is_creating_playlist: false;
+    in-out property <string> new_playlist_name: "";
+
+    callback nav_selected(int);
+    callback playlist_selected(int, string);
+    callback playlist_deleted(int, string);
+    callback create_playlist(string);
+    callback my_wave_toggled();
+
+    width: 230px;
+    background: #080B10;
+    border-width: 1px;
+    border-color: CyberTheme.border;
+
+    VerticalLayout {
+        padding: 12px;
+        spacing: 14px;
+
+        // Telemetry header tag
+        HorizontalLayout {
+            alignment: space-between;
+            Text {
+                text: "SYS_BUS // 0xNODE";
+                font-family: CyberTheme.font_mono;
+                font-size: 9px;
+                color: CyberTheme.muted;
+                vertical-alignment: center;
+            }
+            Text {
+                text: "v2.0_RUST";
+                font-family: CyberTheme.font_mono;
+                font-size: 9px;
+                color: CyberTheme.accent;
+                vertical-alignment: center;
+            }
+        }
+
+        // ================= NEURAL WAVE (MY WAVE) =================
+        my_wave_box := Rectangle {
+            height: 38px;
+            background: root.is_my_wave_active ? CyberTheme.active_row : CyberTheme.surface;
+            border-width: 1px;
+            border-color: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.border;
+            border-radius: CyberTheme.radius_sm;
+
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 8px;
+                alignment: space-between;
+
+                HorizontalLayout {
+                    spacing: 6px;
+                    alignment: start;
+
+                    // Neon wave bars
+                    HorizontalLayout {
+                        spacing: 2px;
+                        alignment: center;
+                        Rectangle {
+                            width: 3px;
+                            height: root.is_my_wave_active ? 16px : 8px;
+                            background: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                            border-radius: 1px;
+                        }
+                        Rectangle {
+                            width: 3px;
+                            height: root.is_my_wave_active ? 22px : 12px;
+                            background: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                            border-radius: 1px;
+                        }
+                        Rectangle {
+                            width: 3px;
+                            height: root.is_my_wave_active ? 14px : 6px;
+                            background: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                            border-radius: 1px;
+                        }
+                    }
+
+                    Text {
+                        text: root.is_my_wave_active ? "MY WAVE // LIVE" : "MY WAVE";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.text;
+                        vertical-alignment: center;
+                    }
+                }
+
+                Text {
+                    text: root.is_my_wave_active ? "ACTIVE" : "OFF";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 9px;
+                    font-weight: 700;
+                    color: root.is_my_wave_active ? CyberTheme.cyber_cyan : CyberTheme.muted;
+                    vertical-alignment: center;
+                }
+            }
+
+            TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.is_my_wave_active = !root.is_my_wave_active;
+                    root.my_wave_toggled();
+                }
+            }
+        }
+
+        // ================= NAVIGATION SECTION =================
+        VerticalLayout {
+            spacing: 4px;
+
+            Text {
+                text: "01 // LIBRARY_NAV";
+                font-family: CyberTheme.font_mono;
+                font-size: 9px;
+                font-weight: 700;
+                color: CyberTheme.muted;
+            }
+
+            // All Tracks Button
+            all_btn := Rectangle {
+                height: 32px;
+                background: (root.selected_nav == 0 && root.selected_playlist_id == -1) ? CyberTheme.active_row :
+                            (all_touch.has-hover ? #121824 : transparent);
+                border-width: 1px;
+                border-color: (root.selected_nav == 0 && root.selected_playlist_id == -1) ? CyberTheme.accent : transparent;
+                border-radius: CyberTheme.radius_sm;
+
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 8px;
+                    alignment: start;
+
+                    Text {
+                        text: "♬";
+                        font-size: 13px;
+                        color: (root.selected_nav == 0 && root.selected_playlist_id == -1) ? CyberTheme.accent : CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "All Tracks";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 12px;
+                        font-weight: (root.selected_nav == 0 && root.selected_playlist_id == -1) ? 700 : 500;
+                        color: (root.selected_nav == 0 && root.selected_playlist_id == -1) ? CyberTheme.accent : CyberTheme.text;
+                        vertical-alignment: center;
+                    }
+                }
+
+                all_touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.selected_nav = 0;
+                        root.selected_playlist_id = -1;
+                        root.nav_selected(0);
+                    }
+                }
+            }
+
+            // Artists Button
+            artists_btn := Rectangle {
+                height: 32px;
+                background: (root.selected_nav == 1 && root.selected_playlist_id == -1) ? CyberTheme.active_row :
+                            (art_touch.has-hover ? #121824 : transparent);
+                border-width: 1px;
+                border-color: (root.selected_nav == 1 && root.selected_playlist_id == -1) ? CyberTheme.accent : transparent;
+                border-radius: CyberTheme.radius_sm;
+
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 8px;
+                    alignment: start;
+
+                    Text {
+                        text: "◈";
+                        font-size: 13px;
+                        color: (root.selected_nav == 1 && root.selected_playlist_id == -1) ? CyberTheme.accent : CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "Artists";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 12px;
+                        font-weight: (root.selected_nav == 1 && root.selected_playlist_id == -1) ? 700 : 500;
+                        color: (root.selected_nav == 1 && root.selected_playlist_id == -1) ? CyberTheme.accent : CyberTheme.text;
+                        vertical-alignment: center;
+                    }
+                }
+
+                art_touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.selected_nav = 1;
+                        root.selected_playlist_id = -1;
+                        root.nav_selected(1);
+                    }
+                }
+            }
+
+            // Genres Button
+            genres_btn := Rectangle {
+                height: 32px;
+                background: (root.selected_nav == 2 && root.selected_playlist_id == -1) ? CyberTheme.active_row :
+                            (gen_touch.has-hover ? #121824 : transparent);
+                border-width: 1px;
+                border-color: (root.selected_nav == 2 && root.selected_playlist_id == -1) ? CyberTheme.accent : transparent;
+                border-radius: CyberTheme.radius_sm;
+
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 8px;
+                    alignment: start;
+
+                    Text {
+                        text: "◎";
+                        font-size: 13px;
+                        color: (root.selected_nav == 2 && root.selected_playlist_id == -1) ? CyberTheme.accent : CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "Genres";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 12px;
+                        font-weight: (root.selected_nav == 2 && root.selected_playlist_id == -1) ? 700 : 500;
+                        color: (root.selected_nav == 2 && root.selected_playlist_id == -1) ? CyberTheme.accent : CyberTheme.text;
+                        vertical-alignment: center;
+                    }
+                }
+
+                gen_touch := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.selected_nav = 2;
+                        root.selected_playlist_id = -1;
+                        root.nav_selected(2);
+                    }
+                }
+            }
+        }
+
+        // ================= PLAYLISTS SECTION =================
+        VerticalLayout {
+            spacing: 6px;
+            vertical-stretch: 1;
+
+            // Section Header & Add Button
+            HorizontalLayout {
+                alignment: space-between;
+
+                Text {
+                    text: "02 // PLAYLISTS";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 9px;
+                    font-weight: 700;
+                    color: CyberTheme.muted;
+                    vertical-alignment: center;
+                }
+
+                Rectangle {
+                    width: 20px;
+                    height: 20px;
+                    background: add_touch.has-hover ? CyberTheme.accent : CyberTheme.surface;
+                    border-width: 1px;
+                    border-color: add_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
+                    border-radius: 1px;
+
+                    Text {
+                        text: "+";
+                        font-size: 12px;
+                        font-weight: 700;
+                        color: add_touch.has-hover ? CyberTheme.accent_text : CyberTheme.text;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    add_touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.is_creating_playlist = !root.is_creating_playlist;
+                        }
+                    }
+                }
+            }
+
+            // Create Playlist Input Row
+            if (root.is_creating_playlist) : Rectangle {
+                height: 32px;
+                background: CyberTheme.surface;
+                border-width: 1px;
+                border-color: CyberTheme.accent;
+                border-radius: CyberTheme.radius_sm;
+
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 4px;
+                    spacing: 4px;
+
+                    input := TextInput {
+                        text <=> root.new_playlist_name;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        color: CyberTheme.text;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        accepted => {
+                            if (root.new_playlist_name != "") {
+                                root.create_playlist(root.new_playlist_name);
+                                root.new_playlist_name = "";
+                                root.is_creating_playlist = false;
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 24px;
+                        height: 24px;
+                        background: submit_touch.has-hover ? CyberTheme.accent : transparent;
+                        border-radius: 1px;
+
+                        Text {
+                            text: "✓";
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: submit_touch.has-hover ? CyberTheme.accent_text : CyberTheme.accent;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        submit_touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                if (root.new_playlist_name != "") {
+                                    root.create_playlist(root.new_playlist_name);
+                                    root.new_playlist_name = "";
+                                    root.is_creating_playlist = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Playlists List
+            VerticalLayout {
+                spacing: 2px;
+
+                for pl in root.playlists : Rectangle {
+                    height: 30px;
+                    background: (root.selected_playlist_id == pl.id) ? CyberTheme.active_row :
+                                (pl_touch.has-hover ? #121824 : transparent);
+                    border-width: 1px;
+                    border-color: (root.selected_playlist_id == pl.id) ? CyberTheme.accent : transparent;
+                    border-radius: CyberTheme.radius_sm;
+
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-right: 8px;
+                        spacing: 8px;
+                        alignment: space-between;
+
+                        HorizontalLayout {
+                            spacing: 6px;
+                            alignment: start;
+                            horizontal-stretch: 1;
+
+                            Text {
+                                text: "»";
+                                font-size: 11px;
+                                color: (root.selected_playlist_id == pl.id) ? CyberTheme.accent : CyberTheme.muted;
+                                vertical-alignment: center;
+                            }
+
+                            Text {
+                                text: pl.name;
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                font-weight: (root.selected_playlist_id == pl.id) ? 700 : 500;
+                                color: (root.selected_playlist_id == pl.id) ? CyberTheme.accent : CyberTheme.text;
+                                overflow: elide;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        // Delete button
+                        del_btn := Rectangle {
+                            width: 18px;
+                            height: 18px;
+                            background: del_touch.has-hover ? CyberTheme.cyber_crimson : transparent;
+                            border-radius: 1px;
+
+                            Text {
+                                text: "✕";
+                                font-size: 10px;
+                                color: del_touch.has-hover ? #FFFFFF : CyberTheme.muted;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+
+                            del_touch := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    root.playlist_deleted(pl.id, pl.name);
+                                }
+                            }
+                        }
+                    }
+
+                    pl_touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.selected_playlist_id = pl.id;
+                            root.playlist_selected(pl.id, pl.name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

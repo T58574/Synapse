@@ -1,0 +1,50 @@
+import { CyberTheme } from "../theme.slint";
+
+export component SpectrumView inherits Rectangle {
+    in property <[float]> magnitudes: [
+        0.05, 0.12, 0.25, 0.40, 0.55, 0.70, 0.85, 0.65,
+        0.50, 0.45, 0.38, 0.52, 0.68, 0.75, 0.60, 0.48,
+        0.35, 0.30, 0.42, 0.58, 0.62, 0.55, 0.45, 0.35,
+        0.28, 0.32, 0.40, 0.48, 0.52, 0.46, 0.38, 0.30,
+        0.25, 0.28, 0.35, 0.42, 0.45, 0.38, 0.32, 0.26,
+        0.22, 0.25, 0.30, 0.36, 0.38, 0.32, 0.28, 0.22,
+        0.18, 0.20, 0.24, 0.28, 0.30, 0.26, 0.20, 0.16,
+        0.14, 0.16, 0.18, 0.22, 0.24, 0.18, 0.12, 0.08
+    ];
+    in property <bool> is_active: true;
+    in property <length> bar_spacing: 1px;
+    in property <length> min_bar_height: 2px;
+
+    background: transparent;
+
+    HorizontalLayout {
+        spacing: root.bar_spacing;
+        alignment: stretch;
+
+        for mag[idx] in root.magnitudes : Rectangle {
+            background: transparent;
+            horizontal-stretch: 1;
+
+            VerticalLayout {
+                alignment: end;
+
+                // Glowing magnitude bar
+                Rectangle {
+                    height: root.is_active ? Math.max(root.min_bar_height, parent.height * Math.min(1.0, Math.max(0.0, mag))) : root.min_bar_height;
+                    background: @linear-gradient(180deg, #FF003C 0%, #FCEE0A 55%, #00F0FF 100%);
+                    border-radius: 1px;
+
+                    // Neon peak cap
+                    Rectangle {
+                        x: 0px;
+                        y: 0px;
+                        width: parent.width;
+                        height: 1px;
+                        background: #FFFFFF;
+                        opacity: mag > 0.6 ? 0.9 : 0.0;
+                    }
+                }
+            }
+        }
+    }
+}

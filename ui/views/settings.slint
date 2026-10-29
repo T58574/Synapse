@@ -1,0 +1,546 @@
+import { CyberTheme } from "../theme.slint";
+import { CyberButton } from "../components/button.slint";
+import { CyberSlider } from "../components/slider.slint";
+import { CyberSelect, SelectOption } from "../components/cyber_select.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export struct AudioDeviceItem {
+    id: string,
+    name: string,
+    is_default: bool,
+}
+
+export component SettingsView inherits Rectangle {
+    in property <[AudioDeviceItem]> audio_devices: [
+        { id: "default", name: "System Default Audio Device", is_default: true },
+        { id: "speakers", name: "High Definition Audio Speakers", is_default: false },
+        { id: "headphones", name: "CyberDeck Headset Bus 0x1", is_default: false }
+    ];
+    in-out property <int> selected_device_index: 0;
+    in-out property <float> crossfade_duration: 4.0;
+    in property <string> music_directory: "~/.synapse/music";
+
+    callback theme_selected(int, string);
+    callback crossfade_changed(float);
+    callback device_selected(int, string);
+    callback open_music_dir();
+
+    background: #08090D;
+
+    ScrollView {
+        VerticalLayout {
+            padding: 24px;
+            spacing: 20px;
+
+            // ================= HEADER =================
+            VerticalLayout {
+                spacing: 4px;
+
+                HorizontalLayout {
+                    spacing: 6px;
+                    Text {
+                        text: "[";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        color: CyberTheme.accent;
+                    }
+                    Text {
+                        text: "SYS_CONFIG // TERMINAL_CONTROL";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: CyberTheme.accent;
+                    }
+                    Text {
+                        text: "]";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        color: CyberTheme.accent;
+                    }
+                }
+
+                Text {
+                    text: "SYSTEM SETTINGS";
+                    font-family: CyberTheme.font_display;
+                    font-size: 20px;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                    color: CyberTheme.text;
+                }
+
+                Text {
+                    text: "Configure audio device pipeline, automix crossfade transitions, and cyber HUD palettes.";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 11px;
+                    color: CyberTheme.muted;
+                }
+            }
+
+            // Divider
+            Rectangle {
+                height: 1px;
+                background: CyberTheme.border;
+            }
+
+            // ================= 1. THEMES PALETTE SECTION =================
+            Rectangle {
+                background: #0B0E17;
+                border-width: 1px;
+                border-color: CyberTheme.border;
+                border-radius: CyberTheme.radius_md;
+
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 14px;
+
+                    HorizontalLayout {
+                        alignment: space-between;
+                        Text {
+                            text: "01 // COLOR PALETTE THEME";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 11px;
+                            font-weight: 700;
+                            color: CyberTheme.accent;
+                        }
+                        Text {
+                            text: "ACTIVE: " + CyberTheme.active_theme_name;
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            font-weight: 700;
+                            color: CyberTheme.accent;
+                        }
+                    }
+
+                    // Theme Cards Grid
+                    HorizontalLayout {
+                        spacing: 10px;
+
+                        // 1. Night City
+                        nc_card := Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: CyberTheme.active_theme_index == 0 ? CyberTheme.active_row : #11141D;
+                            border-width: 1px;
+                            border-color: CyberTheme.active_theme_index == 0 ? #FCEE0A : CyberTheme.border;
+                            border-radius: CyberTheme.radius_sm;
+
+                            VerticalLayout {
+                                padding: 8px;
+                                spacing: 4px;
+                                alignment: space-between;
+
+                                HorizontalLayout {
+                                    alignment: space-between;
+                                    Text {
+                                        text: "Night City";
+                                        font-family: CyberTheme.font_mono;
+                                        font-size: 11px;
+                                        font-weight: 700;
+                                        color: #FCEE0A;
+                                    }
+                                    Rectangle {
+                                        width: 10px;
+                                        height: 10px;
+                                        background: #FCEE0A;
+                                        border-radius: 5px;
+                                    }
+                                }
+
+                                Text {
+                                    text: "Iconic Yellow / Cyan";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 9px;
+                                    color: CyberTheme.muted;
+                                }
+                            }
+
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    CyberTheme.set_theme(0);
+                                    root.theme_selected(0, "Night City");
+                                }
+                            }
+                        }
+
+                        // 2. Arasaka
+                        ara_card := Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: CyberTheme.active_theme_index == 1 ? CyberTheme.active_row : #0E0C0E;
+                            border-width: 1px;
+                            border-color: CyberTheme.active_theme_index == 1 ? #E50012 : CyberTheme.border;
+                            border-radius: CyberTheme.radius_sm;
+
+                            VerticalLayout {
+                                padding: 8px;
+                                spacing: 4px;
+                                alignment: space-between;
+
+                                HorizontalLayout {
+                                    alignment: space-between;
+                                    Text {
+                                        text: "Arasaka";
+                                        font-family: CyberTheme.font_mono;
+                                        font-size: 11px;
+                                        font-weight: 700;
+                                        color: #E50012;
+                                    }
+                                    Rectangle {
+                                        width: 10px;
+                                        height: 10px;
+                                        background: #E50012;
+                                        border-radius: 5px;
+                                    }
+                                }
+
+                                Text {
+                                    text: "Corporate Crimson";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 9px;
+                                    color: CyberTheme.muted;
+                                }
+                            }
+
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    CyberTheme.set_theme(1);
+                                    root.theme_selected(1, "Arasaka");
+                                }
+                            }
+                        }
+
+                        // 3. Netrunner
+                        net_card := Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: CyberTheme.active_theme_index == 2 ? CyberTheme.active_row : #0B171A;
+                            border-width: 1px;
+                            border-color: CyberTheme.active_theme_index == 2 ? #00FF66 : CyberTheme.border;
+                            border-radius: CyberTheme.radius_sm;
+
+                            VerticalLayout {
+                                padding: 8px;
+                                spacing: 4px;
+                                alignment: space-between;
+
+                                HorizontalLayout {
+                                    alignment: space-between;
+                                    Text {
+                                        text: "Netrunner";
+                                        font-family: CyberTheme.font_mono;
+                                        font-size: 11px;
+                                        font-weight: 700;
+                                        color: #00FF66;
+                                    }
+                                    Rectangle {
+                                        width: 10px;
+                                        height: 10px;
+                                        background: #00FF66;
+                                        border-radius: 5px;
+                                    }
+                                }
+
+                                Text {
+                                    text: "Matrix Phosphor";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 9px;
+                                    color: CyberTheme.muted;
+                                }
+                            }
+
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    CyberTheme.set_theme(2);
+                                    root.theme_selected(2, "Netrunner");
+                                }
+                            }
+                        }
+
+                        // 4. Trauma Team
+                        tt_card := Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: CyberTheme.active_theme_index == 3 ? CyberTheme.active_row : #121A22;
+                            border-width: 1px;
+                            border-color: CyberTheme.active_theme_index == 3 ? #00F0FF : CyberTheme.border;
+                            border-radius: CyberTheme.radius_sm;
+
+                            VerticalLayout {
+                                padding: 8px;
+                                spacing: 4px;
+                                alignment: space-between;
+
+                                HorizontalLayout {
+                                    alignment: space-between;
+                                    Text {
+                                        text: "Trauma Team";
+                                        font-family: CyberTheme.font_mono;
+                                        font-size: 11px;
+                                        font-weight: 700;
+                                        color: #00F0FF;
+                                    }
+                                    Rectangle {
+                                        width: 10px;
+                                        height: 10px;
+                                        background: #00F0FF;
+                                        border-radius: 5px;
+                                    }
+                                }
+
+                                Text {
+                                    text: "Cold Slate Cyan";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 9px;
+                                    color: CyberTheme.muted;
+                                }
+                            }
+
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    CyberTheme.set_theme(3);
+                                    root.theme_selected(3, "Trauma Team");
+                                }
+                            }
+                        }
+
+                        // 5. Kang Tao
+                        kt_card := Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: CyberTheme.active_theme_index == 4 ? CyberTheme.active_row : #171618;
+                            border-width: 1px;
+                            border-color: CyberTheme.active_theme_index == 4 ? #FF9900 : CyberTheme.border;
+                            border-radius: CyberTheme.radius_sm;
+
+                            VerticalLayout {
+                                padding: 8px;
+                                spacing: 4px;
+                                alignment: space-between;
+
+                                HorizontalLayout {
+                                    alignment: space-between;
+                                    Text {
+                                        text: "Kang Tao";
+                                        font-family: CyberTheme.font_mono;
+                                        font-size: 11px;
+                                        font-weight: 700;
+                                        color: #FF9900;
+                                    }
+                                    Rectangle {
+                                        width: 10px;
+                                        height: 10px;
+                                        background: #FF9900;
+                                        border-radius: 5px;
+                                    }
+                                }
+
+                                Text {
+                                    text: "Hazard Amber";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 9px;
+                                    color: CyberTheme.muted;
+                                }
+                            }
+
+                            TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => {
+                                    CyberTheme.set_theme(4);
+                                    root.theme_selected(4, "Kang Tao");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ================= 2. AUDIO HARDWARE & AUTOMIX =================
+            Rectangle {
+                background: #0B0E17;
+                border-width: 1px;
+                border-color: CyberTheme.border;
+                border-radius: CyberTheme.radius_md;
+
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 16px;
+
+                    Text {
+                        text: "02 // AUDIO ENGINE & HARDWARE BUS";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: CyberTheme.cyber_cyan;
+                    }
+
+                    // Audio Device Item
+                    HorizontalLayout {
+                        alignment: space-between;
+                        VerticalLayout {
+                            spacing: 2px;
+                            Text {
+                                text: "Audio Output Device";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: CyberTheme.text;
+                            }
+                            Text {
+                                text: "Select active sound driver for real-time DSP output";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 10px;
+                                color: CyberTheme.muted;
+                            }
+                        }
+
+                        // CyberSelect Dropdown
+                        CyberSelect {
+                            width: 260px;
+                            prefix: "DEV";
+                            current_index: root.selected_device_index;
+                            options: [
+                                { id: "default", text: "System Default Audio", badge: "DEFAULT" },
+                                { id: "speakers", text: "Realtek HD Audio", badge: "DIRECT" },
+                                { id: "headphones", text: "CyberDeck DAC 0x1", badge: "USB" }
+                            ];
+                            selected(idx, id) => {
+                                root.selected_device_index = idx;
+                                root.device_selected(idx, id);
+                            }
+                        }
+                    }
+
+                    Rectangle { height: 1px; background: CyberTheme.border; }
+
+                    // Automix Crossfade Slider
+                    HorizontalLayout {
+                        alignment: space-between;
+                        VerticalLayout {
+                            spacing: 2px;
+                            Text {
+                                text: "Automix Crossfade Duration";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: CyberTheme.text;
+                            }
+                            Text {
+                                text: "Transition duration between dual-deck audio slots";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 10px;
+                                color: CyberTheme.muted;
+                            }
+                        }
+
+                        HorizontalLayout {
+                            spacing: 12px;
+                            alignment: center;
+
+                            CyberSlider {
+                                width: 180px;
+                                minimum: 1.0;
+                                maximum: 15.0;
+                                value: root.crossfade_duration;
+                                changed(val) => {
+                                    root.crossfade_duration = val;
+                                    root.crossfade_changed(val);
+                                }
+                            }
+
+                            Rectangle {
+                                width: 44px;
+                                height: 26px;
+                                background: CyberTheme.active_row;
+                                border-width: 1px;
+                                border-color: CyberTheme.accent;
+                                border-radius: 1px;
+
+                                Text {
+                                    text: Math.round(root.crossfade_duration) + "s";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 11px;
+                                    font-weight: 700;
+                                    color: CyberTheme.accent;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ================= 3. STORAGE & DIRECTORIES =================
+            Rectangle {
+                background: #0B0E17;
+                border-width: 1px;
+                border-color: CyberTheme.border;
+                border-radius: CyberTheme.radius_md;
+
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 14px;
+
+                    Text {
+                        text: "03 // LOCAL STORAGE & SCANNER";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: CyberTheme.cyber_amber;
+                    }
+
+                    HorizontalLayout {
+                        alignment: space-between;
+                        spacing: 16px;
+
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 4px;
+
+                            Text {
+                                text: "Library Directory Path";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                color: CyberTheme.muted;
+                            }
+
+                            Rectangle {
+                                height: 34px;
+                                background: CyberTheme.surface;
+                                border-width: 1px;
+                                border-color: CyberTheme.border;
+                                border-radius: CyberTheme.radius_sm;
+
+                                HorizontalLayout {
+                                    padding-left: 10px;
+                                    padding-right: 10px;
+                                    Text {
+                                        text: root.music_directory;
+                                        font-family: CyberTheme.font_mono;
+                                        font-size: 11px;
+                                        color: CyberTheme.text;
+                                        overflow: elide;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+                        }
+
+                        VerticalLayout {
+                            alignment: end;
+                            CyberButton {
+                                text: "📂 OPEN MUSIC DIRECTORY";
+                                primary: true;
+                                clicked => { root.open_music_dir(); }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

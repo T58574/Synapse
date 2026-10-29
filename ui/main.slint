@@ -1,0 +1,517 @@
+import { CyberTheme, CyberColors } from "theme.slint";
+import { CyberButton } from "components/button.slint";
+import { CyberSlider } from "components/slider.slint";
+import { CyberSelect, SelectOption } from "components/cyber_select.slint";
+import { CyberModal } from "components/modal.slint";
+import { SpectrumView } from "visualizer/spectrum.slint";
+import { PlaybackBar } from "views/playback_bar.slint";
+import { LibrarySidebar, PlaylistRow } from "views/sidebar.slint";
+import { LibraryTable, TrackRow } from "views/library_table.slint";
+import { EqualizerView } from "views/equalizer.slint";
+import { SettingsView, AudioDeviceItem } from "views/settings.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export { CyberTheme, CyberColors } from "theme.slint";
+export { SelectOption } from "components/cyber_select.slint";
+export { PlaylistRow } from "views/sidebar.slint";
+export { TrackRow } from "views/library_table.slint";
+export { AudioDeviceItem } from "views/settings.slint";
+
+export component MainWindow inherits Window {
+    title: "Synapse // Cyberpunk Audio Workstation";
+    min-width: 960px;
+    min-height: 680px;
+    preferred-width: 1200px;
+    preferred-height: 800px;
+    background: CyberTheme.bg;
+    default-font-family: CyberTheme.font_mono;
+
+    // View Switching State
+    in-out property <int> active_tab: 0; // 0: Library, 1: Musicians, 2: Settings
+    in-out property <bool> show_equalizer: false;
+    in-out property <string> search_query: "";
+
+    // Library Models
+    in property <[TrackRow]> tracks: [];
+    in property <[PlaylistRow]> playlists: [];
+    in property <[AudioDeviceItem]> audio_devices: [];
+    in property <int> active_track_index: -1;
+
+    // Playback State
+    in property <bool> is_playing: false;
+    in property <bool> is_automix: false;
+    in property <image> current_cover;
+    in property <bool> has_cover: false;
+    in property <string> current_title: "No Track Playing";
+    in property <string> current_artist: "Unknown Artist";
+    in property <string> current_mood: "NEURAL";
+    in property <float> current_bpm: 128.0;
+    in property <string> current_key: "8A";
+    in property <float> current_pos: 0.0;
+    in property <float> total_duration: 180.0;
+    in property <string> current_time_str: "00:00";
+    in property <string> total_time_str: "03:00";
+    in-out property <float> master_volume: 0.8;
+    in-out property <bool> is_muted: false;
+    in property <[float]> spectrum_data: [
+        0.05, 0.12, 0.25, 0.40, 0.55, 0.70, 0.85, 0.65,
+        0.50, 0.45, 0.38, 0.52, 0.68, 0.75, 0.60, 0.48,
+        0.35, 0.30, 0.42, 0.58, 0.62, 0.55, 0.45, 0.35,
+        0.28, 0.32, 0.40, 0.48, 0.52, 0.46, 0.38, 0.30,
+        0.25, 0.28, 0.35, 0.42, 0.45, 0.38, 0.32, 0.26,
+        0.22, 0.25, 0.30, 0.36, 0.38, 0.32, 0.28, 0.22,
+        0.18, 0.20, 0.24, 0.28, 0.30, 0.26, 0.20, 0.16,
+        0.14, 0.16, 0.18, 0.22, 0.24, 0.18, 0.12, 0.08
+    ];
+
+    // EQ & DSP State
+    in-out property <[float]> eq_bands: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    in-out property <float> limiter_boost: 0.0;
+    in-out property <float> stereo_width: 1.0;
+    in-out property <float> reverb_mix: 0.0;
+    in-out property <float> bass_boost: 0.0;
+    in-out property <float> treble_exciter: 0.0;
+    in-out property <float> crossfade_duration: 4.0;
+    in property <string> music_dir: "~/.synapse/music";
+
+    // Callbacks for Rust Bridge
+    callback play_track(int, string);
+    callback toggle_play();
+    callback prev_track();
+    callback next_track();
+    callback seek_track(float);
+    callback set_volume(float);
+    callback toggle_automix();
+    callback set_eq_band(int, float);
+    callback reset_eq();
+    callback set_dsp_param(string, float);
+    callback search_tracks(string);
+    callback open_directory();
+    callback scan_directory();
+    callback select_playlist(int, string);
+    callback create_playlist(string);
+    callback delete_playlist(int, string);
+    callback add_to_playlist(int, string);
+    callback remove_from_playlist(int, string);
+    callback set_crossfade(float);
+    callback set_audio_device(string);
+    callback toggle_my_wave();
+
+    // Main App Container
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: CyberTheme.bg;
+
+        VerticalLayout {
+            spacing: 0px;
+
+            // ================= 1. APP HEADER =================
+            Rectangle {
+                height: 48px;
+                background: #0A0D14;
+
+                Rectangle {
+                    y: parent.height - 1px;
+                    height: 1px;
+                    background: CyberTheme.border;
+                }
+
+                HorizontalLayout {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    spacing: 12px;
+                    alignment: space-between;
+
+                    // Header Left: Brand Logo & Navigation
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+
+                        // Logo Button
+                        CyberButton {
+                            text: "⚡ SYNAPSE";
+                            primary: true;
+                            compact: true;
+                            clicked => { root.active_tab = 0; }
+                        }
+
+                        // Library Tab Button
+                        CyberButton {
+                            text: "[ LIBRARY ]";
+                            active: root.active_tab == 0;
+                            compact: true;
+                            clicked => { root.active_tab = 0; }
+                        }
+
+                        // Musicians Tab Button
+                        CyberButton {
+                            text: "MUSICIANS";
+                            active: root.active_tab == 1;
+                            compact: true;
+                            clicked => { root.active_tab = 1; }
+                        }
+
+                        // Open Folder Button
+                        CyberButton {
+                            text: "📁 OPEN";
+                            compact: true;
+                            clicked => { root.open_directory(); }
+                        }
+
+                        // Scan Folder Button
+                        CyberButton {
+                            text: "🔄 SCAN";
+                            compact: true;
+                            clicked => { root.scan_directory(); }
+                        }
+                    }
+
+                    // Header Center: Spectrum HUD preview
+                    HorizontalLayout {
+                        width: 220px;
+                        height: 28px;
+                        alignment: center;
+
+                        Rectangle {
+                            width: 100%;
+                            height: 100%;
+                            background: #06080C;
+                            border-width: 1px;
+                            border-color: CyberTheme.border;
+                            border-radius: 1px;
+                            clip: true;
+
+                            SpectrumView {
+                                magnitudes: root.spectrum_data;
+                                is_active: root.is_playing;
+                                bar_spacing: 1px;
+                                min_bar_height: 1px;
+                            }
+                        }
+                    }
+
+                    // Header Right: Equalizer & Settings Buttons
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: end;
+
+                        // Equalizer Button
+                        CyberButton {
+                            text: "🎛 EQUALIZER";
+                            active: root.show_equalizer;
+                            compact: true;
+                            clicked => { root.show_equalizer = !root.show_equalizer; }
+                        }
+
+                        // Settings Button
+                        CyberButton {
+                            text: "⚙ SETTINGS";
+                            active: root.active_tab == 2;
+                            compact: true;
+                            clicked => {
+                                root.active_tab = (root.active_tab == 2 ? 0 : 2);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ================= 2. WORKSPACE BODY =================
+            HorizontalLayout {
+                vertical-stretch: 1;
+                spacing: 0px;
+
+                // Left Sidebar
+                LibrarySidebar {
+                    playlists: root.playlists;
+                    nav_selected(idx) => {
+                        if (idx == 0) {
+                            root.active_tab = 0;
+                        } else if (idx == 1) {
+                            root.active_tab = 1;
+                        }
+                    }
+                    playlist_selected(id, name) => {
+                        root.active_tab = 0;
+                        root.select_playlist(id, name);
+                    }
+                    playlist_deleted(id, name) => {
+                        root.delete_playlist(id, name);
+                    }
+                    create_playlist(name) => {
+                        root.create_playlist(name);
+                    }
+                    my_wave_toggled => {
+                        root.toggle_my_wave();
+                    }
+                }
+
+                // Center View Area
+                Rectangle {
+                    horizontal-stretch: 1;
+                    background: CyberTheme.bg;
+
+                    // View 0: Library Tracks Table
+                    if (root.active_tab == 0) : LibraryTable {
+                        tracks: root.tracks;
+                        active_index: root.active_track_index;
+                        search_query <=> root.search_query;
+                        track_clicked(idx, path) => {
+                            root.play_track(idx, path);
+                        }
+                        search_changed(q) => {
+                            root.search_tracks(q);
+                        }
+                        add_to_playlist_clicked(idx, path) => {
+                            root.add_to_playlist(idx, path);
+                        }
+                        remove_track_clicked(idx, path) => {
+                            root.remove_from_playlist(idx, path);
+                        }
+                        open_music_dir => {
+                            root.open_directory();
+                        }
+                    }
+
+                    // View 1: Musicians / Artists Grid View
+                    if (root.active_tab == 1) : Rectangle {
+                        background: #08090D;
+                        ScrollView {
+                            VerticalLayout {
+                                padding: 24px;
+                                spacing: 16px;
+
+                                HorizontalLayout {
+                                    alignment: space-between;
+                                    Text {
+                                        text: "SYS_INDEX // ARTISTS & MUSICIANS";
+                                        font-family: CyberTheme.font_mono;
+                                        font-size: 11px;
+                                        font-weight: 700;
+                                        color: CyberTheme.accent;
+                                    }
+                                }
+
+                                Text {
+                                    text: "FEATURED MUSICIANS & PRODUCERS";
+                                    font-family: CyberTheme.font_display;
+                                    font-size: 18px;
+                                    font-weight: 700;
+                                    color: CyberTheme.text;
+                                }
+
+                                // Placeholder Artist Cards Grid
+                                HorizontalLayout {
+                                    spacing: 16px;
+
+                                    Rectangle {
+                                        horizontal-stretch: 1;
+                                        height: 120px;
+                                        background: #0E131E;
+                                        border-width: 1px;
+                                        border-color: CyberTheme.border;
+                                        border-radius: CyberTheme.radius_md;
+
+                                        VerticalLayout {
+                                            padding: 14px;
+                                            spacing: 6px;
+                                            alignment: space-between;
+
+                                            Text {
+                                                text: "SAMURAI";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 14px;
+                                                font-weight: 700;
+                                                color: CyberTheme.cyber_crimson;
+                                            }
+                                            Text {
+                                                text: "Chromerock // Night City";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 10px;
+                                                color: CyberTheme.muted;
+                                            }
+                                            CyberButton {
+                                                text: "EXPLORE TRACKS";
+                                                compact: true;
+                                                clicked => {
+                                                    root.search_query = "SAMURAI";
+                                                    root.active_tab = 0;
+                                                    root.search_tracks("SAMURAI");
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        horizontal-stretch: 1;
+                                        height: 120px;
+                                        background: #0E131E;
+                                        border-width: 1px;
+                                        border-color: CyberTheme.border;
+                                        border-radius: CyberTheme.radius_md;
+
+                                        VerticalLayout {
+                                            padding: 14px;
+                                            spacing: 6px;
+                                            alignment: space-between;
+
+                                            Text {
+                                                text: "US CRACKS";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 14px;
+                                                font-weight: 700;
+                                                color: CyberTheme.cyber_cyan;
+                                            }
+                                            Text {
+                                                text: "J-Pop Synthwave // Westbrook";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 10px;
+                                                color: CyberTheme.muted;
+                                            }
+                                            CyberButton {
+                                                text: "EXPLORE TRACKS";
+                                                compact: true;
+                                                clicked => {
+                                                    root.search_query = "US Cracks";
+                                                    root.active_tab = 0;
+                                                    root.search_tracks("US Cracks");
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        horizontal-stretch: 1;
+                                        height: 120px;
+                                        background: #0E131E;
+                                        border-width: 1px;
+                                        border-color: CyberTheme.border;
+                                        border-radius: CyberTheme.radius_md;
+
+                                        VerticalLayout {
+                                            padding: 14px;
+                                            spacing: 6px;
+                                            alignment: space-between;
+
+                                            Text {
+                                                text: "LIZZY WIZZY";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 14px;
+                                                font-weight: 700;
+                                                color: CyberTheme.cyber_yellow;
+                                            }
+                                            Text {
+                                                text: "Glitch Cyber Electro // Vista del Rey";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 10px;
+                                                color: CyberTheme.muted;
+                                            }
+                                            CyberButton {
+                                                text: "EXPLORE TRACKS";
+                                                compact: true;
+                                                clicked => {
+                                                    root.search_query = "Lizzy";
+                                                    root.active_tab = 0;
+                                                    root.search_tracks("Lizzy");
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // View 2: Settings View
+                    if (root.active_tab == 2) : SettingsView {
+                        audio_devices: root.audio_devices;
+                        crossfade_duration <=> root.crossfade_duration;
+                        music_directory: root.music_dir;
+                        crossfade_changed(val) => {
+                            root.set_crossfade(val);
+                        }
+                        device_selected(idx, id) => {
+                            root.set_audio_device(id);
+                        }
+                        open_music_dir => {
+                            root.open_directory();
+                        }
+                    }
+                }
+            }
+
+            // ================= 3. BOTTOM PLAYBACK BAR =================
+            PlaybackBar {
+                cover_art: root.current_cover;
+                has_cover: root.has_cover;
+                track_title: root.current_title;
+                track_artist: root.current_artist;
+                track_mood: root.current_mood;
+                bpm: root.current_bpm;
+                key_sig: root.current_key;
+                is_playing: root.is_playing;
+                is_automix: root.is_automix;
+                current_position: root.current_pos;
+                total_duration: root.total_duration;
+                time_formatted: root.current_time_str;
+                duration_formatted: root.total_time_str;
+                volume <=> root.master_volume;
+                is_muted <=> root.is_muted;
+                mini_spectrum: root.spectrum_data;
+
+                play_pause_clicked => { root.toggle_play(); }
+                prev_clicked => { root.prev_track(); }
+                next_clicked => { root.next_track(); }
+                automix_toggled => { root.toggle_automix(); }
+                seek_changed(val) => { root.seek_track(val); }
+                volume_changed(val) => { root.set_volume(val); }
+                mute_toggled => {
+                    root.is_muted = !root.is_muted;
+                    root.set_volume(root.is_muted ? 0.0 : root.master_volume);
+                }
+            }
+        }
+
+        // ================= POPUP MODAL: EQUALIZER =================
+        CyberModal {
+            is_open: root.show_equalizer;
+            title: "10-BAND EQUALIZER & DSP MATRIX";
+            subtitle: "REAL-TIME HARDWARE DSP // C++ ENGINE";
+            modal_width: 820px;
+            modal_height: 520px;
+            close => { root.show_equalizer = false; }
+
+            EqualizerView {
+                bands <=> root.eq_bands;
+                limiter_boost <=> root.limiter_boost;
+                stereo_width <=> root.stereo_width;
+                reverb_mix <=> root.reverb_mix;
+                bass_boost <=> root.bass_boost;
+                treble_exciter <=> root.treble_exciter;
+
+                band_changed(idx, val) => {
+                    root.set_eq_band(idx, val);
+                }
+                limiter_changed(val) => {
+                    root.set_dsp_param("limiter_boost", val);
+                }
+                stereo_width_changed(val) => {
+                    root.set_dsp_param("stereo_width", val);
+                }
+                reverb_changed(val) => {
+                    root.set_dsp_param("reverb_mix", val);
+                }
+                bass_boost_changed(val) => {
+                    root.set_dsp_param("bass_boost", val);
+                }
+                exciter_changed(val) => {
+                    root.set_dsp_param("treble_exciter", val);
+                }
+                reset_eq => {
+                    root.reset_eq();
+                }
+            }
+        }
+    }
+}

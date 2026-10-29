@@ -1,0 +1,297 @@
+import { CyberTheme } from "../theme.slint";
+import { CyberButton } from "../components/button.slint";
+import { CyberSlider } from "../components/slider.slint";
+
+export component EqualizerView inherits Rectangle {
+    in-out property <[float]> bands: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+    property <[string]> band_labels: ["31Hz", "62Hz", "125Hz", "250Hz", "500Hz", "1kHz", "2kHz", "4kHz", "8kHz", "16kHz"];
+
+    in-out property <float> limiter_boost: 0.0;
+    in-out property <float> stereo_width: 1.0;
+    in-out property <float> reverb_mix: 0.0;
+    in-out property <float> bass_boost: 0.0;
+    in-out property <float> treble_exciter: 0.0;
+
+    callback band_changed(int, float);
+    callback limiter_changed(float);
+    callback stereo_width_changed(float);
+    callback reverb_changed(float);
+    callback bass_boost_changed(float);
+    callback exciter_changed(float);
+    callback reset_eq();
+
+    background: #0A0D14;
+
+    HorizontalLayout {
+        padding: 16px;
+        spacing: 20px;
+
+        // ================= LEFT: 10-BAND EQ =================
+        Rectangle {
+            horizontal-stretch: 3;
+            background: #07090E;
+            border-width: 1px;
+            border-color: CyberTheme.border;
+            border-radius: CyberTheme.radius_md;
+
+            VerticalLayout {
+                padding: 14px;
+                spacing: 12px;
+
+                // Panel Header
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text {
+                        text: "01 // 10-BAND EQUALIZER";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: CyberTheme.accent;
+                    }
+                    Text {
+                        text: "-12dB .. +12dB";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        color: CyberTheme.muted;
+                    }
+                }
+
+                // 10 Vertical Sliders
+                HorizontalLayout {
+                    vertical-stretch: 1;
+                    spacing: 4px;
+                    alignment: space-between;
+
+                    for b[idx] in root.bands : VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 6px;
+                        alignment: center;
+
+                        // Gain dB text
+                        Text {
+                            text: (b > 0.0 ? "+" : "") + Math.round(b) + "dB";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 9px;
+                            font-weight: 600;
+                            color: b != 0.0 ? CyberTheme.accent : CyberTheme.muted;
+                            horizontal-alignment: center;
+                        }
+
+                        // Slider
+                        CyberSlider {
+                            vertical: true;
+                            vertical-stretch: 1;
+                            minimum: -12.0;
+                            maximum: 12.0;
+                            value: b;
+                            changed(val) => {
+                                root.band_changed(idx, val);
+                            }
+                        }
+
+                        // Frequency label
+                        Text {
+                            text: root.band_labels[idx];
+                            font-family: CyberTheme.font_mono;
+                            font-size: 9px;
+                            font-weight: 600;
+                            color: CyberTheme.text;
+                            horizontal-alignment: center;
+                        }
+                    }
+                }
+
+                // Reset Button
+                HorizontalLayout {
+                    alignment: center;
+                    CyberButton {
+                        text: "↺ RESET EQ (FLAT)";
+                        clicked => { root.reset_eq(); }
+                    }
+                }
+            }
+        }
+
+        // ================= RIGHT: 5 DSP RACK CONTROLS =================
+        Rectangle {
+            horizontal-stretch: 2;
+            background: #07090E;
+            border-width: 1px;
+            border-color: CyberTheme.border;
+            border-radius: CyberTheme.radius_md;
+
+            VerticalLayout {
+                padding: 14px;
+                spacing: 14px;
+
+                // Panel Header
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text {
+                        text: "02 // DSP RACK FX";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: CyberTheme.cyber_cyan;
+                    }
+                    Text {
+                        text: "SIGNALS_CORE";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        color: CyberTheme.muted;
+                    }
+                }
+
+                // 1. Limiter / Boost
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        alignment: space-between;
+                        Text {
+                            text: "LIMITER BOOST";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            color: CyberTheme.text;
+                        }
+                        Text {
+                            text: "+" + Math.round(root.limiter_boost) + " dB";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            font-weight: 700;
+                            color: CyberTheme.accent;
+                        }
+                    }
+                    CyberSlider {
+                        minimum: 0.0;
+                        maximum: 12.0;
+                        value: root.limiter_boost;
+                        changed(val) => {
+                            root.limiter_boost = val;
+                            root.limiter_changed(val);
+                        }
+                    }
+                }
+
+                // 2. Stereo Width
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        alignment: space-between;
+                        Text {
+                            text: "STEREO WIDENER";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            color: CyberTheme.text;
+                        }
+                        Text {
+                            text: Math.round(root.stereo_width * 100) + "%";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            font-weight: 700;
+                            color: CyberTheme.accent;
+                        }
+                    }
+                    CyberSlider {
+                        minimum: 0.0;
+                        maximum: 2.0;
+                        value: root.stereo_width;
+                        changed(val) => {
+                            root.stereo_width = val;
+                            root.stereo_width_changed(val);
+                        }
+                    }
+                }
+
+                // 3. Bass Boost
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        alignment: space-between;
+                        Text {
+                            text: "BASS BOOST";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            color: CyberTheme.text;
+                        }
+                        Text {
+                            text: Math.round(root.bass_boost * 100) + "%";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            font-weight: 700;
+                            color: CyberTheme.accent;
+                        }
+                    }
+                    CyberSlider {
+                        minimum: 0.0;
+                        maximum: 1.0;
+                        value: root.bass_boost;
+                        changed(val) => {
+                            root.bass_boost = val;
+                            root.bass_boost_changed(val);
+                        }
+                    }
+                }
+
+                // 4. Treble Exciter
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        alignment: space-between;
+                        Text {
+                            text: "TREBLE EXCITER";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            color: CyberTheme.text;
+                        }
+                        Text {
+                            text: Math.round(root.treble_exciter * 100) + "%";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            font-weight: 700;
+                            color: CyberTheme.accent;
+                        }
+                    }
+                    CyberSlider {
+                        minimum: 0.0;
+                        maximum: 1.0;
+                        value: root.treble_exciter;
+                        changed(val) => {
+                            root.treble_exciter = val;
+                            root.exciter_changed(val);
+                        }
+                    }
+                }
+
+                // 5. Reverb Mix
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        alignment: space-between;
+                        Text {
+                            text: "REVERB MIX";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            color: CyberTheme.text;
+                        }
+                        Text {
+                            text: Math.round(root.reverb_mix * 100) + "%";
+                            font-family: CyberTheme.font_mono;
+                            font-size: 10px;
+                            font-weight: 700;
+                            color: CyberTheme.accent;
+                        }
+                    }
+                    CyberSlider {
+                        minimum: 0.0;
+                        maximum: 1.0;
+                        value: root.reverb_mix;
+                        changed(val) => {
+                            root.reverb_mix = val;
+                            root.reverb_changed(val);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

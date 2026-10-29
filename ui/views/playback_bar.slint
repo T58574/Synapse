@@ -1,0 +1,287 @@
+import { CyberTheme } from "../theme.slint";
+import { CyberButton } from "../components/button.slint";
+import { CyberSlider } from "../components/slider.slint";
+import { SpectrumView } from "../visualizer/spectrum.slint";
+
+export component PlaybackBar inherits Rectangle {
+    in property <image> cover_art;
+    in property <bool> has_cover: false;
+    in property <string> track_title: "No Track Selected";
+    in property <string> track_artist: "Unknown Artist";
+    in property <string> track_mood: "NEURAL";
+    in property <float> bpm: 128.0;
+    in property <string> key_sig: "8A";
+    in property <bool> is_playing: false;
+    in property <bool> is_automix: false;
+    in property <float> current_position: 0.0;
+    in property <float> total_duration: 180.0;
+    in property <string> time_formatted: "00:00";
+    in property <string> duration_formatted: "03:00";
+    in-out property <float> volume: 0.8;
+    in property <bool> is_muted: false;
+    in property <[float]> mini_spectrum: [
+        0.15, 0.35, 0.65, 0.85, 0.50, 0.40, 0.70, 0.90,
+        0.60, 0.45, 0.30, 0.55, 0.75, 0.80, 0.40, 0.20
+    ];
+
+    callback play_pause_clicked();
+    callback prev_clicked();
+    callback next_clicked();
+    callback automix_toggled();
+    callback seek_changed(float);
+    callback volume_changed(float);
+    callback mute_toggled();
+
+    height: 76px;
+    background: #090C12;
+    border-width: 1px;
+    border-color: CyberTheme.border;
+
+    // Top neon accent line
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: 1px;
+        background: CyberTheme.accent;
+        opacity: root.is_playing ? 0.9 : 0.3;
+    }
+
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        spacing: 16px;
+        alignment: space-between;
+
+        // ================= LEFT: TRACK META & COVER =================
+        HorizontalLayout {
+            min-width: 240px;
+            max-width: 300px;
+            spacing: 12px;
+            alignment: start;
+
+            // Cover Art Container
+            cover_container := Rectangle {
+                width: 56px;
+                height: 56px;
+                background: CyberTheme.surface;
+                border-width: 1px;
+                border-color: root.is_playing ? CyberTheme.accent : CyberTheme.border;
+                border-radius: CyberTheme.radius_sm;
+                clip: true;
+
+                if (root.has_cover) : Image {
+                    source: root.cover_art;
+                    width: 100%;
+                    height: 100%;
+                }
+
+                if (!root.has_cover) : Rectangle {
+                    width: 100%;
+                    height: 100%;
+                    background: transparent;
+
+                    Text {
+                        text: "⚡";
+                        font-size: 20px;
+                        color: CyberTheme.accent;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    // Tactical HUD bracket
+                    Rectangle {
+                        x: 2px;
+                        y: 2px;
+                        width: 6px;
+                        height: 6px;
+                        background: CyberTheme.accent;
+                    }
+                }
+            }
+
+            // Track Info Text
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+                horizontal-stretch: 1;
+
+                Text {
+                    text: root.track_title;
+                    font-family: CyberTheme.font_mono;
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: CyberTheme.text;
+                    overflow: elide;
+                }
+
+                Text {
+                    text: root.track_artist;
+                    font-family: CyberTheme.font_mono;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: CyberTheme.accent;
+                    overflow: elide;
+                }
+
+                HorizontalLayout {
+                    spacing: 6px;
+                    Text {
+                        text: "BPM: " + Math.round(root.bpm) + " | " + root.key_sig;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 9px;
+                        color: CyberTheme.muted;
+                    }
+                    if (root.track_mood != "") : Rectangle {
+                        height: 14px;
+                        background: CyberTheme.active_row;
+                        border-width: 1px;
+                        border-color: CyberTheme.accent;
+                        border-radius: 1px;
+                        HorizontalLayout {
+                            padding-left: 4px;
+                            padding-right: 4px;
+                            Text {
+                                text: root.track_mood;
+                                font-family: CyberTheme.font_mono;
+                                font-size: 8px;
+                                font-weight: 700;
+                                color: CyberTheme.accent;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ================= CENTER: TRANSPORT & SEEKER =================
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 4px;
+
+            // Transport Buttons Row
+            HorizontalLayout {
+                alignment: center;
+                spacing: 12px;
+
+                CyberButton {
+                    text: "|◀";
+                    compact: true;
+                    clicked => { root.prev_clicked(); }
+                }
+
+                CyberButton {
+                    text: root.is_playing ? "⏸ PAUSE" : "▶ PLAY";
+                    primary: true;
+                    compact: false;
+                    clicked => { root.play_pause_clicked(); }
+                }
+
+                CyberButton {
+                    text: "▶|";
+                    compact: true;
+                    clicked => { root.next_clicked(); }
+                }
+
+                CyberButton {
+                    text: root.is_automix ? "⚡ AUTOMIX: ON" : "⚡ AUTOMIX";
+                    active: root.is_automix;
+                    compact: true;
+                    clicked => { root.automix_toggled(); }
+                }
+            }
+
+            // Seeker Row
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+
+                Text {
+                    text: root.time_formatted;
+                    font-family: CyberTheme.font_mono;
+                    font-size: 11px;
+                    color: CyberTheme.muted;
+                    vertical-alignment: center;
+                    min-width: 36px;
+                }
+
+                CyberSlider {
+                    horizontal-stretch: 1;
+                    minimum: 0.0;
+                    maximum: Math.max(1.0, root.total_duration);
+                    value: root.current_position;
+                    changed(val) => { root.seek_changed(val); }
+                }
+
+                Text {
+                    text: root.duration_formatted;
+                    font-family: CyberTheme.font_mono;
+                    font-size: 11px;
+                    color: CyberTheme.muted;
+                    vertical-alignment: center;
+                    min-width: 36px;
+                }
+            }
+        }
+
+        // ================= RIGHT: MINI VISUALIZER & VOLUME =================
+        HorizontalLayout {
+            min-width: 220px;
+            max-width: 280px;
+            spacing: 12px;
+            alignment: end;
+
+            // Mini Wave / Spectrum Preview
+            Rectangle {
+                width: 70px;
+                height: 36px;
+                background: #05070A;
+                border-width: 1px;
+                border-color: CyberTheme.border;
+                border-radius: 1px;
+                clip: true;
+
+                SpectrumView {
+                    magnitudes: root.mini_spectrum;
+                    is_active: root.is_playing;
+                    bar_spacing: 1px;
+                    min_bar_height: 1px;
+                }
+            }
+
+            // Volume Section
+            HorizontalLayout {
+                spacing: 6px;
+                alignment: center;
+
+                CyberButton {
+                    text: root.is_muted ? "MUTED" : "VOL";
+                    compact: true;
+                    active: root.is_muted;
+                    clicked => { root.mute_toggled(); }
+                }
+
+                CyberSlider {
+                    width: 75px;
+                    minimum: 0.0;
+                    maximum: 1.0;
+                    value: root.is_muted ? 0.0 : root.volume;
+                    changed(val) => { root.volume_changed(val); }
+                }
+
+                Text {
+                    text: Math.round((root.is_muted ? 0.0 : root.volume) * 100) + "%";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 10px;
+                    color: CyberTheme.muted;
+                    vertical-alignment: center;
+                    min-width: 32px;
+                }
+            }
+        }
+    }
+}

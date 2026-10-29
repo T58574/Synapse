@@ -1,0 +1,474 @@
+import { CyberTheme } from "../theme.slint";
+import { CyberButton } from "../components/button.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export struct TrackRow {
+    file_path: string,
+    title: string,
+    artist: string,
+    bpm: float,
+    key_sig: string,
+    duration: string,
+    is_playing: bool,
+}
+
+export component LibraryTable inherits Rectangle {
+    in property <[TrackRow]> tracks: [];
+    in-out property <string> search_query: "";
+    in property <int> active_index: -1;
+
+    callback track_clicked(int, string);
+    callback search_changed(string);
+    callback add_to_playlist_clicked(int, string);
+    callback remove_track_clicked(int, string);
+    callback open_music_dir();
+
+    background: #08090D;
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 12px;
+
+        // ================= SEARCH & TOOLBAR =================
+        HorizontalLayout {
+            height: 38px;
+            spacing: 12px;
+            alignment: space-between;
+
+            // Search Bar Input
+            search_box := Rectangle {
+                horizontal-stretch: 1;
+                background: CyberTheme.surface;
+                border-width: 1px;
+                border-color: search_input.has-focus ? CyberTheme.accent : CyberTheme.border;
+                border-radius: CyberTheme.radius_sm;
+
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 8px;
+
+                    Text {
+                        text: ">";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 13px;
+                        font-weight: 700;
+                        color: CyberTheme.accent;
+                        vertical-alignment: center;
+                    }
+
+                    search_input := TextInput {
+                        text <=> root.search_query;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 12px;
+                        color: CyberTheme.text;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                        edited => {
+                            root.search_changed(self.text);
+                        }
+                    }
+
+                    if (root.search_query != "") : Rectangle {
+                        width: 20px;
+                        height: 20px;
+                        background: clear_touch.has-hover ? CyberTheme.cyber_crimson : transparent;
+                        border-radius: 1px;
+
+                        Text {
+                            text: "✕";
+                            font-size: 11px;
+                            color: clear_touch.has-hover ? #FFFFFF : CyberTheme.muted;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        clear_touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.search_query = "";
+                                root.search_changed("");
+                            }
+                        }
+                    }
+
+                    if (root.search_query == "") : Text {
+                        text: "SYS::FND";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 9px;
+                        color: CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            CyberButton {
+                text: "📁 OPEN DIRECTORY";
+                clicked => { root.open_music_dir(); }
+            }
+        }
+
+        // ================= TABLE OR EMPTY STATE =================
+        if (root.tracks.length > 0) : VerticalLayout {
+            vertical-stretch: 1;
+            spacing: 0px;
+
+            // Table Header Row
+            Rectangle {
+                height: 32px;
+                background: #0E121A;
+                Rectangle {
+                    y: parent.height - 1px;
+                    height: 1px;
+                    background: CyberTheme.border;
+                }
+
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 8px;
+
+                    Text {
+                        text: "#";
+                        width: 40px;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        font-weight: 700;
+                        color: CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "TITLE";
+                        horizontal-stretch: 3;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        font-weight: 700;
+                        color: CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "ARTIST";
+                        horizontal-stretch: 2;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        font-weight: 700;
+                        color: CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "BPM";
+                        width: 70px;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        font-weight: 700;
+                        color: CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "KEY";
+                        width: 70px;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        font-weight: 700;
+                        color: CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "TIME";
+                        width: 70px;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        font-weight: 700;
+                        color: CyberTheme.muted;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "ACTIONS";
+                        width: 80px;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        font-weight: 700;
+                        color: CyberTheme.muted;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            // Scrollable Track Rows
+            ScrollView {
+                vertical-stretch: 1;
+
+                VerticalLayout {
+                    spacing: 1px;
+
+                    for track[idx] in root.tracks : Rectangle {
+                        height: 38px;
+                        background: track.is_playing ? CyberTheme.active_row :
+                                    (row_touch.has-hover ? #121722 : (Math.mod(idx, 2) == 0 ? #090B10 : #06080C));
+
+                        if (track.is_playing || root.active_index == idx) : Rectangle {
+                            x: 0px;
+                            y: 0px;
+                            width: 3px;
+                            height: parent.height;
+                            background: CyberTheme.accent;
+                        }
+
+                        HorizontalLayout {
+                            padding-left: 12px;
+                            padding-right: 12px;
+                            spacing: 8px;
+
+                            // # or Play State Icon
+                            Rectangle {
+                                width: 40px;
+                                Text {
+                                    text: track.is_playing ? "▶" : (idx + 1);
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 11px;
+                                    font-weight: track.is_playing ? 700 : 500;
+                                    color: track.is_playing ? CyberTheme.cyber_green : CyberTheme.muted;
+                                    vertical-alignment: center;
+                                }
+                            }
+
+                            // Title
+                            Text {
+                                text: track.title;
+                                horizontal-stretch: 3;
+                                font-family: CyberTheme.font_mono;
+                                font-size: 12px;
+                                font-weight: track.is_playing ? 700 : 500;
+                                color: track.is_playing ? CyberTheme.accent : CyberTheme.text;
+                                overflow: elide;
+                                vertical-alignment: center;
+                            }
+
+                            // Artist
+                            Text {
+                                text: track.artist;
+                                horizontal-stretch: 2;
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                color: track.is_playing ? CyberTheme.accent : CyberTheme.muted;
+                                overflow: elide;
+                                vertical-alignment: center;
+                            }
+
+                            // BPM
+                            Text {
+                                text: Math.round(track.bpm);
+                                width: 70px;
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                color: CyberTheme.text;
+                                vertical-alignment: center;
+                            }
+
+                            // Key
+                            Rectangle {
+                                width: 70px;
+                                HorizontalLayout {
+                                    alignment: start;
+                                    Rectangle {
+                                        height: 18px;
+                                        background: CyberTheme.active_row;
+                                        border-width: 1px;
+                                        border-color: CyberTheme.cyber_cyan;
+                                        border-radius: 1px;
+                                        HorizontalLayout {
+                                            padding-left: 4px;
+                                            padding-right: 4px;
+                                            Text {
+                                                text: track.key_sig != "" ? track.key_sig : "--";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 9px;
+                                                font-weight: 700;
+                                                color: CyberTheme.cyber_cyan;
+                                                vertical-alignment: center;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Duration
+                            Text {
+                                text: track.duration;
+                                width: 70px;
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                color: CyberTheme.muted;
+                                vertical-alignment: center;
+                            }
+
+                            // Actions
+                            HorizontalLayout {
+                                width: 80px;
+                                spacing: 4px;
+                                alignment: center;
+
+                                // Add to Playlist
+                                add_btn := Rectangle {
+                                    width: 24px;
+                                    height: 24px;
+                                    background: add_t.has-hover ? CyberTheme.accent : CyberTheme.surface;
+                                    border-width: 1px;
+                                    border-color: add_t.has-hover ? CyberTheme.accent : CyberTheme.border;
+                                    border-radius: 1px;
+
+                                    Text {
+                                        text: "+";
+                                        font-size: 12px;
+                                        font-weight: 700;
+                                        color: add_t.has-hover ? CyberTheme.accent_text : CyberTheme.text;
+                                        horizontal-alignment: center;
+                                        vertical-alignment: center;
+                                    }
+
+                                    add_t := TouchArea {
+                                        mouse-cursor: pointer;
+                                        clicked => {
+                                            root.add_to_playlist_clicked(idx, track.file_path);
+                                        }
+                                    }
+                                }
+
+                                // Remove / Delete
+                                rem_btn := Rectangle {
+                                    width: 24px;
+                                    height: 24px;
+                                    background: rem_t.has-hover ? CyberTheme.cyber_crimson : CyberTheme.surface;
+                                    border-width: 1px;
+                                    border-color: rem_t.has-hover ? CyberTheme.cyber_crimson : CyberTheme.border;
+                                    border-radius: 1px;
+
+                                    Text {
+                                        text: "✕";
+                                        font-size: 10px;
+                                        color: rem_t.has-hover ? #FFFFFF : CyberTheme.muted;
+                                        horizontal-alignment: center;
+                                        vertical-alignment: center;
+                                    }
+
+                                    rem_t := TouchArea {
+                                        mouse-cursor: pointer;
+                                        clicked => {
+                                            root.remove_track_clicked(idx, track.file_path);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        row_touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.track_clicked(idx, track.file_path);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ================= EMPTY STATE BANNER =================
+        if (root.tracks.length == 0) : Rectangle {
+            vertical-stretch: 1;
+            background: #080B10;
+            border-width: 1px;
+            border-color: CyberTheme.border;
+
+            VerticalLayout {
+                alignment: center;
+                spacing: 16px;
+
+                // Terminal card
+                Rectangle {
+                    width: 480px;
+                    height: 260px;
+                    background: #0D111A;
+                    border-width: 1px;
+                    border-color: CyberTheme.cyber_crimson;
+                    border-radius: CyberTheme.radius_md;
+                    clip: true;
+
+                    VerticalLayout {
+                        padding: 18px;
+                        spacing: 12px;
+                        alignment: space-between;
+
+                        // Header bar
+                        HorizontalLayout {
+                            alignment: space-between;
+                            Text {
+                                text: "SYS_STATUS // NO_MEDIA_FEED";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                font-weight: 700;
+                                color: CyberTheme.cyber_crimson;
+                            }
+                            Text {
+                                text: "ERR::0x00_EMPTY";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 10px;
+                                color: CyberTheme.muted;
+                            }
+                        }
+
+                        // Terminal log output
+                        VerticalLayout {
+                            spacing: 4px;
+                            Text {
+                                text: "> SCAN_TARGET: %USERPROFILE%\\.synapse";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                color: CyberTheme.muted;
+                            }
+                            Text {
+                                text: "> DETECTED_AUDIO_STREAMS: 0";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                color: CyberTheme.muted;
+                            }
+                            Text {
+                                text: "> PROMPT: Direct audio bus connection required.";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 11px;
+                                color: CyberTheme.text;
+                            }
+                        }
+
+                        // Action button
+                        HorizontalLayout {
+                            alignment: center;
+                            CyberButton {
+                                text: "[ OPEN DIRECTORY ]";
+                                primary: true;
+                                clicked => { root.open_music_dir(); }
+                            }
+                        }
+
+                        // Footer
+                        HorizontalLayout {
+                            alignment: space-between;
+                            Text {
+                                text: "PORT::LOCAL_IO";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 9px;
+                                color: CyberTheme.muted;
+                            }
+                            Text {
+                                text: "SYS_BUS::STANDBY";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 9px;
+                                color: CyberTheme.accent;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

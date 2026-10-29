@@ -1,0 +1,125 @@
+import { CyberTheme } from "../theme.slint";
+
+export component CyberSlider inherits Rectangle {
+    in-out property <float> value: 0.5;
+    in property <float> minimum: 0.0;
+    in property <float> maximum: 1.0;
+    in property <bool> disabled: false;
+    in property <bool> vertical: false;
+    in property <length> track_thickness: 4px;
+    in property <color> active_color: CyberTheme.accent;
+
+    callback changed(float);
+
+    min-height: vertical ? 100px : 24px;
+    min-width: vertical ? 24px : 100px;
+    background: transparent;
+
+    property <float> range: Math.max(0.0001, maximum - minimum);
+    property <float> norm_val: Math.max(0.0, Math.min(1.0, (value - minimum) / range));
+    property <length> thumb_w: vertical ? 18px : 12px;
+    property <length> thumb_h: vertical ? 12px : 18px;
+
+    function update_horizontal(mx: length) {
+        if (root.disabled) { return; }
+        let avail_w = Math.max(1.0, (root.width - thumb_w) / 1px);
+        let pos_x = Math.max(0.0, Math.min(avail_w, (mx - thumb_w / 2) / 1px));
+        let ratio = pos_x / avail_w;
+        let new_val = minimum + ratio * range;
+        root.value = new_val;
+        root.changed(new_val);
+    }
+
+    function update_vertical(my: length) {
+        if (root.disabled) { return; }
+        let avail_h = Math.max(1.0, (root.height - thumb_h) / 1px);
+        let pos_y = Math.max(0.0, Math.min(avail_h, (my - thumb_h / 2) / 1px));
+        // Inverted: top is maximum, bottom is minimum
+        let ratio = 1.0 - (pos_y / avail_h);
+        let new_val = minimum + ratio * range;
+        root.value = new_val;
+        root.changed(new_val);
+    }
+
+    // --- HORIZONTAL TRACK ---
+    if (!vertical) : Rectangle {
+        y: (parent.height - track_thickness) / 2;
+        width: parent.width;
+        height: track_thickness;
+        background: CyberTheme.border;
+        border-radius: 1px;
+
+        // Progress fill
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            width: Math.max(0px, (root.width - thumb_w) * norm_val + thumb_w / 2);
+            height: parent.height;
+            background: root.disabled ? CyberTheme.muted : active_color;
+            border-radius: 1px;
+        }
+    }
+
+    // --- VERTICAL TRACK ---
+    if (vertical) : Rectangle {
+        x: (parent.width - track_thickness) / 2;
+        width: track_thickness;
+        height: parent.height;
+        background: CyberTheme.border;
+        border-radius: 1px;
+
+        // Progress fill (from bottom up)
+        Rectangle {
+            x: 0px;
+            y: (parent.height - thumb_h) * (1.0 - norm_val) + thumb_h / 2;
+            width: parent.width;
+            height: parent.height - self.y;
+            background: root.disabled ? CyberTheme.muted : active_color;
+            border-radius: 1px;
+        }
+    }
+
+    // --- THUMB ---
+    thumb := Rectangle {
+        x: vertical ? (parent.width - thumb_w) / 2 : (parent.width - thumb_w) * norm_val;
+        y: vertical ? (parent.height - thumb_h) * (1.0 - norm_val) : (parent.height - thumb_h) / 2;
+        width: thumb_w;
+        height: thumb_h;
+        border-radius: 1px;
+        background: root.disabled ? CyberTheme.muted :
+                    (touch.pressed ? #FFFFFF : (touch.has-hover ? active_color : CyberTheme.surface));
+        border-width: 1px;
+        border-color: root.disabled ? CyberTheme.border : active_color;
+
+        // Inner tactical notch / grip lines
+        Rectangle {
+            width: vertical ? 8px : 2px;
+            height: vertical ? 2px : 8px;
+            background: root.disabled ? CyberTheme.surface :
+                        (touch.pressed ? #000000 : (touch.has-hover ? CyberTheme.accent_text : active_color));
+        }
+
+        animate background { duration: 80ms; }
+    }
+
+    touch := TouchArea {
+        enabled: !root.disabled;
+        mouse-cursor: pointer;
+        moved => {
+            if (self.pressed) {
+                if (root.vertical) {
+                    root.update_vertical(self.mouse-y);
+                } else {
+                    root.update_horizontal(self.mouse-x);
+                }
+            }
+        }
+        clicked => {
+            if (root.vertical) {
+                root.update_vertical(self.mouse-y);
+            } else {
+                root.update_horizontal(self.mouse-x);
+            }
+        }
+    }
+}

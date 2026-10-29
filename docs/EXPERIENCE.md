@@ -147,3 +147,21 @@
 ### Cue (Symptom): Wails `EventsEmit` panics during test runs (`An invalid context was passed`)
 - **Lesson (Takeaway)**: Background ticker routines (such as `broadcastSpectrum`) spawned during `Startup` with an arbitrary context will leak and persist across unit tests unless explicitly cancelled. Always wrap incoming context with `context.WithCancel(ctx)`, store `cancel context.CancelFunc` on the application struct, invoke it in `Shutdown`, and pass `nil` to `Startup` in unit tests that do not mock Wails runtime events.
 - **Evidence**: Fixed in `backend/app.go:Startup/Shutdown` and `audio_engine_test.go:TestLogFromJS`.
+
+## Rust + Slint Migration Architecture
+
+### Cue (Symptom): Idle audio spectrum query returns 0 bins instead of allocated buffer size
+- **Lesson (Takeaway)**: C++ DSP engine returns 0 and zeros out output memory if no decoder is loaded or track is not playing (`ts.has_decoder == false`). FFI wrappers must treat 0 as an expected idle condition, zeroing Slint visualizer state without allocation or assertion failure.
+- **Evidence**: `cpp/audio_engine.cpp:1264-1266` and verified in `src/audio/mod.rs:test_audio_manager_lifecycle`.
+
+### Cue (Symptom): Massive heap memory bloat from unconstrained embedded album artwork in Slint
+- **Lesson (Takeaway)**: High-resolution embedded album covers (up to 3000x3000px, 15-30MB raw RGBA) quickly consume hundreds of megabytes in UI memory. Always downscale artwork to a fixed bounding box (max 300x300px) using `image::imageops::resize` with `FilterType::Lanczos3` before passing pixel buffers to `slint::Image::from_rgba8`.
+- **Evidence**: `src/library/metadata.rs:resize_cover` and `test_cover_downscaling`.
+
+### Cue (Symptom): Legacy cache corruption or data loss when switching from JSON to SQLite
+- **Lesson (Takeaway)**: On initial startup, check if the SQLite `tracks` table is empty and legacy `~/.synapse/cache.json` / `playlists.json` exist. Run the migration inside a single atomic SQLite transaction (`conn.transaction()`) with Little-Endian binary BLOB packing for waveform data, ensuring backwards compatibility and zero data loss.
+- **Evidence**: `src/library/db.rs:migrate_legacy_cache_if_needed` and `test_legacy_migration`.
+
+### Cue (Symptom): IPC serialisation bottleneck and frame drops on 60 FPS spectrum visualizer
+- **Lesson (Takeaway)**: Replace WebView OS pipes and JSON string serialization with direct native `slint::Timer` polling at 30 FPS. Pass stack-allocated `[f32; 64]` buffers directly into C++ FFI and update Slint reactive models in process memory with zero JSON overhead.
+- **Evidence**: Implemented in `src/ui_bridge.rs` and benchmarked with 13 passing unit tests.

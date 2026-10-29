@@ -1,0 +1,137 @@
+export struct CyberColors {
+    accent: color,
+    dark: color,
+    bg: color,
+    surface: color,
+    text: color,
+    muted: color,
+    border: color,
+    accent_text: color,
+    glow: color,
+    active_row: color,
+}
+
+export global CyberTheme {
+    in-out property <int> active_theme_index: 0;
+    in-out property <string> active_theme_name: "Night City";
+
+    // Theme Palettes
+    out property <CyberColors> night_city: {
+        accent: #FCEE0A,
+        dark: #D8CA00,
+        bg: #08090D,
+        surface: #11141D,
+        text: #F2F5F8,
+        muted: #7A889B,
+        border: #232D3F,
+        accent_text: #08090D,
+        glow: #FCEE0A33,
+        active_row: #FCEE0A14,
+    };
+
+    out property <CyberColors> arasaka: {
+        accent: #E50012,
+        dark: #99000B,
+        bg: #050507,
+        surface: #0E0C0E,
+        text: #F5F5F7,
+        muted: #8A8488,
+        border: #420D14,
+        accent_text: #FFFFFF,
+        glow: #E5001233,
+        active_row: #E5001214,
+    };
+
+    out property <CyberColors> netrunner: {
+        accent: #00FF66,
+        dark: #00CC52,
+        bg: #04090C,
+        surface: #0B171A,
+        text: #E0FFF0,
+        muted: #5A8F78,
+        border: #103F35,
+        accent_text: #04090C,
+        glow: #00FF6633,
+        active_row: #00FF6614,
+    };
+
+    out property <CyberColors> trauma_team: {
+        accent: #00F0FF,
+        dark: #00B8C4,
+        bg: #090D12,
+        surface: #121A22,
+        text: #EEF6FA,
+        muted: #6C8394,
+        border: #1D3545,
+        accent_text: #090D12,
+        glow: #00F0FF33,
+        active_row: #00F0FF14,
+    };
+
+    out property <CyberColors> kang_tao: {
+        accent: #FF9900,
+        dark: #CC7A00,
+        bg: #0A0A0C,
+        surface: #171618,
+        text: #F7F4F0,
+        muted: #877E75,
+        border: #382D1D,
+        accent_text: #0A0A0C,
+        glow: #FF990033,
+        active_row: #FF990014,
+    };
+
+    // Active theme accessor
+    out property <CyberColors> active_colors: active_theme_index == 1 ? arasaka :
+                                            active_theme_index == 2 ? netrunner :
+                                            active_theme_index == 3 ? trauma_team :
+                                            active_theme_index == 4 ? kang_tao :
+                                            night_city;
+
+    // Shortcuts for convenience
+    out property <color> accent: active_colors.accent;
+    out property <color> dark: active_colors.dark;
+    out property <color> bg: active_colors.bg;
+    out property <color> surface: active_colors.surface;
+    out property <color> text: active_colors.text;
+    out property <color> muted: active_colors.muted;
+    out property <color> border: active_colors.border;
+    out property <color> accent_text: active_colors.accent_text;
+    out property <color> glow: active_colors.glow;
+    out property <color> active_row: active_colors.active_row;
+
+    // Fixed Cyberpunk Colors
+    out property <color> cyber_yellow: #FCEE0A;
+    out property <color> cyber_cyan: #00F0FF;
+    out property <color> cyber_crimson: #FF003C;
+    out property <color> cyber_green: #00FF66;
+    out property <color> cyber_amber: #FF9900;
+
+    // Typography
+    out property <string> font_mono: "JetBrains Mono";
+    out property <string> font_display: "Chakra Petch";
+
+    // Layout Tokens
+    out property <length> radius_sm: 2px;
+    out property <length> radius_md: 4px;
+    out property <length> spacing_xs: 4px;
+    out property <length> spacing_sm: 8px;
+    out property <length> spacing_md: 12px;
+    out property <length> spacing_lg: 16px;
+    out property <length> spacing_xl: 24px;
+
+    public function set_theme(idx: int) {
+        active_theme_index = idx;
+        if (idx == 1) {
+            active_theme_name = "Arasaka";
+        } else if (idx == 2) {
+            active_theme_name = "Netrunner";
+        } else if (idx == 3) {
+            active_theme_name = "Trauma Team";
+        } else if (idx == 4) {
+            active_theme_name = "Kang Tao";
+        } else {
+            active_theme_name = "Night City";
+        }
+    }
+}

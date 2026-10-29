@@ -1,0 +1,163 @@
+import { CyberTheme } from "../theme.slint";
+
+export component CyberModal inherits Rectangle {
+    in property <bool> is_open: false;
+    in property <string> title: "CYBER MODAL";
+    in property <string> subtitle: "SYS_CONFIG // POPUP";
+    in property <length> modal_width: 680px;
+    in property <length> modal_height: 520px;
+
+    callback close();
+
+    // Fill entire parent when open
+    x: 0px;
+    y: 0px;
+    width: 100%;
+    height: 100%;
+    visible: is_open;
+    z: 100;
+
+    // Semi-transparent backdrop
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: #000000B3;
+
+        TouchArea {
+            clicked => {
+                root.close();
+            }
+        }
+    }
+
+    // Modal Dialog Window
+    dialog := Rectangle {
+        x: (parent.width - modal_width) / 2;
+        y: (parent.height - modal_height) / 2;
+        width: modal_width;
+        height: modal_height;
+        background: #0A0D14;
+        border-width: 1px;
+        border-color: CyberTheme.accent;
+        border-radius: CyberTheme.radius_md;
+        clip: true;
+
+        // Outer glow accent line at top
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            width: parent.width;
+            height: 3px;
+            background: CyberTheme.accent;
+        }
+
+        // Tactical Corner Bracket Accents
+        // Top-Left
+        Rectangle {
+            x: 4px;
+            y: 4px;
+            width: 8px;
+            height: 8px;
+            background: CyberTheme.accent;
+        }
+        // Top-Right
+        Rectangle {
+            x: parent.width - 12px;
+            y: 4px;
+            width: 8px;
+            height: 8px;
+            background: CyberTheme.accent;
+        }
+        // Bottom-Left
+        Rectangle {
+            x: 4px;
+            y: parent.height - 12px;
+            width: 8px;
+            height: 8px;
+            background: CyberTheme.accent;
+        }
+        // Bottom-Right
+        Rectangle {
+            x: parent.width - 12px;
+            y: parent.height - 12px;
+            width: 8px;
+            height: 8px;
+            background: CyberTheme.accent;
+        }
+
+        VerticalLayout {
+            padding: 18px;
+            spacing: 12px;
+
+            // Header Bar
+            HorizontalLayout {
+                height: 38px;
+                alignment: space-between;
+
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 2px;
+
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            text: "[ " + root.title + " ]";
+                            font-family: CyberTheme.font_display;
+                            font-size: 16px;
+                            font-weight: 700;
+                            letter-spacing: 1px;
+                            color: CyberTheme.text;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    if (root.subtitle != "") : Text {
+                        text: "// " + root.subtitle;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 10px;
+                        color: CyberTheme.muted;
+                    }
+                }
+
+                // Close Button
+                close_btn := Rectangle {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 2px;
+                    background: close_touch.has-hover ? CyberTheme.cyber_crimson : CyberTheme.surface;
+                    border-width: 1px;
+                    border-color: close_touch.has-hover ? CyberTheme.cyber_crimson : CyberTheme.border;
+
+                    Text {
+                        text: "✕";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 14px;
+                        font-weight: 700;
+                        color: close_touch.has-hover ? #FFFFFF : CyberTheme.muted;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    close_touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            root.close();
+                        }
+                    }
+                }
+            }
+
+            // Divider Line
+            Rectangle {
+                height: 1px;
+                background: CyberTheme.border;
+            }
+
+            // Dialog Content Area
+            content_area := Rectangle {
+                vertical-stretch: 1;
+                @children
+            }
+        }
+    }
+}
