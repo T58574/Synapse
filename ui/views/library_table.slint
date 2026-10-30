@@ -48,12 +48,14 @@ export component LibraryTable inherits Rectangle {
         // ================= SEARCH & TOP TOOLBAR =================
         HorizontalLayout {
             height: 36px;
-            spacing: 10px;
+            spacing: 12px;
             alignment: space-between;
+            cross-axis-alignment: center;
 
             // Search Bar Input with Tactical Prompt
             search_box := Rectangle {
                 horizontal-stretch: 1;
+                min-width: 240px;
                 background: CyberTheme.surface;
                 border-width: 1px;
                 border-color: search_input.has-focus ? CyberTheme.accent : CyberTheme.border;

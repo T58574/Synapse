@@ -196,90 +196,45 @@ export component MainWindow inherits Window {
                 }
 
                 HorizontalLayout {
-                    padding-left: 14px;
-                    padding-right: 14px;
-                    spacing: 12px;
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    spacing: 16px;
                     alignment: space-between;
+                    cross-axis-alignment: center;
 
                     // Header Left: Brand Logo & Navigation
                     HorizontalLayout {
-                        spacing: 10px;
+                        spacing: 14px;
                         alignment: start;
+                        cross-axis-alignment: center;
+                        horizontal-stretch: 0;
 
-                        // Brand Logo
-                        Rectangle {
-                            height: 30px;
-                            background: transparent;
-
-                            HorizontalLayout {
-                                spacing: 6px;
-                                alignment: start;
-
-                                Rectangle {
-                                    height: 30px;
-                                    background: logo_touch.has-hover ? #FCEE0A22 : CyberTheme.surface;
-                                    border-width: 1px;
-                                    border-color: logo_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
-                                    border-radius: CyberTheme.radius_sm;
-
-                                    HorizontalLayout {
-                                        padding-left: 8px;
-                                        padding-right: 8px;
-                                        spacing: 6px;
-                                        alignment: center;
-
-                                        IconBolt {
-                                            size: 13px;
-                                            icon_color: CyberTheme.accent;
-                                            y: (parent.height - self.height) / 2;
-                                        }
-
-                                        Text {
-                                            text: "SYNAPSE";
-                                            font-family: CyberTheme.font_display;
-                                            font-size: 13px;
-                                            font-weight: 800;
-                                            letter-spacing: 0.8px;
-                                            color: CyberTheme.accent;
-                                            vertical-alignment: center;
-                                        }
-                                    }
-
-                                    logo_touch := TouchArea {
-                                        mouse-cursor: pointer;
-                                        clicked => { root.active_tab = 0; }
-                                    }
-                                }
-
-                                // Version Badge
-                                Rectangle {
-                                    height: 18px;
-                                    y: (parent.height - self.height) / 2;
-                                    background: #111824;
-                                    border-width: 1px;
-                                    border-color: CyberTheme.border;
-                                    border-radius: 2px;
-
-                                    HorizontalLayout {
-                                        padding-left: 4px;
-                                        padding-right: 4px;
-                                        Text {
-                                            text: "v0.2.0";
-                                            font-family: CyberTheme.font_mono;
-                                            font-size: 8px;
-                                            font-weight: 700;
-                                            color: CyberTheme.accent;
-                                            vertical-alignment: center;
-                                        }
-                                    }
-                                }
-                            }
+                        // Brand Logo (Clean element without button or icon)
+                        Text {
+                            text: "SYNAPSE";
+                            font-family: CyberTheme.font_display;
+                            font-size: 15px;
+                            font-weight: 800;
+                            letter-spacing: 2px;
+                            color: CyberTheme.accent;
+                            vertical-alignment: center;
+                            horizontal-stretch: 0;
                         }
 
-                        // Navigation Buttons: [ LIBRARY ], MUSICIANS, SETTINGS
+                        // Tactical vertical divider
+                        Rectangle {
+                            width: 1px;
+                            height: 16px;
+                            background: CyberTheme.border;
+                            horizontal-stretch: 0;
+                        }
+
+                        // Navigation Tabs: [ LIBRARY ], MUSICIANS, SETTINGS
                         HorizontalLayout {
-                            spacing: 4px;
+                            spacing: 6px;
                             alignment: center;
+                            cross-axis-alignment: center;
+                            horizontal-stretch: 0;
 
                             CyberButton {
                                 height: 30px;
@@ -309,13 +264,14 @@ export component MainWindow inherits Window {
                         }
                     }
 
-                    // Header Center: Wide Spectrum Visualizer
+                    // Header Center: Wide Spectrum Visualizer / Engine Telemetry
                     HorizontalLayout {
                         horizontal-stretch: 1;
-                        min-width: 380px;
-                        max-width: 600px;
-                        height: 34px;
+                        min-width: 200px;
+                        max-width: 440px;
+                        height: 32px;
                         alignment: center;
+                        cross-axis-alignment: center;
 
                         Rectangle {
                             width: 100%;
@@ -327,8 +283,8 @@ export component MainWindow inherits Window {
                             clip: true;
 
                             if (root.is_playing && root.visualizer_enabled) : HorizontalLayout {
-                                padding-left: 8px;
-                                padding-right: 8px;
+                                padding-left: 10px;
+                                padding-right: 10px;
                                 padding-top: 3px;
                                 padding-bottom: 3px;
                                 spacing: 8px;
@@ -369,9 +325,16 @@ export component MainWindow inherits Window {
                             }
 
                             if (!root.is_playing || !root.visualizer_enabled) : HorizontalLayout {
-                                padding-left: 10px;
-                                padding-right: 10px;
-                                alignment: space-between;
+                                alignment: center;
+                                cross-axis-alignment: center;
+                                spacing: 10px;
+
+                                Rectangle {
+                                    width: 5px;
+                                    height: 5px;
+                                    border-radius: 2.5px;
+                                    background: CyberTheme.cyber_cyan;
+                                }
 
                                 Text {
                                     text: "AUDIO ENGINE // 44.1kHz 24-BIT [ 64 BANDS ]";
@@ -387,7 +350,7 @@ export component MainWindow inherits Window {
                                     text: "[ STANDBY ]";
                                     font-family: CyberTheme.font_mono;
                                     font-size: 8px;
-                                    font-weight: 600;
+                                    font-weight: 700;
                                     color: CyberTheme.cyber_cyan;
                                     vertical-alignment: center;
                                 }
@@ -397,9 +360,10 @@ export component MainWindow inherits Window {
 
                     // Header Right: Action Buttons
                     HorizontalLayout {
-                        spacing: 6px;
-                        alignment: center;
+                        spacing: 8px;
+                        alignment: end;
                         cross-axis-alignment: center;
+                        horizontal-stretch: 0;
 
                         CyberButton {
                             height: 30px;
@@ -432,7 +396,7 @@ export component MainWindow inherits Window {
                                 size: 13px;
                                 icon_color: parent.icon_color;
                             }
-                            text: "EQ";
+                            text: "EQUALIZER";
                         }
                     }
                 }
