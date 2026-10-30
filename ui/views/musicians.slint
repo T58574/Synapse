@@ -1,0 +1,210 @@
+import { CyberTheme } from "../theme.slint";
+import { CyberButton } from "../components/button.slint";
+import { IconArtist, IconPlay, IconSearch } from "../components/icons.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export struct ArtistCardItem {
+    name: string,
+    track_count: int,
+    genre: string,
+}
+
+export component MusiciansView inherits Rectangle {
+    in property <[ArtistCardItem]> artists: [];
+    in-out property <string> search_query: "";
+
+    callback artist_clicked(string);
+    callback play_artist_clicked(string);
+
+    background: #08090D;
+
+    VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+
+        // Header & Search
+        HorizontalLayout {
+            height: 38px;
+            alignment: space-between;
+
+            VerticalLayout {
+                spacing: 2px;
+                alignment: center;
+                Text {
+                    text: "// ARTISTS & PRODUCERS DIRECTORY";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 10px;
+                    font-weight: 700;
+                    color: CyberTheme.accent;
+                }
+                Text {
+                    text: root.artists.length + " MUSICIANS INDEXED";
+                    font-family: CyberTheme.font_display;
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: CyberTheme.text;
+                }
+            }
+
+            // Search by Artist
+            Rectangle {
+                width: 260px;
+                background: CyberTheme.surface;
+                border-width: 1px;
+                border-color: artist_search_in.has-focus ? CyberTheme.accent : CyberTheme.border;
+                border-radius: CyberTheme.radius_sm;
+
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 8px;
+
+                    IconSearch {
+                        size: 13px;
+                        icon_color: artist_search_in.has-focus ? CyberTheme.accent : CyberTheme.muted;
+                        y: (parent.height - self.height) / 2;
+                    }
+
+                    artist_search_in := TextInput {
+                        width: 100%;
+                        height: 100%;
+                        text <=> root.search_query;
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        color: CyberTheme.text;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        // Scrollable Artists Grid
+        ScrollView {
+            vertical-stretch: 1;
+
+            VerticalLayout {
+                spacing: 10px;
+                alignment: start;
+
+                for art[idx] in root.artists : Rectangle {
+                    height: 52px;
+                    background: card_touch.has-hover ? #121724 : #0D111A;
+                    border-width: 1px;
+                    border-color: card_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
+                    border-radius: CyberTheme.radius_sm;
+
+                    // Left accent
+                    if (card_touch.has-hover) : Rectangle {
+                        x: 0px;
+                        y: 0px;
+                        width: 3px;
+                        height: parent.height;
+                        background: CyberTheme.accent;
+                    }
+
+                    card_touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.artist_clicked(art.name); }
+                    }
+
+                    HorizontalLayout {
+                        padding-left: 14px;
+                        padding-right: 14px;
+                        spacing: 12px;
+                        alignment: space-between;
+
+                        HorizontalLayout {
+                            spacing: 12px;
+                            alignment: start;
+
+                            // Avatar icon
+                            Rectangle {
+                                width: 34px;
+                                height: 34px;
+                                background: #161D2C;
+                                border-radius: 17px;
+                                y: (parent.height - self.height) / 2;
+
+                                IconArtist {
+                                    size: 16px;
+                                    icon_color: card_touch.has-hover ? CyberTheme.accent : CyberTheme.muted;
+                                    x: (parent.width - self.width) / 2;
+                                    y: (parent.height - self.height) / 2;
+                                }
+                            }
+
+                            VerticalLayout {
+                                alignment: center;
+                                spacing: 2px;
+
+                                Text {
+                                    text: art.name;
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 12px;
+                                    font-weight: 700;
+                                    color: card_touch.has-hover ? CyberTheme.accent : CyberTheme.text;
+                                }
+
+                                Text {
+                                    text: art.genre != "" ? art.genre : "Various Genres";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 9px;
+                                    color: CyberTheme.muted;
+                                }
+                            }
+                        }
+
+                        HorizontalLayout {
+                            spacing: 10px;
+                            alignment: center;
+
+                            // Track count pill
+                            Rectangle {
+                                height: 20px;
+                                background: #141A28;
+                                border-width: 1px;
+                                border-color: CyberTheme.border;
+                                border-radius: 2px;
+                                y: (parent.height - self.height) / 2;
+
+                                HorizontalLayout {
+                                    padding-left: 6px;
+                                    padding-right: 6px;
+                                    Text {
+                                        text: art.track_count + " TRACKS";
+                                        font-family: CyberTheme.font_mono;
+                                        font-size: 9px;
+                                        font-weight: 600;
+                                        color: CyberTheme.muted;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+
+                            CyberButton {
+                                height: 28px;
+                                compact: true;
+                                primary: true;
+                                clicked => { root.play_artist_clicked(art.name); }
+                                IconPlay {
+                                    size: 10px;
+                                    icon_color: parent.icon_color;
+                                }
+                                text: "PLAY";
+                            }
+                        }
+                    }
+                }
+
+                if (root.artists.length == 0) : Text {
+                    text: "No musicians found matching current criteria.";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 11px;
+                    color: CyberTheme.muted;
+                    height: 40px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}

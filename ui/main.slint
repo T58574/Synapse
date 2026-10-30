@@ -1,12 +1,20 @@
+import "./fonts/JetBrainsMono-Regular.ttf";
+import "./fonts/JetBrainsMono-Bold.ttf";
+import "./fonts/ChakraPetch-Regular.ttf";
+import "./fonts/ChakraPetch-Bold.ttf";
+
 import { CyberTheme, CyberColors } from "theme.slint";
 import { CyberButton } from "components/button.slint";
 import { CyberSlider } from "components/slider.slint";
 import { CyberSelect, SelectOption } from "components/cyber_select.slint";
 import { CyberModal } from "components/modal.slint";
+import { CyberToast } from "components/toast.slint";
 import { SpectrumView } from "visualizer/spectrum.slint";
-import { PlaybackBar } from "views/playback_bar.slint";
+import { PlaybackBar, QueueRow } from "views/playback_bar.slint";
 import { LibrarySidebar, PlaylistRow } from "views/sidebar.slint";
+import { LibraryHero } from "views/library_hero.slint";
 import { LibraryTable, TrackRow } from "views/library_table.slint";
+import { MusiciansView, ArtistCardItem } from "views/musicians.slint";
 import { EqualizerView } from "views/equalizer.slint";
 import { SettingsView, AudioDeviceItem } from "views/settings.slint";
 import { IconBolt, IconFolder, IconScan, IconEqualizer } from "components/icons.slint";
@@ -17,6 +25,8 @@ export { SelectOption } from "components/cyber_select.slint";
 export { PlaylistRow } from "views/sidebar.slint";
 export { TrackRow } from "views/library_table.slint";
 export { AudioDeviceItem } from "views/settings.slint";
+export { QueueRow } from "views/playback_bar.slint";
+export { ArtistCardItem } from "views/musicians.slint";
 
 export component MainWindow inherits Window {
     title: "Synapse // Cyberpunk Audio Workstation";
@@ -36,11 +46,21 @@ export component MainWindow inherits Window {
     in property <[TrackRow]> tracks: [];
     in property <[PlaylistRow]> playlists: [];
     in property <[AudioDeviceItem]> audio_devices: [];
+    in property <[SelectOption]> device_select_options: [];
+    in property <[ArtistCardItem]> artists: [];
     in property <int> active_track_index: -1;
+    in-out property <int> selected_playlist_id: -1;
+
+    // Hero Info
+    in property <string> hero_category_tag: "LOCAL REPOSITORY";
+    in property <string> hero_title: "ALL TRACKS";
+    in property <string> total_library_duration: "00:00";
 
     // Playback State
     in property <bool> is_playing: false;
     in property <bool> is_automix: false;
+    in-out property <bool> is_shuffle: false;
+    in-out property <bool> is_repeat: false;
     in property <image> current_cover;
     in property <bool> has_cover: false;
     in property <string> current_title: "No Track Playing";
@@ -54,6 +74,10 @@ export component MainWindow inherits Window {
     in property <string> total_time_str: "03:00";
     in-out property <float> master_volume: 0.8;
     in-out property <bool> is_muted: false;
+    in property <[QueueRow]> queue_items: [];
+    in property <int> queue_count: 0;
+
+    // Spectrum Data
     in property <[float]> spectrum_data: [
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -84,6 +108,12 @@ export component MainWindow inherits Window {
     in-out property <float> treble_exciter: 0.0;
     in-out property <float> crossfade_duration: 4.0;
     in property <string> music_dir: "~/.synapse/music";
+    in-out property <bool> visualizer_enabled: true;
+    in-out property <string> current_language: "EN";
+
+    // Toast State
+    in-out property <string> toast_message: "";
+    in-out property <bool> is_toast_visible: false;
 
     // Callbacks for Rust Bridge
     callback play_track(int, string);
@@ -93,6 +123,8 @@ export component MainWindow inherits Window {
     callback seek_track(float);
     callback set_volume(float);
     callback toggle_automix();
+    callback toggle_shuffle();
+    callback toggle_repeat();
     callback set_eq_band(int, float);
     callback reset_eq();
     callback set_dsp_param(string, float);
@@ -104,9 +136,44 @@ export component MainWindow inherits Window {
     callback delete_playlist(int, string);
     callback add_to_playlist(int, string);
     callback remove_from_playlist(int, string);
+    callback add_to_queue(int, string);
+    callback remove_from_queue(int);
+    callback clear_queue();
     callback set_crossfade(float);
     callback set_audio_device(string);
     callback toggle_my_wave();
+    callback play_all_library();
+    callback select_artist(string);
+    callback play_artist(string);
+    callback title_clicked(string);
+    callback artist_clicked(string);
+    callback language_changed(string);
+    callback visualizer_toggled(bool);
+    callback theme_selected(int, string);
+
+    forward-focus: key_handler;
+    key_handler := FocusScope {
+        key-pressed(event) => {
+            if (event.text == " ") {
+                root.toggle_play();
+                accept
+            } else if (event.text == Key.LeftArrow) {
+                root.seek_track(Math.max(0.0, root.current_pos - 5.0));
+                accept
+            } else if (event.text == Key.RightArrow) {
+                root.seek_track(Math.min(root.total_duration, root.current_pos + 5.0));
+                accept
+            } else if (event.text == Key.UpArrow) {
+                root.set_volume(Math.min(1.0, root.master_volume + 0.05));
+                accept
+            } else if (event.text == Key.DownArrow) {
+                root.set_volume(Math.max(0.0, root.master_volume - 0.05));
+                accept
+            } else {
+                reject
+            }
+        }
+    }
 
     // Main App Container
     Rectangle {
@@ -119,7 +186,7 @@ export component MainWindow inherits Window {
 
             // ================= 1. APP HEADER =================
             Rectangle {
-                height: 50px;
+                height: 48px;
                 background: #0A0D14;
 
                 Rectangle {
@@ -129,54 +196,40 @@ export component MainWindow inherits Window {
                 }
 
                 HorizontalLayout {
-                    padding-left: 16px;
-                    padding-right: 16px;
-                    spacing: 14px;
+                    padding-left: 14px;
+                    padding-right: 14px;
+                    spacing: 12px;
                     alignment: space-between;
 
-                    // Header Left: Brand Logo with Version Badge & Navigation
+                    // Header Left: Brand Logo & Navigation
                     HorizontalLayout {
-                        spacing: 12px;
+                        spacing: 10px;
                         alignment: start;
 
-                        // Brand Logo Container with v0.2.0 Badge
+                        // Brand Logo
                         Rectangle {
-                            height: 32px;
+                            height: 30px;
                             background: transparent;
 
                             HorizontalLayout {
                                 spacing: 6px;
                                 alignment: start;
 
-                                logo_btn := Rectangle {
-                                    height: 32px;
+                                Rectangle {
+                                    height: 30px;
                                     background: logo_touch.has-hover ? #FCEE0A22 : CyberTheme.surface;
                                     border-width: 1px;
                                     border-color: logo_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
                                     border-radius: CyberTheme.radius_sm;
 
-                                    // Top-right 45-degree chamfer notch
-                                    Path {
-                                        x: parent.width - 6px;
-                                        y: 0px;
-                                        width: 6px;
-                                        height: 6px;
-                                        viewbox-x: 0;
-                                        viewbox-y: 0;
-                                        viewbox-width: 6;
-                                        viewbox-height: 6;
-                                        fill: CyberTheme.accent;
-                                        commands: "M 0 0 L 6 0 L 6 6 Z";
-                                    }
-
                                     HorizontalLayout {
-                                        padding-left: 10px;
-                                        padding-right: 10px;
+                                        padding-left: 8px;
+                                        padding-right: 8px;
                                         spacing: 6px;
                                         alignment: center;
 
                                         IconBolt {
-                                            size: 14px;
+                                            size: 13px;
                                             icon_color: CyberTheme.accent;
                                             y: (parent.height - self.height) / 2;
                                         }
@@ -200,7 +253,7 @@ export component MainWindow inherits Window {
 
                                 // Version Badge
                                 Rectangle {
-                                    height: 20px;
+                                    height: 18px;
                                     y: (parent.height - self.height) / 2;
                                     background: #111824;
                                     border-width: 1px;
@@ -208,12 +261,12 @@ export component MainWindow inherits Window {
                                     border-radius: 2px;
 
                                     HorizontalLayout {
-                                        padding-left: 5px;
-                                        padding-right: 5px;
+                                        padding-left: 4px;
+                                        padding-right: 4px;
                                         Text {
                                             text: "v0.2.0";
                                             font-family: CyberTheme.font_mono;
-                                            font-size: 9px;
+                                            font-size: 8px;
                                             font-weight: 700;
                                             color: CyberTheme.accent;
                                             vertical-alignment: center;
@@ -225,11 +278,11 @@ export component MainWindow inherits Window {
 
                         // Navigation Buttons: [ LIBRARY ], MUSICIANS, SETTINGS
                         HorizontalLayout {
-                            spacing: 6px;
+                            spacing: 4px;
                             alignment: center;
 
                             CyberButton {
-                                height: 32px;
+                                height: 30px;
                                 text: root.active_tab == 0 ? "[ LIBRARY ]" : "LIBRARY";
                                 active: root.active_tab == 0;
                                 compact: true;
@@ -237,7 +290,7 @@ export component MainWindow inherits Window {
                             }
 
                             CyberButton {
-                                height: 32px;
+                                height: 30px;
                                 text: root.active_tab == 1 ? "[ MUSICIANS ]" : "MUSICIANS";
                                 active: root.active_tab == 1;
                                 compact: true;
@@ -245,7 +298,7 @@ export component MainWindow inherits Window {
                             }
 
                             CyberButton {
-                                height: 32px;
+                                height: 30px;
                                 text: root.active_tab == 2 ? "[ SETTINGS ]" : "SETTINGS";
                                 active: root.active_tab == 2;
                                 compact: true;
@@ -256,12 +309,12 @@ export component MainWindow inherits Window {
                         }
                     }
 
-                    // Header Center: Wide Cyber-Winamp Spectrum Visualizer (Single unified display)
+                    // Header Center: Wide Spectrum Visualizer
                     HorizontalLayout {
                         horizontal-stretch: 1;
-                        min-width: 440px;
-                        max-width: 680px;
-                        height: 36px;
+                        min-width: 380px;
+                        max-width: 600px;
+                        height: 34px;
                         alignment: center;
 
                         Rectangle {
@@ -273,67 +326,29 @@ export component MainWindow inherits Window {
                             border-radius: CyberTheme.radius_sm;
                             clip: true;
 
-                            // Active neon top accent when playing
-                            if (root.is_playing) : Rectangle {
-                                x: 0px;
-                                y: 0px;
-                                width: parent.width;
-                                height: 1px;
-                                background: CyberTheme.cyber_cyan;
-                            }
-
-                            // Cyber 45-degree chamfer notches
-                            Path {
-                                x: 0px;
-                                y: 0px;
-                                width: 6px;
-                                height: 6px;
-                                viewbox-x: 0;
-                                viewbox-y: 0;
-                                viewbox-width: 6;
-                                viewbox-height: 6;
-                                fill: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.muted;
-                                opacity: 0.6;
-                                commands: "M 0 0 L 6 0 L 0 6 Z";
-                            }
-                            Path {
-                                x: parent.width - 6px;
-                                y: parent.height - 6px;
-                                width: 6px;
-                                height: 6px;
-                                viewbox-x: 0;
-                                viewbox-y: 0;
-                                viewbox-width: 6;
-                                viewbox-height: 6;
-                                fill: root.is_playing ? CyberTheme.cyber_cyan : CyberTheme.muted;
-                                opacity: 0.6;
-                                commands: "M 0 6 L 6 6 L 6 0 Z";
-                            }
-
-                            // When playing: Live Audio Spectrum with Live Badge
-                            if (root.is_playing) : HorizontalLayout {
-                                padding-left: 10px;
-                                padding-right: 10px;
-                                padding-top: 4px;
-                                padding-bottom: 4px;
-                                spacing: 10px;
+                            if (root.is_playing && root.visualizer_enabled) : HorizontalLayout {
+                                padding-left: 8px;
+                                padding-right: 8px;
+                                padding-top: 3px;
+                                padding-bottom: 3px;
+                                spacing: 8px;
 
                                 HorizontalLayout {
-                                    spacing: 5px;
+                                    spacing: 4px;
                                     alignment: center;
 
                                     Rectangle {
-                                        width: 6px;
-                                        height: 6px;
-                                        border-radius: 3px;
+                                        width: 5px;
+                                        height: 5px;
+                                        border-radius: 2.5px;
                                         background: CyberTheme.cyber_green;
                                         y: (parent.height - self.height) / 2;
                                     }
 
                                     Text {
-                                        text: "LIVE 44.1kHz";
+                                        text: "LIVE";
                                         font-family: CyberTheme.font_mono;
-                                        font-size: 9px;
+                                        font-size: 8px;
                                         font-weight: 700;
                                         color: CyberTheme.cyber_green;
                                         vertical-alignment: center;
@@ -353,85 +368,70 @@ export component MainWindow inherits Window {
                                 }
                             }
 
-                            // When idle: audio telemetry status
-                            if (!root.is_playing) : HorizontalLayout {
-                                padding-left: 12px;
-                                padding-right: 12px;
-                                spacing: 8px;
+                            if (!root.is_playing || !root.visualizer_enabled) : HorizontalLayout {
+                                padding-left: 10px;
+                                padding-right: 10px;
                                 alignment: space-between;
 
-                                HorizontalLayout {
-                                    spacing: 6px;
-                                    alignment: center;
-
-                                    Rectangle {
-                                        width: 6px;
-                                        height: 6px;
-                                        background: CyberTheme.cyber_cyan;
-                                        opacity: 0.7;
-                                        y: (parent.height - self.height) / 2;
-                                    }
-
-                                    Text {
-                                        text: "AUDIO ENGINE // 44.1kHz 24-BIT [ 64 BANDS ]";
-                                        font-family: CyberTheme.font_mono;
-                                        font-size: 9px;
-                                        font-weight: 700;
-                                        letter-spacing: 0.5px;
-                                        color: CyberTheme.muted;
-                                        vertical-alignment: center;
-                                    }
+                                Text {
+                                    text: "AUDIO ENGINE // 44.1kHz 24-BIT [ 64 BANDS ]";
+                                    font-family: CyberTheme.font_mono;
+                                    font-size: 8px;
+                                    font-weight: 700;
+                                    letter-spacing: 0.5px;
+                                    color: CyberTheme.muted;
+                                    vertical-alignment: center;
                                 }
 
                                 Text {
-                                    text: "[ READY ]";
+                                    text: "[ STANDBY ]";
                                     font-family: CyberTheme.font_mono;
-                                    font-size: 9px;
+                                    font-size: 8px;
                                     font-weight: 600;
-                                    color: CyberTheme.cyber_green;
+                                    color: CyberTheme.cyber_cyan;
                                     vertical-alignment: center;
                                 }
                             }
                         }
                     }
 
-                    // Header Right: Quick Buttons (Vector Icons, zero emojis)
+                    // Header Right: Action Buttons
                     HorizontalLayout {
-                        spacing: 8px;
+                        spacing: 6px;
                         alignment: center;
 
                         CyberButton {
-                            height: 32px;
+                            height: 30px;
                             compact: true;
                             clicked => { root.open_directory(); }
                             IconFolder {
-                                size: 14px;
+                                size: 13px;
                                 icon_color: parent.icon_color;
                             }
                             text: "OPEN";
                         }
 
                         CyberButton {
-                            height: 32px;
+                            height: 30px;
                             compact: true;
                             clicked => { root.scan_directory(); }
                             IconScan {
-                                size: 14px;
+                                size: 13px;
                                 icon_color: parent.icon_color;
                             }
                             text: "SCAN";
                         }
 
                         CyberButton {
-                            height: 32px;
+                            height: 30px;
                             active: root.show_equalizer;
                             compact: true;
                             clicked => { root.show_equalizer = !root.show_equalizer; }
                             IconEqualizer {
-                                size: 14px;
+                                size: 13px;
                                 icon_color: parent.icon_color;
                             }
-                            text: "EQUALIZER";
+                            text: "EQ";
                         }
                     }
                 }
@@ -445,11 +445,16 @@ export component MainWindow inherits Window {
                 // Left Sidebar
                 LibrarySidebar {
                     playlists: root.playlists;
+                    total_tracks_count: root.tracks.length;
+                    selected_playlist_id <=> root.selected_playlist_id;
                     nav_selected(idx) => {
                         if (idx == 0) {
                             root.active_tab = 0;
+                            root.search_tracks("");
                         } else if (idx == 1) {
                             root.active_tab = 1;
+                        } else if (idx == 2) {
+                            root.active_tab = 0;
                         }
                     }
                     playlist_selected(id, name) => {
@@ -472,182 +477,73 @@ export component MainWindow inherits Window {
                     horizontal-stretch: 1;
                     background: CyberTheme.bg;
 
-                    // View 0: Library Tracks Table
-                    if (root.active_tab == 0) : LibraryTable {
-                        tracks: root.tracks;
-                        active_index: root.active_track_index;
-                        search_query <=> root.search_query;
-                        track_clicked(idx, path) => {
-                            root.play_track(idx, path);
+                    // View 0: Library Tracks Table + Hero Banner
+                    if (root.active_tab == 0) : VerticalLayout {
+                        padding: 12px;
+                        spacing: 10px;
+
+                        // Library Hero Banner
+                        LibraryHero {
+                            title: root.hero_title;
+                            category_tag: root.hero_category_tag;
+                            track_count: root.tracks.length;
+                            total_duration_str: root.total_library_duration;
+                            mount_path: root.music_dir;
+                            is_playing: root.is_playing;
+                            is_my_wave: root.is_automix;
+                            play_all_clicked => { root.play_all_library(); }
+                            my_wave_toggled => { root.toggle_my_wave(); }
+                            open_dir_clicked => { root.open_directory(); }
                         }
-                        search_changed(q) => {
-                            root.search_tracks(q);
-                        }
-                        add_to_playlist_clicked(idx, path) => {
-                            root.add_to_playlist(idx, path);
-                        }
-                        remove_track_clicked(idx, path) => {
-                            root.remove_from_playlist(idx, path);
-                        }
-                        open_music_dir => {
-                            root.open_directory();
+
+                        // Library Table
+                        LibraryTable {
+                            vertical-stretch: 1;
+                            tracks: root.tracks;
+                            playlists: root.playlists;
+                            active_index: root.active_track_index;
+                            selected_playlist_id: root.selected_playlist_id;
+                            search_query <=> root.search_query;
+                            track_clicked(idx, path) => {
+                                root.play_track(idx, path);
+                            }
+                            search_changed(q) => {
+                                root.search_tracks(q);
+                            }
+                            add_to_playlist_clicked(idx, path) => {
+                                root.add_to_playlist(idx, path);
+                            }
+                            remove_track_clicked(idx, path) => {
+                                root.remove_from_playlist(idx, path);
+                            }
+                            add_to_queue_clicked(idx, path) => {
+                                root.add_to_queue(idx, path);
+                            }
+                            open_music_dir => {
+                                root.open_directory();
+                            }
                         }
                     }
 
-                    // View 1: Musicians / Artists Grid View
-                    if (root.active_tab == 1) : Rectangle {
-                        background: #08090D;
-                        ScrollView {
-                            VerticalLayout {
-                                padding: 24px;
-                                spacing: 16px;
-
-                                HorizontalLayout {
-                                    alignment: space-between;
-                                    Text {
-                                        text: "SYS_INDEX // ARTISTS & MUSICIANS";
-                                        font-family: CyberTheme.font_mono;
-                                        font-size: 11px;
-                                        font-weight: 700;
-                                        color: CyberTheme.accent;
-                                    }
-                                }
-
-                                Text {
-                                    text: "FEATURED MUSICIANS & PRODUCERS";
-                                    font-family: CyberTheme.font_display;
-                                    font-size: 18px;
-                                    font-weight: 700;
-                                    color: CyberTheme.text;
-                                }
-
-                                // Placeholder Artist Cards Grid
-                                HorizontalLayout {
-                                    spacing: 16px;
-
-                                    Rectangle {
-                                        horizontal-stretch: 1;
-                                        height: 120px;
-                                        background: #0E131E;
-                                        border-width: 1px;
-                                        border-color: CyberTheme.border;
-                                        border-radius: CyberTheme.radius_md;
-
-                                        VerticalLayout {
-                                            padding: 14px;
-                                            spacing: 6px;
-                                            alignment: space-between;
-
-                                            Text {
-                                                text: "SAMURAI";
-                                                font-family: CyberTheme.font_mono;
-                                                font-size: 14px;
-                                                font-weight: 700;
-                                                color: CyberTheme.cyber_crimson;
-                                            }
-                                            Text {
-                                                text: "Chromerock // Night City";
-                                                font-family: CyberTheme.font_mono;
-                                                font-size: 10px;
-                                                color: CyberTheme.muted;
-                                            }
-                                            CyberButton {
-                                                text: "EXPLORE TRACKS";
-                                                compact: true;
-                                                clicked => {
-                                                    root.search_query = "SAMURAI";
-                                                    root.active_tab = 0;
-                                                    root.search_tracks("SAMURAI");
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Rectangle {
-                                        horizontal-stretch: 1;
-                                        height: 120px;
-                                        background: #0E131E;
-                                        border-width: 1px;
-                                        border-color: CyberTheme.border;
-                                        border-radius: CyberTheme.radius_md;
-
-                                        VerticalLayout {
-                                            padding: 14px;
-                                            spacing: 6px;
-                                            alignment: space-between;
-
-                                            Text {
-                                                text: "US CRACKS";
-                                                font-family: CyberTheme.font_mono;
-                                                font-size: 14px;
-                                                font-weight: 700;
-                                                color: CyberTheme.cyber_cyan;
-                                            }
-                                            Text {
-                                                text: "J-Pop Synthwave // Westbrook";
-                                                font-family: CyberTheme.font_mono;
-                                                font-size: 10px;
-                                                color: CyberTheme.muted;
-                                            }
-                                            CyberButton {
-                                                text: "EXPLORE TRACKS";
-                                                compact: true;
-                                                clicked => {
-                                                    root.search_query = "US Cracks";
-                                                    root.active_tab = 0;
-                                                    root.search_tracks("US Cracks");
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Rectangle {
-                                        horizontal-stretch: 1;
-                                        height: 120px;
-                                        background: #0E131E;
-                                        border-width: 1px;
-                                        border-color: CyberTheme.border;
-                                        border-radius: CyberTheme.radius_md;
-
-                                        VerticalLayout {
-                                            padding: 14px;
-                                            spacing: 6px;
-                                            alignment: space-between;
-
-                                            Text {
-                                                text: "LIZZY WIZZY";
-                                                font-family: CyberTheme.font_mono;
-                                                font-size: 14px;
-                                                font-weight: 700;
-                                                color: CyberTheme.cyber_yellow;
-                                            }
-                                            Text {
-                                                text: "Glitch Cyber Electro // Vista del Rey";
-                                                font-family: CyberTheme.font_mono;
-                                                font-size: 10px;
-                                                color: CyberTheme.muted;
-                                            }
-                                            CyberButton {
-                                                text: "EXPLORE TRACKS";
-                                                compact: true;
-                                                clicked => {
-                                                    root.search_query = "Lizzy";
-                                                    root.active_tab = 0;
-                                                    root.search_tracks("Lizzy");
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                    // View 1: Musicians Grid View
+                    if (root.active_tab == 1) : MusiciansView {
+                        artists: root.artists;
+                        artist_clicked(artist_name) => {
+                            root.select_artist(artist_name);
+                            root.active_tab = 0;
+                        }
+                        play_artist_clicked(artist_name) => {
+                            root.play_artist(artist_name);
                         }
                     }
 
                     // View 2: Settings View
                     if (root.active_tab == 2) : SettingsView {
-                        audio_devices: root.audio_devices;
+                        device_options: root.device_select_options;
                         crossfade_duration <=> root.crossfade_duration;
                         music_directory: root.music_dir;
+                        current_language <=> root.current_language;
+                        visualizer_enabled <=> root.visualizer_enabled;
                         crossfade_changed(val) => {
                             root.set_crossfade(val);
                         }
@@ -656,6 +552,15 @@ export component MainWindow inherits Window {
                         }
                         open_music_dir => {
                             root.open_directory();
+                        }
+                        language_changed(lang) => {
+                            root.language_changed(lang);
+                        }
+                        visualizer_toggled(enabled) => {
+                            root.visualizer_toggled(enabled);
+                        }
+                        theme_selected(idx, name) => {
+                            root.theme_selected(idx, name);
                         }
                     }
                 }
@@ -672,24 +577,43 @@ export component MainWindow inherits Window {
                 key_sig: root.current_key;
                 is_playing: root.is_playing;
                 is_automix: root.is_automix;
+                is_shuffle <=> root.is_shuffle;
+                is_repeat <=> root.is_repeat;
                 current_position: root.current_pos;
                 total_duration: root.total_duration;
                 time_formatted: root.current_time_str;
                 duration_formatted: root.total_time_str;
                 volume <=> root.master_volume;
                 is_muted <=> root.is_muted;
+                queue_items: root.queue_items;
+                queue_count: root.queue_count;
 
                 play_pause_clicked => { root.toggle_play(); }
                 prev_clicked => { root.prev_track(); }
                 next_clicked => { root.next_track(); }
                 automix_toggled => { root.toggle_automix(); }
+                shuffle_toggled => { root.toggle_shuffle(); }
+                repeat_toggled => { root.toggle_repeat(); }
                 seek_changed(val) => { root.seek_track(val); }
                 volume_changed(val) => { root.set_volume(val); }
                 mute_toggled => {
                     root.is_muted = !root.is_muted;
                     root.set_volume(root.is_muted ? 0.0 : root.master_volume);
                 }
+                title_clicked(t) => { root.title_clicked(t); }
+                artist_clicked(a) => { root.artist_clicked(a); }
+                remove_from_queue(idx) => { root.remove_from_queue(idx); }
+                clear_queue => { root.clear_queue(); }
             }
+        }
+
+        // ================= POPUP TOAST =================
+        CyberToast {
+            x: (parent.width - self.width) / 2;
+            y: parent.height - self.height - 88px;
+            width: Math.min(parent.width - 40px, 340px);
+            message: root.toast_message;
+            is_visible: root.is_toast_visible;
         }
 
         // ================= POPUP MODAL: EQUALIZER =================

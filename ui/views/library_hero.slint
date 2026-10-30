@@ -1,0 +1,178 @@
+import { CyberTheme } from "../theme.slint";
+import { CyberButton } from "../components/button.slint";
+import { IconPlay, IconPause, IconWave, IconFolder } from "../components/icons.slint";
+
+export component LibraryHero inherits Rectangle {
+    in property <string> title: "ALL TRACKS";
+    in property <string> category_tag: "LOCAL REPOSITORY";
+    in property <int> track_count: 0;
+    in property <string> total_duration_str: "00:00";
+    in property <string> mount_path: "~/.synapse/music";
+    in property <bool> is_playing: false;
+    in property <bool> is_my_wave: false;
+
+    callback play_all_clicked();
+    callback my_wave_toggled();
+    callback open_dir_clicked();
+
+    height: 86px;
+    background: #090C14;
+    border-width: 1px;
+    border-color: CyberTheme.border;
+    border-radius: CyberTheme.radius_md;
+    clip: true;
+
+    // Glowing top accent line
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: 100%;
+        height: 2px;
+        background: CyberTheme.accent;
+    }
+
+    // Background HUD grid pattern
+    Path {
+        x: parent.width - 120px;
+        y: 0px;
+        width: 120px;
+        height: parent.height;
+        commands: "M 0 0 L 120 0 L 120 86 L 20 86 Z";
+        fill: #FCEE0A05;
+    }
+
+    HorizontalLayout {
+        padding-left: 18px;
+        padding-right: 18px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        spacing: 16px;
+        alignment: space-between;
+
+        // Left Content Area
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 4px;
+            alignment: center;
+
+            // Telemetry Tag
+            HorizontalLayout {
+                spacing: 6px;
+                alignment: start;
+
+                Rectangle {
+                    width: 5px;
+                    height: 5px;
+                    border-radius: 2.5px;
+                    background: CyberTheme.accent;
+                    y: (parent.height - self.height) / 2;
+                }
+
+                Text {
+                    text: "[ SYS_STREAM // " + root.category_tag + " ]";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 9px;
+                    font-weight: 700;
+                    letter-spacing: 0.6px;
+                    color: CyberTheme.accent;
+                    vertical-alignment: center;
+                }
+            }
+
+            // Big Title
+            Text {
+                text: root.title;
+                font-family: CyberTheme.font_display;
+                font-size: 18px;
+                font-weight: 800;
+                letter-spacing: 0.8px;
+                color: CyberTheme.text;
+                overflow: elide;
+            }
+
+            // Tech Telemetry Info: Count / Duration / Mount
+            HorizontalLayout {
+                spacing: 10px;
+                alignment: start;
+
+                Text {
+                    text: root.track_count + " TRACKS";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 10px;
+                    font-weight: 700;
+                    color: CyberTheme.text;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: "//";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 10px;
+                    color: CyberTheme.muted;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: root.total_duration_str;
+                    font-family: CyberTheme.font_mono;
+                    font-size: 10px;
+                    color: CyberTheme.muted;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: "//";
+                    font-family: CyberTheme.font_mono;
+                    font-size: 10px;
+                    color: CyberTheme.muted;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: "> MOUNT: " + root.mount_path;
+                    font-family: CyberTheme.font_mono;
+                    font-size: 9px;
+                    color: CyberTheme.muted;
+                    overflow: elide;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        // Right Action Buttons
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: center;
+
+            CyberButton {
+                primary: true;
+                height: 36px;
+                clicked => { root.play_all_clicked(); }
+
+                if (!root.is_playing) : IconPlay {
+                    size: 13px;
+                    icon_color: parent.icon_color;
+                }
+                if (root.is_playing) : IconPause {
+                    size: 13px;
+                    icon_color: parent.icon_color;
+                }
+
+                text: root.is_playing ? "PAUSE" : "PLAY ALL";
+            }
+
+            CyberButton {
+                height: 36px;
+                active: root.is_my_wave;
+                clicked => { root.my_wave_toggled(); }
+
+                IconWave {
+                    size: 14px;
+                    icon_color: parent.icon_color;
+                }
+
+                text: root.is_my_wave ? "WAVE: ON" : "NEURAL WAVE";
+            }
+        }
+    }
+}

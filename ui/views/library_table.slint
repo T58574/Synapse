@@ -1,12 +1,15 @@
 import { CyberTheme } from "../theme.slint";
 import { CyberButton } from "../components/button.slint";
 import { ListView } from "std-widgets.slint";
+import { PlaylistRow } from "./sidebar.slint";
 import {
     IconPlay,
     IconSearch,
     IconClose,
     IconFolder,
-    IconPlus
+    IconPlus,
+    IconCheck,
+    IconNote
 } from "../components/icons.slint";
 
 export struct TrackRow {
@@ -21,25 +24,31 @@ export struct TrackRow {
 
 export component LibraryTable inherits Rectangle {
     in property <[TrackRow]> tracks: [];
+    in property <[PlaylistRow]> playlists: [];
     in-out property <string> search_query: "";
     in property <int> active_index: -1;
+    in property <int> selected_playlist_id: -1;
+    in-out property <int> popup_track_idx: -1;
+    in-out property <string> popup_track_path: "";
 
     callback track_clicked(int, string);
     callback search_changed(string);
     callback add_to_playlist_clicked(int, string);
     callback remove_track_clicked(int, string);
+    callback add_to_queue_clicked(int, string);
+    callback edit_track_clicked(int, string);
     callback open_music_dir();
 
     background: #08090D;
 
     VerticalLayout {
-        padding: 16px;
-        spacing: 12px;
+        padding: 14px;
+        spacing: 10px;
 
-        // ================= SEARCH & TOOLBAR =================
+        // ================= SEARCH & TOP TOOLBAR =================
         HorizontalLayout {
-            height: 38px;
-            spacing: 12px;
+            height: 36px;
+            spacing: 10px;
             alignment: space-between;
 
             // Search Bar Input with Tactical Prompt
@@ -49,26 +58,35 @@ export component LibraryTable inherits Rectangle {
                 border-width: 1px;
                 border-color: search_input.has-focus ? CyberTheme.accent : CyberTheme.border;
                 border-radius: CyberTheme.radius_sm;
+                clip: true;
 
                 HorizontalLayout {
-                    padding-left: 12px;
-                    padding-right: 12px;
-                    spacing: 10px;
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    spacing: 8px;
 
-                    IconSearch {
-                        size: 14px;
-                        icon_color: search_input.has-focus ? CyberTheme.accent : CyberTheme.muted;
-                        y: (parent.height - self.height) / 2;
+                    Rectangle {
+                        width: 16px;
+                        IconSearch {
+                            size: 14px;
+                            icon_color: search_input.has-focus ? CyberTheme.accent : CyberTheme.muted;
+                            x: 0px;
+                            y: (parent.height - self.height) / 2;
+                        }
                     }
 
                     Rectangle {
                         horizontal-stretch: 1;
+                        clip: true;
 
                         if (search_input.text == "") : Text {
+                            width: 100%;
+                            height: 100%;
                             text: "Search tracks by title, artist, key, bpm...";
                             font-family: CyberTheme.font_mono;
                             font-size: 11px;
                             color: CyberTheme.muted;
+                            horizontal-alignment: left;
                             vertical-alignment: center;
                         }
 
@@ -77,7 +95,7 @@ export component LibraryTable inherits Rectangle {
                             height: 100%;
                             text <=> root.search_query;
                             font-family: CyberTheme.font_mono;
-                            font-size: 12px;
+                            font-size: 11px;
                             color: CyberTheme.text;
                             vertical-alignment: center;
                             edited => {
@@ -87,14 +105,14 @@ export component LibraryTable inherits Rectangle {
                     }
 
                     if (root.search_query != "") : Rectangle {
-                        width: 22px;
-                        height: 22px;
+                        width: 20px;
+                        height: 20px;
                         background: clear_touch.has-hover ? CyberTheme.cyber_crimson : transparent;
                         border-radius: 1px;
                         y: (parent.height - self.height) / 2;
 
                         IconClose {
-                            size: 11px;
+                            size: 10px;
                             icon_color: clear_touch.has-hover ? #FFFFFF : CyberTheme.muted;
                             x: (parent.width - self.width) / 2;
                             y: (parent.height - self.height) / 2;
@@ -114,22 +132,21 @@ export component LibraryTable inherits Rectangle {
             CyberButton {
                 clicked => { root.open_music_dir(); }
                 IconFolder {
-                    size: 14px;
+                    size: 13px;
                     icon_color: parent.icon_color;
                 }
                 text: "OPEN DIRECTORY";
             }
         }
 
-        // ================= TABLE OR EMPTY STATE =================
+        // ================= TABLE HEADER =================
         if (root.tracks.length > 0) : VerticalLayout {
             vertical-stretch: 1;
             spacing: 0px;
 
-            // Crisp Column Headers
             Rectangle {
-                height: 34px;
-                background: #0E121A;
+                height: 30px;
+                background: #0B0E16;
 
                 Rectangle {
                     y: parent.height - 1px;
@@ -144,9 +161,9 @@ export component LibraryTable inherits Rectangle {
 
                     Text {
                         text: "#";
-                        width: 44px;
+                        width: 36px;
                         font-family: CyberTheme.font_mono;
-                        font-size: 10px;
+                        font-size: 9px;
                         font-weight: 700;
                         color: CyberTheme.muted;
                         vertical-alignment: center;
@@ -156,7 +173,7 @@ export component LibraryTable inherits Rectangle {
                         text: "TRACK TITLE";
                         horizontal-stretch: 3;
                         font-family: CyberTheme.font_mono;
-                        font-size: 10px;
+                        font-size: 9px;
                         font-weight: 700;
                         color: CyberTheme.muted;
                         vertical-alignment: center;
@@ -165,17 +182,17 @@ export component LibraryTable inherits Rectangle {
                         text: "ARTIST";
                         horizontal-stretch: 2;
                         font-family: CyberTheme.font_mono;
-                        font-size: 10px;
+                        font-size: 9px;
                         font-weight: 700;
                         color: CyberTheme.muted;
                         vertical-alignment: center;
-                        horizontal-alignment: center;
+                        horizontal-alignment: left;
                     }
                     Text {
                         text: "BPM";
-                        width: 64px;
+                        width: 54px;
                         font-family: CyberTheme.font_mono;
-                        font-size: 10px;
+                        font-size: 9px;
                         font-weight: 700;
                         color: CyberTheme.muted;
                         vertical-alignment: center;
@@ -183,9 +200,9 @@ export component LibraryTable inherits Rectangle {
                     }
                     Text {
                         text: "KEY";
-                        width: 64px;
+                        width: 54px;
                         font-family: CyberTheme.font_mono;
-                        font-size: 10px;
+                        font-size: 9px;
                         font-weight: 700;
                         color: CyberTheme.muted;
                         vertical-alignment: center;
@@ -193,9 +210,9 @@ export component LibraryTable inherits Rectangle {
                     }
                     Text {
                         text: "DURATION";
-                        width: 70px;
+                        width: 64px;
                         font-family: CyberTheme.font_mono;
-                        font-size: 10px;
+                        font-size: 9px;
                         font-weight: 700;
                         color: CyberTheme.muted;
                         vertical-alignment: center;
@@ -203,9 +220,9 @@ export component LibraryTable inherits Rectangle {
                     }
                     Text {
                         text: "ACTIONS";
-                        width: 80px;
+                        width: 90px;
                         font-family: CyberTheme.font_mono;
-                        font-size: 10px;
+                        font-size: 9px;
                         font-weight: 700;
                         color: CyberTheme.muted;
                         vertical-alignment: center;
@@ -214,16 +231,16 @@ export component LibraryTable inherits Rectangle {
                 }
             }
 
-            // Virtualized Track Rows via ListView (Memory Retaining <30MB)
+            // Virtualized ListView
             ListView {
                 vertical-stretch: 1;
 
                 for track[idx] in root.tracks : Rectangle {
-                    height: 40px;
+                    height: 38px;
                     background: track.is_playing ? CyberTheme.active_row :
-                                (row_touch.has-hover ? #121722 : (Math.mod(idx, 2) == 0 ? #090B10 : #06080C));
+                                (row_touch.has-hover ? #121724 : (Math.mod(idx, 2) == 0 ? #090B10 : #06080C));
 
-                    // Active playing row: Glowing left neon border
+                    // Left neon border
                     if (track.is_playing || root.active_index == idx) : Rectangle {
                         x: 0px;
                         y: 0px;
@@ -232,16 +249,16 @@ export component LibraryTable inherits Rectangle {
                         background: track.is_playing ? CyberTheme.cyber_green : CyberTheme.accent;
                     }
 
-                    // Bottom divider line
+                    // Bottom subtle line
                     Rectangle {
                         x: 0px;
                         y: parent.height - 1px;
                         width: parent.width;
                         height: 1px;
-                        background: #111520;
+                        background: #0E131E;
                     }
 
-                    // Background clickable touch area
+                    // Background clickable touch
                     row_touch := TouchArea {
                         mouse-cursor: pointer;
                         clicked => {
@@ -254,20 +271,20 @@ export component LibraryTable inherits Rectangle {
                         padding-right: 12px;
                         spacing: 8px;
 
-                        // # or Vector Play State Icon
+                        // # or Playing Icon
                         Rectangle {
-                            width: 44px;
+                            width: 36px;
                             HorizontalLayout {
                                 alignment: center;
                                 if (track.is_playing) : IconPlay {
-                                    size: 12px;
+                                    size: 11px;
                                     icon_color: CyberTheme.cyber_green;
                                     y: (parent.height - self.height) / 2;
                                 }
                                 if (!track.is_playing) : Text {
                                     text: (idx + 1);
                                     font-family: CyberTheme.font_mono;
-                                    font-size: 11px;
+                                    font-size: 10px;
                                     font-weight: 500;
                                     color: CyberTheme.muted;
                                     vertical-alignment: center;
@@ -281,14 +298,14 @@ export component LibraryTable inherits Rectangle {
                             text: track.title;
                             horizontal-stretch: 3;
                             font-family: CyberTheme.font_mono;
-                            font-size: 12px;
+                            font-size: 11px;
                             font-weight: track.is_playing ? 700 : 500;
                             color: track.is_playing ? CyberTheme.accent : (row_touch.has-hover ? #FFFFFF : CyberTheme.text);
                             overflow: elide;
                             vertical-alignment: center;
                         }
 
-                        // Artist (Centered)
+                        // Artist (Left-aligned for clean readability)
                         Text {
                             text: track.artist;
                             horizontal-stretch: 2;
@@ -297,37 +314,37 @@ export component LibraryTable inherits Rectangle {
                             color: track.is_playing ? CyberTheme.accent : CyberTheme.muted;
                             overflow: elide;
                             vertical-alignment: center;
-                            horizontal-alignment: center;
+                            horizontal-alignment: left;
                         }
 
-                        // BPM (Centered)
+                        // BPM
                         Text {
                             text: Math.round(track.bpm);
-                            width: 64px;
+                            width: 54px;
                             font-family: CyberTheme.font_mono;
-                            font-size: 11px;
+                            font-size: 10px;
                             color: CyberTheme.text;
                             vertical-alignment: center;
                             horizontal-alignment: center;
                         }
 
-                        // Key Badge with Camelot Distinct Colors (Centered)
+                        // Camelot Key Badge
                         Rectangle {
-                            width: 64px;
+                            width: 54px;
                             HorizontalLayout {
                                 alignment: center;
                                 key_badge := Rectangle {
-                                    property <color> badge_bg: (track.key_sig == "8A" || track.key_sig == "8B" || track.key_sig == "7A" || track.key_sig == "7B" || track.key_sig == "9A" || track.key_sig == "9B") ? #00FF6622 :
-                                                               (track.key_sig == "4A" || track.key_sig == "4B" || track.key_sig == "5A" || track.key_sig == "5B" || track.key_sig == "6A" || track.key_sig == "6B") ? #FF990022 :
-                                                               (track.key_sig == "" || track.key_sig == "--") ? #18202E : #00F0FF22;
-                                    property <color> badge_border: (track.key_sig == "8A" || track.key_sig == "8B" || track.key_sig == "7A" || track.key_sig == "7B" || track.key_sig == "9A" || track.key_sig == "9B") ? #00FF6677 :
-                                                                   (track.key_sig == "4A" || track.key_sig == "4B" || track.key_sig == "5A" || track.key_sig == "5B" || track.key_sig == "6A" || track.key_sig == "6B") ? #FF990077 :
-                                                                   (track.key_sig == "" || track.key_sig == "--") ? CyberTheme.border : #00F0FF77;
+                                    property <color> badge_bg: (track.key_sig == "8A" || track.key_sig == "8B" || track.key_sig == "7A" || track.key_sig == "7B" || track.key_sig == "9A" || track.key_sig == "9B") ? #00FF661A :
+                                                               (track.key_sig == "4A" || track.key_sig == "4B" || track.key_sig == "5A" || track.key_sig == "5B" || track.key_sig == "6A" || track.key_sig == "6B") ? #FF99001A :
+                                                               (track.key_sig == "" || track.key_sig == "--") ? #18202E : #00F0FF1A;
+                                    property <color> badge_border: (track.key_sig == "8A" || track.key_sig == "8B" || track.key_sig == "7A" || track.key_sig == "7B" || track.key_sig == "9A" || track.key_sig == "9B") ? #00FF6655 :
+                                                                   (track.key_sig == "4A" || track.key_sig == "4B" || track.key_sig == "5A" || track.key_sig == "5B" || track.key_sig == "6A" || track.key_sig == "6B") ? #FF990055 :
+                                                                   (track.key_sig == "" || track.key_sig == "--") ? CyberTheme.border : #00F0FF55;
                                     property <color> badge_fg: (track.key_sig == "8A" || track.key_sig == "8B" || track.key_sig == "7A" || track.key_sig == "7B" || track.key_sig == "9A" || track.key_sig == "9B") ? CyberTheme.cyber_green :
                                                                (track.key_sig == "4A" || track.key_sig == "4B" || track.key_sig == "5A" || track.key_sig == "5B" || track.key_sig == "6A" || track.key_sig == "6B") ? CyberTheme.cyber_amber :
                                                                (track.key_sig == "" || track.key_sig == "--") ? CyberTheme.muted : CyberTheme.cyber_cyan;
 
-                                    height: 20px;
+                                    height: 18px;
                                     background: self.badge_bg;
                                     border-width: 1px;
                                     border-color: self.badge_border;
@@ -335,8 +352,8 @@ export component LibraryTable inherits Rectangle {
                                     y: (parent.height - self.height) / 2;
 
                                     HorizontalLayout {
-                                        padding-left: 6px;
-                                        padding-right: 6px;
+                                        padding-left: 5px;
+                                        padding-right: 5px;
                                         Text {
                                             text: track.key_sig != "" ? track.key_sig : "--";
                                             font-family: CyberTheme.font_mono;
@@ -350,27 +367,54 @@ export component LibraryTable inherits Rectangle {
                             }
                         }
 
-                        // Duration (Centered)
+                        // Duration
                         Text {
                             text: track.duration;
-                            width: 70px;
+                            width: 64px;
                             font-family: CyberTheme.font_mono;
-                            font-size: 11px;
+                            font-size: 10px;
                             color: CyberTheme.muted;
                             vertical-alignment: center;
                             horizontal-alignment: center;
                         }
 
-                        // Actions (Centered)
+                        // Actions Row (Hover-revealed)
                         HorizontalLayout {
-                            width: 80px;
-                            spacing: 6px;
+                            width: 90px;
+                            spacing: 4px;
                             alignment: center;
+                            opacity: (row_touch.has-hover || track.is_playing || root.popup_track_idx == idx) ? 1.0 : 0.2;
+                            animate opacity { duration: 100ms; }
 
-                            // Add to Playlist Button with IconPlus
-                            add_btn := Rectangle {
-                                width: 26px;
-                                height: 26px;
+                            // Add to Queue Button
+                            Rectangle {
+                                width: 24px;
+                                height: 24px;
+                                background: q_touch.has-hover ? #182233 : CyberTheme.surface;
+                                border-width: 1px;
+                                border-color: q_touch.has-hover ? CyberTheme.accent : CyberTheme.border;
+                                border-radius: 2px;
+                                y: (parent.height - self.height) / 2;
+
+                                IconNote {
+                                    size: 11px;
+                                    icon_color: q_touch.has-hover ? CyberTheme.accent : CyberTheme.muted;
+                                    x: (parent.width - self.width) / 2;
+                                    y: (parent.height - self.height) / 2;
+                                }
+
+                                q_touch := TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        root.add_to_queue_clicked(idx, track.file_path);
+                                    }
+                                }
+                            }
+
+                            // Add to Playlist Button
+                            Rectangle {
+                                width: 24px;
+                                height: 24px;
                                 background: add_t.has-hover ? CyberTheme.accent : CyberTheme.surface;
                                 border-width: 1px;
                                 border-color: add_t.has-hover ? CyberTheme.accent : CyberTheme.border;
@@ -378,7 +422,7 @@ export component LibraryTable inherits Rectangle {
                                 y: (parent.height - self.height) / 2;
 
                                 IconPlus {
-                                    size: 12px;
+                                    size: 11px;
                                     icon_color: add_t.has-hover ? CyberTheme.accent_text : CyberTheme.text;
                                     x: (parent.width - self.width) / 2;
                                     y: (parent.height - self.height) / 2;
@@ -387,15 +431,96 @@ export component LibraryTable inherits Rectangle {
                                 add_t := TouchArea {
                                     mouse-cursor: pointer;
                                     clicked => {
-                                        root.add_to_playlist_clicked(idx, track.file_path);
+                                        if (root.popup_track_idx == idx) {
+                                            root.popup_track_idx = -1;
+                                        } else {
+                                            root.popup_track_idx = idx;
+                                            root.popup_track_path = track.file_path;
+                                            pl_popup.show();
+                                        }
+                                    }
+                                }
+
+                                pl_popup := PopupWindow {
+                                    x: -160px;
+                                    y: 26px;
+                                    width: 190px;
+
+                                    Rectangle {
+                                        background: #0B0F1A;
+                                        border-width: 1px;
+                                        border-color: CyberTheme.accent;
+                                        border-radius: CyberTheme.radius_sm;
+                                        clip: true;
+
+                                        VerticalLayout {
+                                            padding: 6px;
+                                            spacing: 3px;
+
+                                            Text {
+                                                text: "// ADD TO PLAYLIST";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 8px;
+                                                font-weight: 700;
+                                                color: CyberTheme.accent;
+                                                height: 16px;
+                                                vertical-alignment: center;
+                                            }
+
+                                            for p[p_idx] in root.playlists : Rectangle {
+                                                height: 24px;
+                                                background: pop_touch.has-hover ? CyberTheme.active_row : transparent;
+                                                border-radius: 1px;
+
+                                                HorizontalLayout {
+                                                    padding-left: 6px;
+                                                    padding-right: 6px;
+                                                    alignment: space-between;
+
+                                                    Text {
+                                                        text: p.name;
+                                                        font-family: CyberTheme.font_mono;
+                                                        font-size: 10px;
+                                                        color: pop_touch.has-hover ? #FFFFFF : CyberTheme.text;
+                                                        vertical-alignment: center;
+                                                        overflow: elide;
+                                                    }
+
+                                                    Text {
+                                                        text: p.track_count + "";
+                                                        font-family: CyberTheme.font_mono;
+                                                        font-size: 9px;
+                                                        color: CyberTheme.muted;
+                                                        vertical-alignment: center;
+                                                    }
+                                                }
+
+                                                pop_touch := TouchArea {
+                                                    mouse-cursor: pointer;
+                                                    clicked => {
+                                                        root.add_to_playlist_clicked(p.id, root.popup_track_path);
+                                                        root.popup_track_idx = -1;
+                                                    }
+                                                }
+                                            }
+
+                                            if (root.playlists.length == 0) : Text {
+                                                text: "No playlists created.";
+                                                font-family: CyberTheme.font_mono;
+                                                font-size: 9px;
+                                                color: CyberTheme.muted;
+                                                height: 20px;
+                                                vertical-alignment: center;
+                                            }
+                                        }
                                     }
                                 }
                             }
 
-                            // Remove Track Button with IconClose
-                            rem_btn := Rectangle {
-                                width: 26px;
-                                height: 26px;
+                            // Remove Track (or Delete from disk)
+                            Rectangle {
+                                width: 24px;
+                                height: 24px;
                                 background: rem_t.has-hover ? CyberTheme.cyber_crimson : CyberTheme.surface;
                                 border-width: 1px;
                                 border-color: rem_t.has-hover ? CyberTheme.cyber_crimson : CyberTheme.border;
@@ -403,7 +528,7 @@ export component LibraryTable inherits Rectangle {
                                 y: (parent.height - self.height) / 2;
 
                                 IconClose {
-                                    size: 11px;
+                                    size: 10px;
                                     icon_color: rem_t.has-hover ? #FFFFFF : CyberTheme.muted;
                                     x: (parent.width - self.width) / 2;
                                     y: (parent.height - self.height) / 2;
@@ -422,7 +547,7 @@ export component LibraryTable inherits Rectangle {
             }
         }
 
-        // ================= EMPTY STATE BANNER =================
+        // ================= EMPTY STATE =================
         if (root.tracks.length == 0) : Rectangle {
             vertical-stretch: 1;
             background: #080B10;
@@ -431,12 +556,11 @@ export component LibraryTable inherits Rectangle {
 
             VerticalLayout {
                 alignment: center;
-                spacing: 16px;
+                spacing: 14px;
 
-                // Terminal card
                 Rectangle {
-                    width: 480px;
-                    height: 260px;
+                    width: 440px;
+                    height: 240px;
                     background: #0D111A;
                     border-width: 1px;
                     border-color: CyberTheme.cyber_crimson;
@@ -448,7 +572,6 @@ export component LibraryTable inherits Rectangle {
                         spacing: 12px;
                         alignment: space-between;
 
-                        // Header bar
                         HorizontalLayout {
                             alignment: space-between;
                             Text {
@@ -466,44 +589,41 @@ export component LibraryTable inherits Rectangle {
                             }
                         }
 
-                        // Terminal log output
                         VerticalLayout {
                             spacing: 4px;
                             Text {
                                 text: "> SCAN_TARGET: %USERPROFILE%\\.synapse";
                                 font-family: CyberTheme.font_mono;
-                                font-size: 11px;
+                                font-size: 10px;
                                 color: CyberTheme.muted;
                             }
                             Text {
                                 text: "> DETECTED_AUDIO_STREAMS: 0";
                                 font-family: CyberTheme.font_mono;
-                                font-size: 11px;
+                                font-size: 10px;
                                 color: CyberTheme.muted;
                             }
                             Text {
-                                text: "> PROMPT: Direct audio bus connection required.";
+                                text: "> PROMPT: Open audio directory to populate index.";
                                 font-family: CyberTheme.font_mono;
                                 font-size: 11px;
                                 color: CyberTheme.text;
                             }
                         }
 
-                        // Action button
                         HorizontalLayout {
                             alignment: center;
                             CyberButton {
                                 primary: true;
                                 clicked => { root.open_music_dir(); }
                                 IconFolder {
-                                    size: 14px;
+                                    size: 13px;
                                     icon_color: parent.icon_color;
                                 }
                                 text: "OPEN DIRECTORY";
                             }
                         }
 
-                        // Footer
                         HorizontalLayout {
                             alignment: space-between;
                             Text {

@@ -6,19 +6,21 @@ export component CyberSlider inherits Rectangle {
     in property <float> maximum: 1.0;
     in property <bool> disabled: false;
     in property <bool> vertical: false;
-    in property <length> track_thickness: 4px;
+    in property <length> track_thickness: 3px;
     in property <color> active_color: CyberTheme.accent;
+    out property <bool> is_dragging: touch.pressed;
 
     callback changed(float);
 
-    min-height: vertical ? 100px : 24px;
-    min-width: vertical ? 24px : 100px;
+    min-height: vertical ? 80px : 20px;
+    min-width: vertical ? 20px : 80px;
     background: transparent;
 
     property <float> range: Math.max(0.0001, maximum - minimum);
     property <float> norm_val: Math.max(0.0, Math.min(1.0, (value - minimum) / range));
-    property <length> thumb_w: vertical ? 18px : 12px;
-    property <length> thumb_h: vertical ? 12px : 18px;
+    property <length> thumb_w: vertical ? 14px : 10px;
+    property <length> thumb_h: vertical ? 10px : 14px;
+    property <length> active_thickness: touch.has-hover ? track_thickness + 1px : track_thickness;
 
     function update_horizontal(mx: length) {
         if (root.disabled) { return; }
@@ -43,11 +45,12 @@ export component CyberSlider inherits Rectangle {
 
     // --- HORIZONTAL TRACK ---
     if (!vertical) : Rectangle {
-        y: (parent.height - track_thickness) / 2;
+        y: (parent.height - active_thickness) / 2;
         width: parent.width;
-        height: track_thickness;
-        background: CyberTheme.border;
+        height: active_thickness;
+        background: #141924;
         border-radius: 1px;
+        animate height { duration: 80ms; }
 
         // Progress fill
         Rectangle {
@@ -55,18 +58,20 @@ export component CyberSlider inherits Rectangle {
             y: 0px;
             width: Math.max(0px, (root.width - thumb_w) * norm_val + thumb_w / 2);
             height: parent.height;
-            background: root.disabled ? CyberTheme.muted : active_color;
+            background: root.disabled ? CyberTheme.muted : (touch.has-hover ? #FFFFFF : active_color);
             border-radius: 1px;
+            animate background { duration: 100ms; }
         }
     }
 
     // --- VERTICAL TRACK ---
     if (vertical) : Rectangle {
-        x: (parent.width - track_thickness) / 2;
-        width: track_thickness;
+        x: (parent.width - active_thickness) / 2;
+        width: active_thickness;
         height: parent.height;
-        background: CyberTheme.border;
+        background: #141924;
         border-radius: 1px;
+        animate width { duration: 80ms; }
 
         // Progress fill (from bottom up)
         Rectangle {
@@ -74,8 +79,9 @@ export component CyberSlider inherits Rectangle {
             y: (parent.height - thumb_h) * (1.0 - norm_val) + thumb_h / 2;
             width: parent.width;
             height: parent.height - self.y;
-            background: root.disabled ? CyberTheme.muted : active_color;
+            background: root.disabled ? CyberTheme.muted : (touch.has-hover ? #FFFFFF : active_color);
             border-radius: 1px;
+            animate background { duration: 100ms; }
         }
     }
 
@@ -87,14 +93,14 @@ export component CyberSlider inherits Rectangle {
         height: thumb_h;
         border-radius: 1px;
         background: root.disabled ? CyberTheme.muted :
-                    (touch.pressed ? #FFFFFF : (touch.has-hover ? active_color : CyberTheme.surface));
+                    (touch.pressed ? #FFFFFF : (touch.has-hover ? active_color : #182030));
         border-width: 1px;
-        border-color: root.disabled ? CyberTheme.border : active_color;
+        border-color: root.disabled ? CyberTheme.border : (touch.pressed ? #FFFFFF : active_color);
 
-        // Inner tactical notch / grip lines
+        // Inner tactical notch / grip dot
         Rectangle {
-            width: vertical ? 8px : 2px;
-            height: vertical ? 2px : 8px;
+            width: vertical ? 6px : 2px;
+            height: vertical ? 2px : 6px;
             background: root.disabled ? CyberTheme.surface :
                         (touch.pressed ? #000000 : (touch.has-hover ? CyberTheme.accent_text : active_color));
         }

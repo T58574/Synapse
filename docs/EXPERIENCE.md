@@ -223,3 +223,15 @@
   2. Unify transport button heights (`height: 34px`) across Prev, Play/Pause, Next, and Automix to prevent jagged vertical misalignment.
   3. In virtualized tables, match explicit column widths and `horizontal-alignment` (left, center, right) identically between header `Text` and row data cells (centering Artist, BPM, Key, Duration, and Action icons).
 - **Evidence**: `ui/views/playback_bar.slint`, `ui/views/library_table.slint`, `ui/main.slint`.
+
+### Cue (Symptom): Search text placeholder overflows horizontally into sidebar and clips icons
+- **Lesson (Takeaway)**: In Slint, a child `Text` placed inside an unconstrained `Rectangle { horizontal-stretch: 1; }` computes width based on text length without bound. Always set `clip: true` on the input wrapper and specify `width: 100%; height: 100%; horizontal-alignment: left; vertical-alignment: center;` on both the placeholder `Text` and `TextInput`.
+- **Evidence**: `ui/views/library_table.slint`, verified search box layout stability.
+
+### Cue (Symptom): Huge empty vertical gap in sidebar pushing navigation to bottom of viewport
+- **Lesson (Takeaway)**: Slint's `VerticalLayout` defaults to distributing unallocated space across children unless `alignment: start` is explicitly declared. Without it, preceding items expand away from each other. Always specify `alignment: start` on static header/nav groups and enclose dynamic list items (`playlists`) in a dedicated `ScrollView { vertical-stretch: 1; }`.
+- **Evidence**: `ui/views/sidebar.slint`, fixed layout collapsing.
+
+### Cue (Symptom): Missing fonts causing ugly default OS font fallbacks in Slint
+- **Lesson (Takeaway)**: Specifying `font-family: "JetBrains Mono"` in Slint without locally imported `.ttf` files causes Linux/Windows to fallback to system fonts (Arial/DejaVu). Download font binaries into `ui/fonts/` and declare `import "./fonts/JetBrainsMono-Regular.ttf";` at the top of the root Slint manifest.
+- **Evidence**: `ui/main.slint`, `ui/fonts/`, verified pixel-perfect monospace rendering.

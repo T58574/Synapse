@@ -174,6 +174,11 @@ impl LibraryDb {
                 PRIMARY KEY (playlist_id, track_path)
             );
 
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+
             CREATE INDEX IF NOT EXISTS idx_playlist_tracks_order 
                 ON playlist_tracks(playlist_id, sort_order);",
         )?;
@@ -474,6 +479,23 @@ impl LibraryDb {
 
         Ok(())
     }
+
+    pub fn get_setting(&self, key: &str) -> rusqlite::Result<Option<String>> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = ?1")?;
+        let res = stmt.query_row(params![key], |row| row.get(0)).optional()?;
+        Ok(res)
+    }
+
+    pub fn set_setting(&self, key: &str, value: &str) -> rusqlite::Result<()> {
+        let conn = self.conn.lock();
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![key, value],
+        )?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -604,5 +626,17 @@ mod tests {
         assert_eq!(playlists.len(), 1);
         assert_eq!(playlists[0].name, "Classics");
         assert_eq!(playlists[0].track_paths, vec!["/legacy/track1.mp3"]);
+    }
+
+    #[test]
+    fn test_settings_persistence() {
+        let db = LibraryDb::in_memory().expect("in-memory db");
+        assert_eq!(db.get_setting("theme").unwrap(), None);
+
+        db.set_setting("theme", "Arasaka").unwrap();
+        assert_eq!(db.get_setting("theme").unwrap(), Some("Arasaka".to_string()));
+
+        db.set_setting("theme", "Netrunner").unwrap();
+        assert_eq!(db.get_setting("theme").unwrap(), Some("Netrunner".to_string()));
     }
 }

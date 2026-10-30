@@ -12,19 +12,19 @@ export struct AudioDeviceItem {
 }
 
 export component SettingsView inherits Rectangle {
-    in property <[AudioDeviceItem]> audio_devices: [
-        { id: "default", name: "System Default Audio Device", is_default: true },
-        { id: "speakers", name: "High Definition Audio Speakers", is_default: false },
-        { id: "headphones", name: "CyberDeck Headset Bus 0x1", is_default: false }
-    ];
+    in property <[SelectOption]> device_options: [];
     in-out property <int> selected_device_index: 0;
     in-out property <float> crossfade_duration: 4.0;
     in property <string> music_directory: "~/.synapse/music";
+    in-out property <string> current_language: "EN";
+    in-out property <bool> visualizer_enabled: true;
 
     callback theme_selected(int, string);
     callback crossfade_changed(float);
     callback device_selected(int, string);
     callback open_music_dir();
+    callback language_changed(string);
+    callback visualizer_toggled(bool);
 
     background: #08090D;
 
@@ -70,7 +70,7 @@ export component SettingsView inherits Rectangle {
                 }
 
                 Text {
-                    text: "Configure audio device pipeline, automix crossfade transitions, and cyber HUD palettes.";
+                    text: "Configure audio device pipeline, automix crossfade transitions, UI language and cyber HUD palettes.";
                     font-family: CyberTheme.font_mono;
                     font-size: 11px;
                     color: CyberTheme.muted;
@@ -117,7 +117,7 @@ export component SettingsView inherits Rectangle {
                         spacing: 10px;
 
                         // 1. Night City
-                        nc_card := Rectangle {
+                        Rectangle {
                             horizontal-stretch: 1;
                             height: 72px;
                             background: CyberTheme.active_theme_index == 0 ? CyberTheme.active_row : #11141D;
@@ -165,7 +165,7 @@ export component SettingsView inherits Rectangle {
                         }
 
                         // 2. Arasaka
-                        ara_card := Rectangle {
+                        Rectangle {
                             horizontal-stretch: 1;
                             height: 72px;
                             background: CyberTheme.active_theme_index == 1 ? CyberTheme.active_row : #0E0C0E;
@@ -213,7 +213,7 @@ export component SettingsView inherits Rectangle {
                         }
 
                         // 3. Netrunner
-                        net_card := Rectangle {
+                        Rectangle {
                             horizontal-stretch: 1;
                             height: 72px;
                             background: CyberTheme.active_theme_index == 2 ? CyberTheme.active_row : #0B171A;
@@ -261,7 +261,7 @@ export component SettingsView inherits Rectangle {
                         }
 
                         // 4. Trauma Team
-                        tt_card := Rectangle {
+                        Rectangle {
                             horizontal-stretch: 1;
                             height: 72px;
                             background: CyberTheme.active_theme_index == 3 ? CyberTheme.active_row : #121A22;
@@ -309,7 +309,7 @@ export component SettingsView inherits Rectangle {
                         }
 
                         // 5. Kang Tao
-                        kt_card := Rectangle {
+                        Rectangle {
                             horizontal-stretch: 1;
                             height: 72px;
                             background: CyberTheme.active_theme_index == 4 ? CyberTheme.active_row : #171618;
@@ -398,15 +398,13 @@ export component SettingsView inherits Rectangle {
                             }
                         }
 
-                        // CyberSelect Dropdown
+                        // Real Audio Devices via CyberSelect
                         CyberSelect {
                             width: 260px;
                             prefix: "DEV";
                             current_index: root.selected_device_index;
-                            options: [
-                                { id: "default", text: "System Default Audio", badge: "DEFAULT" },
-                                { id: "speakers", text: "Realtek HD Audio", badge: "DIRECT" },
-                                { id: "headphones", text: "CyberDeck DAC 0x1", badge: "USB" }
+                            options: root.device_options.length > 0 ? root.device_options : [
+                                { id: "default", text: "System Default Audio", badge: "DEFAULT" }
                             ];
                             selected(idx, id) => {
                                 root.selected_device_index = idx;
@@ -475,7 +473,110 @@ export component SettingsView inherits Rectangle {
                 }
             }
 
-            // ================= 3. STORAGE & DIRECTORIES =================
+            // ================= 3. SYSTEM & LOCALIZATION =================
+            Rectangle {
+                background: #0B0E17;
+                border-width: 1px;
+                border-color: CyberTheme.border;
+                border-radius: CyberTheme.radius_md;
+
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 16px;
+
+                    Text {
+                        text: "03 // LOCALIZATION & SYSTEM DISPLAY";
+                        font-family: CyberTheme.font_mono;
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: CyberTheme.accent;
+                    }
+
+                    // Language Selector
+                    HorizontalLayout {
+                        alignment: space-between;
+                        VerticalLayout {
+                            spacing: 2px;
+                            Text {
+                                text: "Interface Language";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: CyberTheme.text;
+                            }
+                            Text {
+                                text: "Select application display language (RU / EN)";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 10px;
+                                color: CyberTheme.muted;
+                            }
+                        }
+
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: center;
+
+                            CyberButton {
+                                width: 50px;
+                                height: 30px;
+                                text: "EN";
+                                active: root.current_language == "EN";
+                                clicked => {
+                                    root.current_language = "EN";
+                                    root.language_changed("EN");
+                                }
+                            }
+
+                            CyberButton {
+                                width: 50px;
+                                height: 30px;
+                                text: "RU";
+                                active: root.current_language == "RU";
+                                clicked => {
+                                    root.current_language = "RU";
+                                    root.language_changed("RU");
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle { height: 1px; background: CyberTheme.border; }
+
+                    // Visualizer Toggle
+                    HorizontalLayout {
+                        alignment: space-between;
+                        VerticalLayout {
+                            spacing: 2px;
+                            Text {
+                                text: "Hardware Spectrum Visualizer";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: CyberTheme.text;
+                            }
+                            Text {
+                                text: "Toggle 60 FPS Winamp-style FFT spectrum in top header";
+                                font-family: CyberTheme.font_mono;
+                                font-size: 10px;
+                                color: CyberTheme.muted;
+                            }
+                        }
+
+                        CyberButton {
+                            width: 80px;
+                            height: 30px;
+                            text: root.visualizer_enabled ? "ENABLED" : "OFF";
+                            active: root.visualizer_enabled;
+                            clicked => {
+                                root.visualizer_enabled = !root.visualizer_enabled;
+                                root.visualizer_toggled(root.visualizer_enabled);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ================= 4. STORAGE & DIRECTORIES =================
             Rectangle {
                 background: #0B0E17;
                 border-width: 1px;
@@ -487,7 +588,7 @@ export component SettingsView inherits Rectangle {
                     spacing: 14px;
 
                     Text {
-                        text: "03 // LOCAL STORAGE & SCANNER";
+                        text: "04 // LOCAL STORAGE & SCANNER";
                         font-family: CyberTheme.font_mono;
                         font-size: 11px;
                         font-weight: 700;

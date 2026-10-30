@@ -6,75 +6,65 @@ export component CyberButton inherits Rectangle {
     in property <bool> secondary: false;
     in property <bool> active: false;
     in property <bool> disabled: false;
-    in property <length> font_size: 12px;
+    in property <length> font_size: 11px;
     in property <bool> compact: false;
     
     // Icon color accessor for child icons
     out property <color> icon_color: disabled ? CyberTheme.muted :
-                                    primary ? (touch.has-hover ? #000000 : CyberTheme.accent_text) :
+                                    primary ? (touch.pressed ? #000000 : CyberTheme.accent_text) :
                                     (active || touch.has-hover) ? CyberTheme.accent : CyberTheme.text;
     out property <bool> has_hover: touch.has-hover;
 
     callback clicked();
 
-    min-height: compact ? 26px : 34px;
-    min-width: compact ? (text != "" ? 30px : 26px) : (text != "" ? 70px : 34px);
+    min-height: compact ? 26px : 32px;
+    min-width: compact ? (text != "" ? 30px : 26px) : (text != "" ? 64px : 32px);
     clip: true;
 
-    // Base background and border styling
-    background: disabled ? CyberTheme.surface :
-                primary ? (touch.pressed ? CyberTheme.dark : (touch.has-hover ? #FFFFFF : CyberTheme.accent)) :
+    // Base background styling
+    background: disabled ? #0C0F17 :
+                primary ? (touch.pressed ? CyberTheme.dark : (touch.has-hover ? #FFF533 : CyberTheme.accent)) :
                 active ? CyberTheme.active_row :
-                (touch.has-hover ? #181E2B : CyberTheme.surface);
+                (touch.has-hover ? #151A26 : CyberTheme.surface);
 
     border-width: 1px;
-    border-color: disabled ? CyberTheme.border :
-                  primary ? CyberTheme.accent :
-                  (active || touch.has-hover) ? CyberTheme.accent : CyberTheme.border;
+    border-color: disabled ? #182030 :
+                  primary ? (touch.has-hover ? #FFFFFF : CyberTheme.accent) :
+                  active ? CyberTheme.accent :
+                  (touch.has-hover ? CyberTheme.accent : CyberTheme.border);
     border-radius: CyberTheme.radius_sm;
 
-    animate background { duration: 120ms; easing: ease-out; }
-    animate border-color { duration: 120ms; easing: ease-out; }
+    animate background { duration: 100ms; easing: ease-out; }
+    animate border-color { duration: 100ms; easing: ease-out; }
 
-    // Outer neon glow simulation on hover
-    if (touch.has-hover && !disabled) : Rectangle {
-        x: -1px;
-        y: -1px;
-        width: parent.width + 2px;
-        height: parent.height + 2px;
+    // Subtle neon glow simulation on hover
+    if (touch.has-hover && !disabled && !primary) : Rectangle {
+        x: 0px;
+        y: 0px;
+        width: 100%;
+        height: 100%;
         border-width: 1px;
         border-color: CyberTheme.accent;
-        opacity: 0.5;
+        opacity: 0.35;
         border-radius: CyberTheme.radius_sm;
     }
 
-    // Authentic Cyberpunk chamfer corner notches (45-degree corner triangles)
-    Path {
-        x: parent.width - 7px;
+    // Top-right micro HUD corner tick
+    Rectangle {
+        x: parent.width - 4px;
         y: 0px;
-        width: 7px;
-        height: 7px;
-        viewbox-x: 0;
-        viewbox-y: 0;
-        viewbox-width: 7;
-        viewbox-height: 7;
-        fill: disabled ? CyberTheme.border : (primary ? CyberTheme.accent_text : CyberTheme.accent);
-        opacity: (touch.has-hover || primary || active) ? 1.0 : 0.45;
-        commands: "M 0 0 L 7 0 L 7 7 Z";
+        width: 4px;
+        height: 2px;
+        background: primary ? CyberTheme.accent_text : (touch.has-hover || active ? CyberTheme.accent : transparent);
     }
 
-    Path {
+    // Bottom-left micro HUD corner tick
+    Rectangle {
         x: 0px;
-        y: parent.height - 7px;
-        width: 7px;
-        height: 7px;
-        viewbox-x: 0;
-        viewbox-y: 0;
-        viewbox-width: 7;
-        viewbox-height: 7;
-        fill: disabled ? CyberTheme.border : (primary ? CyberTheme.accent_text : CyberTheme.accent);
-        opacity: (touch.has-hover || primary || active) ? 1.0 : 0.45;
-        commands: "M 0 0 L 0 7 L 7 7 Z";
+        y: parent.height - 2px;
+        width: 4px;
+        height: 2px;
+        background: primary ? CyberTheme.accent_text : (touch.has-hover || active ? CyberTheme.accent : transparent);
     }
 
     // Active bottom-accent neon strip
@@ -88,10 +78,10 @@ export component CyberButton inherits Rectangle {
 
     // Content container (Supports icon children + text)
     HorizontalLayout {
-        padding-left: compact ? (root.text != "" ? 8px : 4px) : (root.text != "" ? 12px : 8px);
-        padding-right: compact ? (root.text != "" ? 8px : 4px) : (root.text != "" ? 12px : 8px);
-        padding-top: compact ? 2px : 6px;
-        padding-bottom: compact ? 2px : 6px;
+        padding-left: compact ? (root.text != "" ? 8px : 5px) : (root.text != "" ? 12px : 8px);
+        padding-right: compact ? (root.text != "" ? 8px : 5px) : (root.text != "" ? 12px : 8px);
+        padding-top: 0px;
+        padding-bottom: 0px;
         alignment: center;
         spacing: 6px;
 
@@ -102,7 +92,7 @@ export component CyberButton inherits Rectangle {
             font-family: CyberTheme.font_mono;
             font-size: root.font_size;
             font-weight: (primary || active) ? 700 : 600;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
             color: root.icon_color;
             vertical-alignment: center;
             horizontal-alignment: center;

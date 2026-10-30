@@ -86,6 +86,14 @@ impl LibraryManager {
     pub fn shrink_memory(&self) {
         self.db.shrink_memory();
     }
+
+    pub fn get_setting(&self, key: &str) -> rusqlite::Result<Option<String>> {
+        self.db.get_setting(key)
+    }
+
+    pub fn set_setting(&self, key: &str, value: &str) -> rusqlite::Result<()> {
+        self.db.set_setting(key, value)
+    }
 }
 
 #[cfg(test)]

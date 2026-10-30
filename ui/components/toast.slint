@@ -1,0 +1,50 @@
+import { CyberTheme } from "../theme.slint";
+import { IconCheck } from "./icons.slint";
+
+export component CyberToast inherits Rectangle {
+    in property <string> message: "";
+    in property <bool> is_visible: false;
+
+    height: 38px;
+    z: 200;
+
+    background: #0B101A;
+    border-width: 1px;
+    border-color: CyberTheme.accent;
+    border-radius: CyberTheme.radius_sm;
+    opacity: root.is_visible ? 1.0 : 0.0;
+    visible: root.opacity > 0.01;
+
+    animate opacity { duration: 180ms; easing: ease-out; }
+
+    // Glow line top
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: 100%;
+        height: 1px;
+        background: CyberTheme.accent;
+    }
+
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 10px;
+        alignment: center;
+
+        IconCheck {
+            size: 14px;
+            icon_color: CyberTheme.cyber_green;
+            y: (parent.height - self.height) / 2;
+        }
+
+        Text {
+            text: root.message;
+            font-family: CyberTheme.font_mono;
+            font-size: 11px;
+            font-weight: 600;
+            color: CyberTheme.text;
+            vertical-alignment: center;
+        }
+    }
+}
