@@ -1,12 +1,25 @@
-build/bin
-node_modules
-frontend/dist
-tools/
+# --- RUST BUILD ARTIFACTS ---
+target/
+*.pdb
+
+# --- EXECUTABLES ---
+synapse
+Synapse
+synapse.exe
+Synapse.exe
+
+# --- DATABASE & RUNTIME LOGS ---
+*.db-shm
+*.db-wal
+*.sqlite-journal
+*.log
+logs/
+
+# --- NODE (Scripts helper) ---
+node_modules/
 
 # --- SYSTEM & OS ---
 .DS_Store
-.DS_Store?
-._*
 Thumbs.db
 desktop.ini
 
@@ -14,110 +27,4 @@ desktop.ini
 .idea/
 .vscode/
 *.swp
-*.swo
 *~
-.project
-.pydevproject
-.settings/
-
-# --- NODE ---
-node_modules/
-
-# --- GO & APP ARTIFACTS ---
-synapse
-Synapse
-SoundPlayer
-coverage.out
-coverage
-*.md5
-
-# --- PYTHON CORE ---
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg
-*.egg-info/
-.eggs/
-eggs/
-develop-eggs/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-.mypy_cache/
-.dmypy.json
-dmypy.json
-.pyre/
-.ruff_cache/
-synapse.exe
-Synapse.exe
-SoundPlayer.exe
-build/
-.agent/
-
-# --- ENVIRONMENTS & VENV ---
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.python-version
-pip-log.txt
-
-# --- POETRY & DEPENDENCIES ---
-# (Poetry lockfile лучше держать в git, но папки виртуалок игнорим)
-.venv/
-bin/
-lib/
-lib64/
-include/
-
-# --- BUILD & DIST ---
-build/
-dist/
-out/
-target/
-*.manifest
-*.spec
-
-# --- DATA, JUPYTER & MEDIA ---
-.ipynb_checkpoints
-profile_default/
-ipython_config.py
-*.mp4
-*.avi
-*.mov
-*.mkv
-*.webm
-*.csv
-*.jsonl
-*.sqlite3
-*.sqlite3-journal
-
-# --- DOCKER & INFRA ---
-.docker/
-*.pid
-celerybeat-schedule
-# --- LOGS ---
-*.log
-logs/
-
-# --- APP CUSTOM ---
-go-server/dist/
-go-server/config/
