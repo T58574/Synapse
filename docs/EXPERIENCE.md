@@ -235,3 +235,11 @@
 ### Cue (Symptom): Missing fonts causing ugly default OS font fallbacks in Slint
 - **Lesson (Takeaway)**: Specifying `font-family: "JetBrains Mono"` in Slint without locally imported `.ttf` files causes Linux/Windows to fallback to system fonts (Arial/DejaVu). Download font binaries into `ui/fonts/` and declare `import "./fonts/JetBrainsMono-Regular.ttf";` at the top of the root Slint manifest.
 - **Evidence**: `ui/main.slint`, `ui/fonts/`, verified pixel-perfect monospace rendering.
+
+### Cue (Symptom): Button icons and text misalign, shift vertically, or drift off-center in Slint
+- **Lesson (Takeaway)**:
+  1. A layout (`HorizontalLayout`) placed inside a non-layout container (`Rectangle`) collapses to intrinsic content size at `(0, 0)` unless explicit `width: 100%; height: 100%;` are declared. Without this, button contents stick to the left boundary instead of being centered.
+  2. Slint's `HorizontalLayout` defaults `cross-axis-alignment` to `stretch`. Without `cross-axis-alignment: center;`, child `Path` icons are vertically stretched to the container height, distorting vectors against text glyphs.
+  3. `Text` elements inside layouts stretch horizontally by default. Declare `horizontal-stretch: 0; vertical-stretch: 0;` on both `Text` and vector icons (`Path`) to ensure strict intrinsic sizing.
+  4. Slint compiler rejects specifying both `width`/`height` and `min-width`/`max-width` on the same element; define fixed dimensions solely with `width: size; height: size;` combined with `horizontal-stretch: 0; vertical-stretch: 0;`.
+- **Evidence**: `ui/components/button.slint`, `ui/components/icons.slint`, `ui/components/slider.slint`, `ui/views/playback_bar.slint`. Verified via `cargo check` and 15/15 unit tests.

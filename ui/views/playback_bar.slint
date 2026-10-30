@@ -59,7 +59,7 @@ export component PlaybackBar inherits Rectangle {
     callback remove_from_queue(int);
     callback clear_queue();
 
-    height: 78px;
+    height: 82px;
     background: #090C12;
     border-width: 1px;
     border-color: CyberTheme.border;
@@ -239,17 +239,18 @@ export component PlaybackBar inherits Rectangle {
         VerticalLayout {
             horizontal-stretch: 1;
             alignment: center;
-            spacing: 4px;
+            spacing: 5px;
 
             // Transport Buttons Row
             HorizontalLayout {
                 alignment: center;
+                cross-axis-alignment: center;
                 spacing: 8px;
 
                 // Shuffle Button
                 CyberButton {
-                    width: 32px;
-                    height: 30px;
+                    width: 34px;
+                    height: 32px;
                     compact: true;
                     active: root.is_shuffle;
                     clicked => {
@@ -257,27 +258,27 @@ export component PlaybackBar inherits Rectangle {
                         root.shuffle_toggled();
                     }
                     IconShuffle {
-                        size: 13px;
+                        size: 14px;
                         icon_color: root.is_shuffle ? CyberTheme.accent : parent.icon_color;
                     }
                 }
 
                 // Previous Track
                 CyberButton {
-                    width: 34px;
-                    height: 30px;
+                    width: 36px;
+                    height: 32px;
                     compact: true;
                     clicked => { root.prev_clicked(); }
                     IconPrev {
-                        size: 13px;
+                        size: 14px;
                         icon_color: parent.icon_color;
                     }
                 }
 
                 // Primary Play / Pause Button
                 CyberButton {
-                    width: 90px;
-                    height: 32px;
+                    width: 96px;
+                    height: 34px;
                     primary: true;
                     compact: true;
                     clicked => { root.play_pause_clicked(); }
@@ -296,20 +297,20 @@ export component PlaybackBar inherits Rectangle {
 
                 // Next Track
                 CyberButton {
-                    width: 34px;
-                    height: 30px;
+                    width: 36px;
+                    height: 32px;
                     compact: true;
                     clicked => { root.next_clicked(); }
                     IconNext {
-                        size: 13px;
+                        size: 14px;
                         icon_color: parent.icon_color;
                     }
                 }
 
                 // Repeat Button
                 CyberButton {
-                    width: 32px;
-                    height: 30px;
+                    width: 34px;
+                    height: 32px;
                     compact: true;
                     active: root.is_repeat;
                     clicked => {
@@ -317,21 +318,21 @@ export component PlaybackBar inherits Rectangle {
                         root.repeat_toggled();
                     }
                     IconRepeat {
-                        size: 13px;
+                        size: 14px;
                         icon_color: root.is_repeat ? CyberTheme.accent : parent.icon_color;
                     }
                 }
 
                 // Automix Toggle Button
                 CyberButton {
-                    width: 110px;
-                    height: 30px;
+                    width: 116px;
+                    height: 32px;
                     active: root.is_automix;
                     compact: true;
                     clicked => { root.automix_toggled(); }
 
                     IconBolt {
-                        size: 12px;
+                        size: 13px;
                         icon_color: root.is_automix ? CyberTheme.cyber_yellow : parent.icon_color;
                     }
 
@@ -343,21 +344,26 @@ export component PlaybackBar inherits Rectangle {
             HorizontalLayout {
                 spacing: 10px;
                 alignment: center;
+                cross-axis-alignment: center;
 
                 Text {
                     text: root.time_formatted;
                     font-family: CyberTheme.font_mono;
-                    font-size: 10px;
+                    font-size: 11px;
                     font-weight: 700;
                     color: CyberTheme.accent;
                     vertical-alignment: center;
-                    width: 40px;
+                    width: 44px;
                     horizontal-alignment: right;
+                    horizontal-stretch: 0;
                 }
 
                 CyberSlider {
                     horizontal-stretch: 1;
-                    height: 18px;
+                    height: 24px;
+                    track_thickness: 5px;
+                    thumb_width: 14px;
+                    thumb_height: 20px;
                     minimum: 0.0;
                     maximum: Math.max(1.0, root.total_duration);
                     value: root.current_position;
@@ -367,12 +373,13 @@ export component PlaybackBar inherits Rectangle {
                 Text {
                     text: root.duration_formatted;
                     font-family: CyberTheme.font_mono;
-                    font-size: 10px;
+                    font-size: 11px;
                     font-weight: 600;
                     color: CyberTheme.muted;
                     vertical-alignment: center;
-                    width: 40px;
+                    width: 44px;
                     horizontal-alignment: left;
+                    horizontal-stretch: 0;
                 }
             }
         }
@@ -586,8 +593,11 @@ export component PlaybackBar inherits Rectangle {
 
             // Volume Slider
             CyberSlider {
-                width: 80px;
-                height: 18px;
+                width: 84px;
+                height: 22px;
+                track_thickness: 4px;
+                thumb_width: 10px;
+                thumb_height: 16px;
                 minimum: 0.0;
                 maximum: 1.0;
                 value: root.is_muted ? 0.0 : root.volume;

@@ -76,13 +76,18 @@ export component CyberButton inherits Rectangle {
         background: CyberTheme.accent;
     }
 
-    // Content container (Supports icon children + text)
+    // Content container (Supports icon children + text) - Full autolayer centering
     HorizontalLayout {
-        padding-left: compact ? (root.text != "" ? 8px : 5px) : (root.text != "" ? 12px : 8px);
-        padding-right: compact ? (root.text != "" ? 8px : 5px) : (root.text != "" ? 12px : 8px);
+        x: 0px;
+        y: 0px;
+        width: 100%;
+        height: 100%;
+        padding-left: compact ? (root.text != "" ? 6px : 4px) : (root.text != "" ? 10px : 6px);
+        padding-right: compact ? (root.text != "" ? 6px : 4px) : (root.text != "" ? 10px : 6px);
         padding-top: 0px;
         padding-bottom: 0px;
         alignment: center;
+        cross-axis-alignment: center;
         spacing: 6px;
 
         @children
@@ -96,6 +101,8 @@ export component CyberButton inherits Rectangle {
             color: root.icon_color;
             vertical-alignment: center;
             horizontal-alignment: center;
+            horizontal-stretch: 0;
+            vertical-stretch: 0;
             animate color { duration: 100ms; }
         }
     }

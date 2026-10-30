@@ -6,26 +6,30 @@ export component CyberSlider inherits Rectangle {
     in property <float> maximum: 1.0;
     in property <bool> disabled: false;
     in property <bool> vertical: false;
-    in property <length> track_thickness: 3px;
+    in property <length> track_thickness: 5px;
+    in property <length> thumb_width: 0px;
+    in property <length> thumb_height: 0px;
     in property <color> active_color: CyberTheme.accent;
     out property <bool> is_dragging: touch.pressed;
 
     callback changed(float);
 
-    min-height: vertical ? 80px : 20px;
-    min-width: vertical ? 20px : 80px;
+    min-height: vertical ? 80px : 24px;
+    min-width: vertical ? 24px : 80px;
     background: transparent;
 
     property <float> range: Math.max(0.0001, maximum - minimum);
     property <float> norm_val: Math.max(0.0, Math.min(1.0, (value - minimum) / range));
-    property <length> thumb_w: vertical ? 14px : 10px;
-    property <length> thumb_h: vertical ? 10px : 14px;
-    property <length> active_thickness: touch.has-hover ? track_thickness + 1px : track_thickness;
+    property <length> base_thumb_w: thumb_width > 0px ? thumb_width : (vertical ? 16px : 14px);
+    property <length> base_thumb_h: thumb_height > 0px ? thumb_height : (vertical ? 14px : 20px);
+    property <length> current_thumb_w: (touch.has-hover || touch.pressed) ? base_thumb_w + 2px : base_thumb_w;
+    property <length> current_thumb_h: (touch.has-hover || touch.pressed) ? base_thumb_h + 2px : base_thumb_h;
+    property <length> active_thickness: (touch.has-hover || touch.pressed) ? track_thickness + 2px : track_thickness;
 
     function update_horizontal(mx: length) {
         if (root.disabled) { return; }
-        let avail_w = Math.max(1.0, (root.width - thumb_w) / 1px);
-        let pos_x = Math.max(0.0, Math.min(avail_w, (mx - thumb_w / 2) / 1px));
+        let avail_w = Math.max(1.0, (root.width - current_thumb_w) / 1px);
+        let pos_x = Math.max(0.0, Math.min(avail_w, (mx - current_thumb_w / 2) / 1px));
         let ratio = pos_x / avail_w;
         let new_val = minimum + ratio * range;
         root.value = new_val;
@@ -34,8 +38,8 @@ export component CyberSlider inherits Rectangle {
 
     function update_vertical(my: length) {
         if (root.disabled) { return; }
-        let avail_h = Math.max(1.0, (root.height - thumb_h) / 1px);
-        let pos_y = Math.max(0.0, Math.min(avail_h, (my - thumb_h / 2) / 1px));
+        let avail_h = Math.max(1.0, (root.height - current_thumb_h) / 1px);
+        let pos_y = Math.max(0.0, Math.min(avail_h, (my - current_thumb_h / 2) / 1px));
         // Inverted: top is maximum, bottom is minimum
         let ratio = 1.0 - (pos_y / avail_h);
         let new_val = minimum + ratio * range;
@@ -48,18 +52,21 @@ export component CyberSlider inherits Rectangle {
         y: (parent.height - active_thickness) / 2;
         width: parent.width;
         height: active_thickness;
-        background: #141924;
-        border-radius: 1px;
+        background: #111520;
+        border-width: 1px;
+        border-color: (touch.has-hover || touch.pressed) ? #2C384E : #1E2536;
+        border-radius: 2px;
         animate height { duration: 80ms; }
+        animate border-color { duration: 100ms; }
 
         // Progress fill
         Rectangle {
             x: 0px;
             y: 0px;
-            width: Math.max(0px, (root.width - thumb_w) * norm_val + thumb_w / 2);
+            width: Math.max(0px, (root.width - current_thumb_w) * norm_val + current_thumb_w / 2);
             height: parent.height;
-            background: root.disabled ? CyberTheme.muted : (touch.has-hover ? #FFFFFF : active_color);
-            border-radius: 1px;
+            background: root.disabled ? CyberTheme.muted : (touch.pressed ? #FFFFFF : (touch.has-hover ? #FFF740 : active_color));
+            border-radius: 2px;
             animate background { duration: 100ms; }
         }
     }
@@ -69,43 +76,59 @@ export component CyberSlider inherits Rectangle {
         x: (parent.width - active_thickness) / 2;
         width: active_thickness;
         height: parent.height;
-        background: #141924;
-        border-radius: 1px;
+        background: #111520;
+        border-width: 1px;
+        border-color: (touch.has-hover || touch.pressed) ? #2C384E : #1E2536;
+        border-radius: 2px;
         animate width { duration: 80ms; }
+        animate border-color { duration: 100ms; }
 
         // Progress fill (from bottom up)
         Rectangle {
             x: 0px;
-            y: (parent.height - thumb_h) * (1.0 - norm_val) + thumb_h / 2;
+            y: (parent.height - current_thumb_h) * (1.0 - norm_val) + current_thumb_h / 2;
             width: parent.width;
             height: parent.height - self.y;
-            background: root.disabled ? CyberTheme.muted : (touch.has-hover ? #FFFFFF : active_color);
-            border-radius: 1px;
+            background: root.disabled ? CyberTheme.muted : (touch.pressed ? #FFFFFF : (touch.has-hover ? #FFF740 : active_color));
+            border-radius: 2px;
             animate background { duration: 100ms; }
         }
     }
 
-    // --- THUMB ---
+    // --- THUMB (TACTICAL DAW FADER KNOB) ---
     thumb := Rectangle {
-        x: vertical ? (parent.width - thumb_w) / 2 : (parent.width - thumb_w) * norm_val;
-        y: vertical ? (parent.height - thumb_h) * (1.0 - norm_val) : (parent.height - thumb_h) / 2;
-        width: thumb_w;
-        height: thumb_h;
-        border-radius: 1px;
+        x: vertical ? (parent.width - current_thumb_w) / 2 : (parent.width - current_thumb_w) * norm_val;
+        y: vertical ? (parent.height - current_thumb_h) * (1.0 - norm_val) : (parent.height - current_thumb_h) / 2;
+        width: current_thumb_w;
+        height: current_thumb_h;
+        border-radius: 2px;
         background: root.disabled ? CyberTheme.muted :
-                    (touch.pressed ? #FFFFFF : (touch.has-hover ? active_color : #182030));
+                    (touch.pressed ? #FFFFFF : (touch.has-hover ? #1E2638 : #151A26));
         border-width: 1px;
-        border-color: root.disabled ? CyberTheme.border : (touch.pressed ? #FFFFFF : active_color);
+        border-color: root.disabled ? CyberTheme.border : (touch.pressed ? #FFFFFF : (touch.has-hover ? active_color : #324058));
+        animate width { duration: 60ms; }
+        animate height { duration: 60ms; }
+        animate background { duration: 80ms; }
+        animate border-color { duration: 80ms; }
 
         // Inner tactical notch / grip dot
         Rectangle {
-            width: vertical ? 6px : 2px;
-            height: vertical ? 2px : 6px;
+            width: vertical ? (parent.width - 6px) : 2px;
+            height: vertical ? 2px : (parent.height - 6px);
             background: root.disabled ? CyberTheme.surface :
-                        (touch.pressed ? #000000 : (touch.has-hover ? CyberTheme.accent_text : active_color));
+                        (touch.pressed ? #000000 : (touch.has-hover ? #FFFFFF : active_color));
+            border-radius: 1px;
         }
 
-        animate background { duration: 80ms; }
+        // Tactical edge accent
+        if (!vertical) : Rectangle {
+            x: 2px;
+            y: 2px;
+            width: parent.width - 4px;
+            height: 1px;
+            background: (touch.has-hover || touch.pressed) ? active_color : transparent;
+            opacity: 0.6;
+        }
     }
 
     touch := TouchArea {
