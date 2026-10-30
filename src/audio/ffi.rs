@@ -24,6 +24,7 @@ extern "C" {
     pub fn set_track_pitch(slot: c_int, pitch_semi: c_double);
     pub fn get_track_position(slot: c_int) -> c_double;
     pub fn is_track_playing(slot: c_int) -> c_int;
+    pub fn get_mixer_state() -> c_int;
     pub fn set_automix_enabled(enabled: c_int);
     pub fn set_crossfade_duration(duration_sec: c_double);
     pub fn free_track_metadata(metadata: TrackMetadataC);

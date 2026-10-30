@@ -77,6 +77,7 @@ static void engine_log(const char* level, const char* fmt, ...) {
     std::snprintf(line, sizeof(line), "[%-5s] %s\n", level, buf);
     va_end(args2);
     std::fwrite(line, 1, std::strlen(line), stderr);
+    std::fflush(stderr);
     if (g_log_file) {
         std::fseek(g_log_file, 0, SEEK_END);
         std::fwrite(line, 1, std::strlen(line), g_log_file);
@@ -814,7 +815,7 @@ static void get_audio_frames(TrackState& ts, float* out_buffer, int frame_count,
         }
     }
     
-    if (!g_automix_enabled && ts.tempo_ratio == 1.0 && ts.pitch_semi == 0.0) {
+    if (ts.tempo_ratio == 1.0 && ts.pitch_semi == 0.0) {
         ma_uint64 read_frames = 0;
         ma_decoder_read_pcm_frames(ts.decoder, out_buffer, frame_count, &read_frames);
         for (ma_uint64 i = 0; i < read_frames * channels; i++) {
@@ -916,34 +917,6 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
 
     if (g_mixer_state == 1 || g_mixer_state == 3) {
         g_crossfade_elapsed += (double)frameCount / sample_rate;
-        double t = g_crossfade_elapsed / g_actual_crossfade_duration;
-        if (t < 0.0) t = 0.0;
-        if (t > 1.0) t = 1.0;
-
-        double bpm0 = g_tracks[0].bpm;
-        double bpm1 = g_tracks[1].bpm;
-        if (bpm0 < 30.0 || bpm0 > 300.0) bpm0 = 120.0;
-        if (bpm1 < 30.0 || bpm1 > 300.0) bpm1 = 120.0;
-
-        if (g_mixer_state == 1) {
-            {
-                std::lock_guard<std::mutex> lock0(g_tracks[0].mtx);
-                g_tracks[0].tempo_ratio = 1.0 * (1.0 - t) + (bpm1 / bpm0) * t;
-            }
-            {
-                std::lock_guard<std::mutex> lock1(g_tracks[1].mtx);
-                g_tracks[1].tempo_ratio = 1.0;
-            }
-        } else {
-            {
-                std::lock_guard<std::mutex> lock1(g_tracks[1].mtx);
-                g_tracks[1].tempo_ratio = 1.0 * (1.0 - t) + (bpm0 / bpm1) * t;
-            }
-            {
-                std::lock_guard<std::mutex> lock0(g_tracks[0].mtx);
-                g_tracks[0].tempo_ratio = 1.0;
-            }
-        }
     }
 
     std::vector<float> buf0(frameCount * 2);
@@ -955,7 +928,7 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
     std::vector<float> mixed_stereo(frameCount * 2, 0.0f);
 
     if (g_mixer_state == 1) {
-        double t = g_crossfade_elapsed / g_actual_crossfade_duration;
+        double t = g_actual_crossfade_duration > 0.0 ? (g_crossfade_elapsed / g_actual_crossfade_duration) : 1.0;
         if (t < 0.0) t = 0.0;
         if (t > 1.0) t = 1.0;
 
@@ -979,9 +952,10 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
                 g_tracks[1].pitch_semi = 0.0;
             }
             g_mixer_state = 2;
+            ENGINE_LOGI("crossfade 0 -> 1 complete (mixer_state=2)");
         }
     } else if (g_mixer_state == 3) {
-        double t = g_crossfade_elapsed / g_actual_crossfade_duration;
+        double t = g_actual_crossfade_duration > 0.0 ? (g_crossfade_elapsed / g_actual_crossfade_duration) : 1.0;
         if (t < 0.0) t = 0.0;
         if (t > 1.0) t = 1.0;
 
@@ -1005,63 +979,12 @@ static void audio_callback(ma_device* pDevice, void* pOutput, const void* pInput
                 g_tracks[0].pitch_semi = 0.0;
             }
             g_mixer_state = 0;
+            ENGINE_LOGI("crossfade 1 -> 0 complete (mixer_state=0)");
         }
     } else if (g_mixer_state == 0) {
         std::memcpy(mixed_stereo.data(), buf0.data(), frameCount * 2 * sizeof(float));
-
-        if (g_automix_enabled && g_tracks[0].is_playing && g_tracks[1].has_decoder) {
-            double pos0 = get_track_position(0);
-            double dur0 = g_tracks[0].duration;
-
-            double bpm0 = g_tracks[0].bpm;
-            if (bpm0 < 30.0 || bpm0 > 300.0) bpm0 = 120.0;
-            double bar_dur0 = 240.0 / bpm0;
-            double num_bars0 = std::round(g_crossfade_duration / bar_dur0);
-            if (num_bars0 < 1.0) num_bars0 = 1.0;
-            double actual_crossfade_dur = num_bars0 * bar_dur0;
-            if (actual_crossfade_dur > dur0 * 0.5) {
-                actual_crossfade_dur = dur0 * 0.5;
-            }
-
-            if (dur0 > 0.0 && pos0 >= dur0 - actual_crossfade_dur) {
-                g_mixer_state = 1;
-                g_crossfade_elapsed = 0.0;
-                g_actual_crossfade_duration = actual_crossfade_dur;
-                {
-                    std::lock_guard<std::mutex> lock1(g_tracks[1].mtx);
-                    g_tracks[1].is_playing = true;
-                    g_tracks[1].pitch_semi = 0.0;
-                }
-            }
-        }
     } else if (g_mixer_state == 2) {
         std::memcpy(mixed_stereo.data(), buf1.data(), frameCount * 2 * sizeof(float));
-
-        if (g_automix_enabled && g_tracks[1].is_playing && g_tracks[0].has_decoder) {
-            double pos1 = get_track_position(1);
-            double dur1 = g_tracks[1].duration;
-
-            double bpm1 = g_tracks[1].bpm;
-            if (bpm1 < 30.0 || bpm1 > 300.0) bpm1 = 120.0;
-            double bar_dur1 = 240.0 / bpm1;
-            double num_bars1 = std::round(g_crossfade_duration / bar_dur1);
-            if (num_bars1 < 1.0) num_bars1 = 1.0;
-            double actual_crossfade_dur = num_bars1 * bar_dur1;
-            if (actual_crossfade_dur > dur1 * 0.5) {
-                actual_crossfade_dur = dur1 * 0.5;
-            }
-
-            if (dur1 > 0.0 && pos1 >= dur1 - actual_crossfade_dur) {
-                g_mixer_state = 3;
-                g_crossfade_elapsed = 0.0;
-                g_actual_crossfade_duration = actual_crossfade_dur;
-                {
-                    std::lock_guard<std::mutex> lock0(g_tracks[0].mtx);
-                    g_tracks[0].is_playing = true;
-                    g_tracks[0].pitch_semi = 0.0;
-                }
-            }
-        }
     }
 
     if (channels == 1) {
@@ -1338,14 +1261,33 @@ void play_track(int slot) {
         ENGINE_LOGW("play_track: device not initialized, attempting init...");
         init_audio_engine(g_sample_rate > 0 ? g_sample_rate : 44100, 2);
     }
+
+    int other = 1 - slot;
+    bool other_playing = false;
+    {
+        std::lock_guard<std::mutex> lock_other(g_tracks[other].mtx);
+        other_playing = g_tracks[other].is_playing;
+    }
+
     std::lock_guard<std::mutex> lock(g_tracks[slot].mtx);
     if (g_tracks[slot].has_decoder && g_tracks[slot].decoder) {
         g_tracks[slot].is_playing = true;
-        if (g_mixer_state != 1 && g_mixer_state != 3) {
-            if (slot == 0) g_mixer_state = 0;
-            else g_mixer_state = 2;
+        g_tracks[slot].tempo_ratio = 1.0;
+        g_tracks[slot].pitch_semi = 0.0;
+
+        if (g_automix_enabled && other_playing) {
+            g_crossfade_elapsed = 0.0;
+            g_actual_crossfade_duration = g_crossfade_duration;
+            g_mixer_state = (slot == 1) ? 1 : 3;
+            ENGINE_LOGI("play_track: START CROSSFADE %d -> %d duration=%.1fs", other, slot, g_actual_crossfade_duration);
+        } else {
+            {
+                std::lock_guard<std::mutex> lock_other(g_tracks[other].mtx);
+                g_tracks[other].is_playing = false;
+            }
+            g_mixer_state = (slot == 0) ? 0 : 2;
+            ENGINE_LOGI("play_track: playing=true slot=%d mixer_state=%d", slot, g_mixer_state);
         }
-        ENGINE_LOGI("play_track: playing=true slot=%d mixer_state=%d", slot, g_mixer_state);
     } else {
         ENGINE_LOGW("play_track: нет декодера на slot=%d", slot);
     }
@@ -1401,6 +1343,10 @@ int is_track_playing(int slot) {
     TrackState& ts = g_tracks[slot];
     std::lock_guard<std::mutex> lock(ts.mtx);
     return ts.is_playing ? 1 : 0;
+}
+
+int get_mixer_state() {
+    return g_mixer_state;
 }
 
 void set_automix_enabled(int enabled) {

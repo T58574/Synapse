@@ -46,10 +46,8 @@ fn trigger_toast(win: &MainWindow, msg: &str) {
     });
 }
 
-fn update_queue_model(win: &MainWindow, player: &Arc<Mutex<PlayerState>>) {
-    let p = player.lock();
-    let rows: Vec<QueueRow> = p
-        .queue
+fn update_queue_ui(win: &MainWindow, queue: &std::collections::VecDeque<crate::state::player::TrackItem>) {
+    let rows: Vec<QueueRow> = queue
         .iter()
         .map(|item| QueueRow {
             file_path: SharedString::from(&item.file_path),
@@ -59,6 +57,11 @@ fn update_queue_model(win: &MainWindow, player: &Arc<Mutex<PlayerState>>) {
         .collect();
     win.set_queue_count(rows.len() as i32);
     win.set_queue_items(Rc::new(VecModel::from(rows)).into());
+}
+
+fn update_queue_model(win: &MainWindow, player: &Arc<Mutex<PlayerState>>) {
+    let p = player.lock();
+    update_queue_ui(win, &p.queue);
 }
 
 pub fn setup_ui_bridge(
@@ -401,6 +404,7 @@ pub fn setup_ui_bridge(
         let window_weak = window.as_weak();
         let player = Arc::clone(&player);
 
+        let refresh_table = refresh_tracks_table.clone();
         window.on_prev_track(move || {
             let mut p = player.lock();
             if let Some(prev) = p.history.pop() {
@@ -416,11 +420,14 @@ pub fn setup_ui_bridge(
                             win.set_total_duration(cur.duration_sec as f32);
                             win.set_total_time_str(SharedString::from(format_duration(cur.duration_sec)));
                         }
+                        update_queue_ui(&win, &p.queue);
                     }
                 }
             } else {
                 p.seek(0.0);
             }
+            drop(p);
+            refresh_table();
         });
     }
 
@@ -432,10 +439,19 @@ pub fn setup_ui_bridge(
         let refresh_table = refresh_tracks_table.clone();
 
         move || {
-            let mut p = player.lock();
-            let next_item = if let Some(queued) = p.pop_next_track() {
+            let queued_item = {
+                let mut p = player.lock();
+                p.pop_next_track()
+            };
+
+            let next_item = if let Some(queued) = queued_item {
                 Some(queued)
             } else {
+                let current_path = {
+                    let p = player.lock();
+                    p.current_track.as_ref().map(|t| t.file_path.clone())
+                };
+
                 let state = ui_state.lock();
                 if state.filtered_indices.is_empty() {
                     None
@@ -448,8 +464,8 @@ pub fn setup_ui_bridge(
                     let track_idx = state.filtered_indices[rand_slot];
                     Some(record_to_item(&state.all_tracks[track_idx]))
                 } else {
-                    let current_path = p.current_track.as_ref().map(|t| &t.file_path);
                     let current_pos = current_path
+                        .as_ref()
                         .and_then(|path| {
                             state
                                 .filtered_indices
@@ -464,6 +480,7 @@ pub fn setup_ui_bridge(
             };
 
             if let Some(item) = next_item {
+                let mut p = player.lock();
                 let success = p.play_track(item);
                 if success {
                     if let Some(win) = window_weak.upgrade() {
@@ -477,12 +494,19 @@ pub fn setup_ui_bridge(
                             win.set_total_duration(cur.duration_sec as f32);
                             win.set_total_time_str(SharedString::from(format_duration(cur.duration_sec)));
                         }
-                        update_queue_model(&win, &player);
+                        update_queue_ui(&win, &p.queue);
                     }
                 }
+                drop(p);
+                refresh_table();
+            } else {
+                let mut p = player.lock();
+                p.is_playing = false;
+                drop(p);
+                if let Some(win) = window_weak.upgrade() {
+                    win.set_is_playing(false);
+                }
             }
-            drop(p);
-            refresh_table();
         }
     };
 
@@ -1059,6 +1083,7 @@ pub fn setup_ui_bridge(
     let player_clone = Arc::clone(&player);
     let ui_state_clone = Arc::clone(&ui_state);
     let next_track_fn = handle_next_track.clone();
+    let is_transitioning = Arc::new(std::sync::atomic::AtomicBool::new(false));
 
     let mut smoothed_spectrum = [0.0f32; 64];
     let mut peak_spectrum = [0.0f32; 64];
@@ -1075,9 +1100,13 @@ pub fn setup_ui_bridge(
             };
             let p = player_clone.lock();
             let is_playing = p.is_playing;
+            let is_automix = p.automix;
+            let crossfade_dur = p.crossfade_duration;
             let slot = p.active_slot;
             let current_dur = p.current_track.as_ref().map(|t| t.duration_sec).unwrap_or(0.0);
             drop(p);
+
+            let engine_playing = audio_clone.is_playing(slot);
 
             let viz_enabled = ui_state_clone.lock().visualizer_enabled;
 
@@ -1148,13 +1177,27 @@ pub fn setup_ui_bridge(
                 win.set_spectrum_peaks(Rc::new(VecModel::from(peak_spectrum.to_vec())).into());
             }
 
-            // Detect Track End
-            if current_dur > 0.0 && pos >= (current_dur - 0.25) {
-                let is_rep = ui_state_clone.lock().is_repeat;
-                if is_rep {
-                    audio_clone.seek(slot, 0.0);
-                } else {
-                    next_track_fn();
+            // Detect Track End / Automix transition
+            let threshold = if is_automix {
+                crossfade_dur.min(current_dur * 0.4).max(0.5)
+            } else {
+                0.25
+            };
+
+            let at_track_end = (current_dur > 0.0 && pos >= (current_dur - threshold))
+                || (pos > 0.5 && !engine_playing && is_playing);
+
+            if at_track_end {
+                if !is_transitioning.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                    let is_rep = ui_state_clone.lock().is_repeat;
+                    if is_rep {
+                        audio_clone.seek(slot, 0.0);
+                        audio_clone.play(slot);
+                        is_transitioning.store(false, std::sync::atomic::Ordering::SeqCst);
+                    } else {
+                        next_track_fn();
+                        is_transitioning.store(false, std::sync::atomic::Ordering::SeqCst);
+                    }
                 }
             }
         },

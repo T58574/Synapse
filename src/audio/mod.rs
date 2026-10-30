@@ -130,6 +130,10 @@ impl AudioManager {
         unsafe { ffi::is_track_playing(slot as i32) != 0 }
     }
 
+    pub fn get_mixer_state(&self) -> i32 {
+        unsafe { ffi::get_mixer_state() }
+    }
+
     pub fn set_automix_enabled(&self, enabled: bool) {
         unsafe {
             ffi::set_automix_enabled(if enabled { 1 } else { 0 });

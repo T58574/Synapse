@@ -74,6 +74,7 @@ impl PlayerState {
     pub fn toggle_play(&mut self) {
         if self.is_playing {
             self.audio.pause(self.active_slot);
+            self.audio.pause(1 - self.active_slot);
             self.is_playing = false;
         } else if self.current_track.is_some() {
             self.audio.play(self.active_slot);
@@ -171,5 +172,35 @@ mod tests {
 
         player.set_crossfade(6.5);
         assert_eq!(player.crossfade_duration, 6.5);
+    }
+
+    #[test]
+    fn test_player_toggle_play_behavior() {
+        let audio = AudioManager::new(44100, 2).expect("Audio init");
+        let mut player = PlayerState::new(audio);
+        assert!(!player.is_playing);
+
+        // Cannot play without current track
+        player.toggle_play();
+        assert!(!player.is_playing);
+
+        // When track is present, toggle switches state
+        player.current_track = Some(TrackItem {
+            file_path: "/dummy/test.mp3".to_string(),
+            title: "Test".to_string(),
+            artist: "Test Artist".to_string(),
+            genre: "Synth".to_string(),
+            mood: "chill".to_string(),
+            bpm: 120.0,
+            key_signature: "8A".to_string(),
+            duration_sec: 100.0,
+            waveform: vec![],
+        });
+        player.toggle_play();
+        assert!(player.is_playing);
+
+        // Toggle again pauses
+        player.toggle_play();
+        assert!(!player.is_playing);
     }
 }

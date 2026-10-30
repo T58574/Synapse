@@ -28,6 +28,7 @@ void set_track_tempo(int slot, double tempo_ratio);
 void set_track_pitch(int slot, double pitch_semi);
 double get_track_position(int slot);
 int is_track_playing(int slot);
+int get_mixer_state();
 void set_automix_enabled(int enabled);
 void set_crossfade_duration(double duration_sec);
 void free_track_metadata(TrackMetadataC metadata);

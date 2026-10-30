@@ -244,3 +244,17 @@
   4. Slint compiler rejects specifying both `width`/`height` and `min-width`/`max-width` on the same element; define fixed dimensions solely with `width: size; height: size;` combined with `horizontal-stretch: 0; vertical-stretch: 0;`.
   5. If a custom component (`Rectangle`) declares `min-width: 0px; horizontal-stretch: 0;` without an explicit `width` or `preferred-width`, Slint collapses its width to `0px`. Always bind `min-width: content_layout.min-width; preferred-width: content_layout.preferred-width;` and center the inner layout with `x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;` so both unconstrained and fixed-width buttons size and center reliably.
 - **Evidence**: `ui/components/button.slint`, `ui/components/icons.slint`, `ui/components/slider.slint`, `ui/views/playback_bar.slint`. Verified via `cargo check` and 15/15 unit tests.
+
+### Cue (Symptom): Application freeze/deadlock and crash on EOF (track end) or Next Track
+- **Lesson (Takeaway)**:
+  1. **Self-Deadlock on Mutex re-acquisition**: `parking_lot::Mutex` is not re-entrant. If `handle_next_track` holds `let mut p = player.lock()` and invokes a helper (`update_queue_model`) that calls `player.lock()`, the main UI thread self-deadlocks instantaneously. Refactor queue UI synchronization into `update_queue_ui(win, &p.queue)` taking an explicit reference to the already-locked queue.
+  2. **Inverted Lock Ordering Deadlock**: `refresh_tracks_table` locked `ui_state` then `player`, whereas `handle_next_track` locked `player` then `ui_state`. In `handle_next_track`, query `p.pop_next_track()`, release `player`, lock `ui_state` to determine the next track, release `ui_state`, and only then lock `player` to execute `play_track`. Never hold both mutexes concurrently.
+  3. **Timer Event Loop Flooding**: When a track finishes in C++ (`ts.is_playing = false`), Rust's `p.is_playing` remained `true` and `pos >= duration - threshold` was continuously satisfied, triggering `next_track_fn` every 33ms in a tight loop. Add an atomic transition flag (`Arc<AtomicBool>`) and detect track end via `audio_clone.is_playing(slot)` to prevent duplicate triggers.
+- **Evidence**: Fixed in `src/ui_bridge/mod.rs` (`handle_next_track`, `update_queue_ui`, timer loop). Verified with 16/16 unit tests.
+
+### Cue (Symptom): Audio dropouts, buffer underrun, or crash when Automix is enabled
+- **Lesson (Takeaway)**:
+  1. In `cpp/audio_engine.cpp:get_audio_frames`, `if (!g_automix_enabled && ts.tempo_ratio == 1.0 && ts.pitch_semi == 0.0)` forced the audio thread to bypass direct PCM reads and run heavy STFT/FFT time-stretching (`SignalsmithStretch`) 100% of the time whenever Automix was toggled ON.
+  2. When `tempo_ratio == 1.0 && pitch_semi == 0.0`, direct PCM reading must always be used regardless of automix mode. Running phase vocoders on standard 1.0x playback introduces 120ms internal buffering latency, memory allocation spikes, and WASAPI buffer underruns.
+  3. Automix crossfading should use constant-power sinusoidal volume curves (`cos/sin`) across slots 0 and 1 without warping pitch or forcing unaligned tempo stretching. Rust manages track sequencing and initiates the transition into the alternate slot (`1 - active_slot`), while C++ executes the crossfade.
+- **Evidence**: `cpp/audio_engine.cpp:818,918-970,1257`, `src/state/player.rs`, `src/ui_bridge/mod.rs`. All 16 unit tests passing.
