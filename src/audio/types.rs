@@ -1,13 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[repr(C)]
-pub struct TrackMetadataC {
-    pub duration_sec: f64,
-    pub bpm: f64,
-    pub key_signature: *const libc::c_char,
-    pub waveform_data: *mut f32,
-    pub waveform_size: libc::c_int,
-}
+pub use synapse_audio_engine::TrackMetadataC;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AudioDevice {

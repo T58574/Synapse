@@ -4513,7 +4513,6 @@ dependencies = [
 name = "synapse"
 version = "0.2.0"
 dependencies = [
- "cc",
  "dirs",
  "image",
  "libc",
@@ -4525,8 +4524,18 @@ dependencies = [
  "serde_json",
  "slint",
  "slint-build",
+ "synapse-audio-engine",
  "tempfile",
  "tokio",
+]
+
+[[package]]
+name = "synapse-audio-engine"
+version = "0.2.0"
+source = "git+https://github.com/T58574/synapse-audio-engine.git#ea206861be8e7d073370307eef594ea8a6f8d865"
+dependencies = [
+ "cc",
+ "libc",
 ]
 
 [[package]]

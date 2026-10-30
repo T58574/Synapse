@@ -1,0 +1,3 @@
+# Hide legacy Wails/Go/React code from GitHub language statistics
+backend/** linguist-vendored
+frontend/** linguist-vendored
