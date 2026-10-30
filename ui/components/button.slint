@@ -18,7 +18,8 @@ export component CyberButton inherits Rectangle {
     callback clicked();
 
     min-height: compact ? 26px : 32px;
-    min-width: text == "" ? (compact ? 26px : 32px) : 0px;
+    min-width: content_layout.min-width;
+    preferred-width: content_layout.preferred-width;
     horizontal-stretch: 0;
     clip: true;
 
@@ -77,12 +78,10 @@ export component CyberButton inherits Rectangle {
         background: CyberTheme.accent;
     }
 
-    // Content container (Supports icon children + text) - Full autolayer centering
-    HorizontalLayout {
-        x: 0px;
-        y: 0px;
-        width: 100%;
-        height: 100%;
+    // Content container (Supports icon children + text) - Mathematically centered
+    content_layout := HorizontalLayout {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
         padding-left: compact ? (root.text != "" ? 10px : 6px) : (root.text != "" ? 14px : 8px);
         padding-right: compact ? (root.text != "" ? 10px : 6px) : (root.text != "" ? 14px : 8px);
         padding-top: 0px;
