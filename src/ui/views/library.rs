@@ -2,8 +2,9 @@
 
 use super::RootView;
 use crate::ui::state::View;
+use crate::ui::theme;
 
-use gpui_kit::component::button::Button;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
 use gpui_kit::component::input::Input;
 use gpui_kit::component::scroll::Scrollbar;
 use gpui_kit::component::v_virtual_list;
@@ -73,19 +74,62 @@ pub fn sidebar(_root: &RootView, cx: &mut Context<RootView>) -> impl IntoElement
             row,
         ))
         .child(div().h(px(12.)))
-        .child(section_label("PLAYLISTS", dim))
+        .child(
+            h_flex()
+                .w_full()
+                .justify_between()
+                .items_center()
+                .pr_3()
+                .child(section_label("PLAYLISTS", dim))
+                .child(
+                    div()
+                        .id("new-playlist-btn")
+                        .px_1p5()
+                        .py_0p5()
+                        .rounded_sm()
+                        .text_xs()
+                        .cursor_pointer()
+                        .text_color(dim)
+                        .hover(|s| s.text_color(theme::c(theme::C_ACCENT)))
+                        .on_click({
+                            let app = app.clone();
+                            move |_, _, cx| {
+                                app.update(cx, |state, cx| {
+                                    let new_num = state.playlists.len() + 1;
+                                    let name = format!("Playlist {new_num}");
+                                    state.create_playlist(&name);
+                                    cx.notify();
+                                });
+                            }
+                        })
+                        .child("+ New"),
+                ),
+        )
         .children(playlists.into_iter().map(|playlist| {
             let active = selected.as_deref() == Some(playlist.name.as_str());
             let app = app.clone();
-            let name = playlist.name.clone();
-            sidebar_row(
-                format!("playlist-{}", playlist.id),
-                format!("{}  ·  {}", playlist.name, playlist.track_paths.len()),
+            let app_delete = app.clone();
+            let pl_id = playlist.id;
+            let name_display = playlist.name.clone();
+            let name_select = playlist.name.clone();
+            let name_delete = playlist.name.clone();
+            sidebar_playlist_row(
+                format!("playlist-{pl_id}"),
+                format!("del-pl-{pl_id}"),
+                name_display,
+                playlist.track_paths.len(),
                 active,
                 move |cx| {
-                    let name = name.clone();
+                    let name = name_select.clone();
                     app.update(cx, |state, cx| {
                         state.select_playlist(Some(name));
+                        cx.notify();
+                    });
+                },
+                move |cx| {
+                    let name = name_delete.clone();
+                    app_delete.update(cx, |state, cx| {
+                        state.delete_playlist(&name);
                         cx.notify();
                     });
                 },
@@ -93,6 +137,53 @@ pub fn sidebar(_root: &RootView, cx: &mut Context<RootView>) -> impl IntoElement
             )
             .into_any_element()
         }))
+}
+
+fn sidebar_playlist_row(
+    id: impl Into<ElementId>,
+    del_id: impl Into<ElementId>,
+    name: String,
+    count: usize,
+    active: bool,
+    on_click: impl Fn(&mut App) + 'static,
+    on_delete: impl Fn(&mut App) + 'static,
+    style: RowStyle,
+) -> impl IntoElement {
+    let (foreground, dim, hover, active_bg) =
+        (style.foreground, style.dim, style.hover, style.active_bg);
+    h_flex()
+        .id(id)
+        .mx_2()
+        .px_2()
+        .py_1p5()
+        .rounded_md()
+        .text_sm()
+        .cursor_pointer()
+        .justify_between()
+        .items_center()
+        .text_color(if active { foreground } else { dim })
+        .when(active, |this| this.bg(active_bg))
+        .when(!active, |this| this.hover(move |style| style.bg(hover)))
+        .on_click(move |_, _, cx| on_click(cx))
+        .child(
+            div()
+                .flex_1()
+                .min_w_0()
+                .truncate()
+                .child(format!("{name}  ·  {count}")),
+        )
+        .child(
+            div()
+                .id(del_id)
+                .px_1p5()
+                .py_0p5()
+                .rounded_sm()
+                .text_xs()
+                .text_color(dim)
+                .hover(|s| s.text_color(theme::c(0xEF4444)))
+                .on_click(move |_, _, cx| on_delete(cx))
+                .child("×"),
+        )
 }
 
 fn section_label(text: &'static str, color: Hsla) -> impl IntoElement {
@@ -201,7 +292,7 @@ pub fn view(root: &RootView, cx: &mut Context<RootView>) -> impl IntoElement {
                 .child(div().w(px(56.)).child("BPM"))
                 .child(div().w(px(52.)).child("KEY"))
                 .child(div().w(px(56.)).child("TIME"))
-                .child(div().w(px(34.))),
+                .child(div().w(px(64.))),
         )
         .child(
             v_flex()
@@ -230,6 +321,8 @@ pub fn view(root: &RootView, cx: &mut Context<RootView>) -> impl IntoElement {
                             item_sizes,
                             move |root, range: std::ops::Range<usize>, _window, cx| {
                                 let state = root.app.read(cx);
+                                let selected_pl = state.selected_playlist.clone();
+                                let first_pl = state.playlists.first().map(|p| p.name.clone());
                                 range
                                     .map(|index| {
                                         let Some(&track_index) = state.filtered.get(index) else {
@@ -241,7 +334,9 @@ pub fn view(root: &RootView, cx: &mut Context<RootView>) -> impl IntoElement {
                                         let is_playing_this = is_current && state.playback.playing;
                                         let app = root.app.clone();
                                         let queue_app = app.clone();
+                                        let pl_app = app.clone();
                                         let path = track.file_path.clone();
+                                        let pl_track_path = track.file_path.clone();
                                         let row_bg = if index % 2 == 0 {
                                             cx.theme().background
                                         } else {
@@ -250,6 +345,8 @@ pub fn view(root: &RootView, cx: &mut Context<RootView>) -> impl IntoElement {
                                         let accent = cx.theme().primary;
                                         let text = cx.theme().foreground;
                                         let muted = cx.theme().muted_foreground;
+                                        let cur_selected = selected_pl.clone();
+                                        let cur_first = first_pl.clone();
 
                                         h_flex()
                                             .id(format!("track-{index}"))
@@ -323,21 +420,58 @@ pub fn view(root: &RootView, cx: &mut Context<RootView>) -> impl IntoElement {
                                                 ),
                                             ))
                                             .child(
-                                                div().w(px(34.)).child(
-                                                    Button::new(format!("queue-{index}"))
-                                                        .small()
-                                                        .label("+")
-                                                        .on_click({
-                                                            let app = queue_app;
-                                                            let path = track.file_path.clone();
-                                                            move |_, _, cx| {
-                                                                app.update(cx, |state, cx| {
-                                                                    state.queue_add_by_path(&path);
-                                                                    cx.notify();
-                                                                });
-                                                            }
-                                                        }),
-                                                ),
+                                                h_flex()
+                                                    .w(px(64.))
+                                                    .gap_1()
+                                                    .items_center()
+                                                    .child(
+                                                        Button::new(format!("queue-{index}"))
+                                                            .small()
+                                                            .ghost()
+                                                            .label("+Q")
+                                                            .on_click({
+                                                                let app = queue_app;
+                                                                let path = pl_track_path.clone();
+                                                                move |_, _, cx| {
+                                                                    app.update(cx, |state, cx| {
+                                                                        state.queue_add_by_path(&path);
+                                                                        cx.notify();
+                                                                    });
+                                                                }
+                                                            }),
+                                                    )
+                                                    .when_some(cur_selected, |this, pl_name| {
+                                                        let app = pl_app.clone();
+                                                        let path = pl_track_path.clone();
+                                                        this.child(
+                                                            Button::new(format!("rm-pl-{index}"))
+                                                                .small()
+                                                                .ghost()
+                                                                .label("−")
+                                                                .on_click(move |_, _, cx| {
+                                                                    app.update(cx, |state, cx| {
+                                                                        state.remove_track_from_playlist(&pl_name, &path);
+                                                                        cx.notify();
+                                                                    });
+                                                                }),
+                                                        )
+                                                    })
+                                                    .when_some(if selected_pl.is_none() { cur_first } else { None }, |this, first_name| {
+                                                        let app = pl_app.clone();
+                                                        let path = pl_track_path.clone();
+                                                        this.child(
+                                                            Button::new(format!("add-pl-{index}"))
+                                                                .small()
+                                                                .ghost()
+                                                                .label("+P")
+                                                                .on_click(move |_, _, cx| {
+                                                                    app.update(cx, |state, cx| {
+                                                                        state.add_track_to_playlist(&first_name, &path);
+                                                                        cx.notify();
+                                                                    });
+                                                                }),
+                                                        )
+                                                    }),
                                             )
                                             .into_any_element()
                                     })

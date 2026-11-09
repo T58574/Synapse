@@ -51,6 +51,7 @@ pub struct Dragging {
 
 pub struct RootView {
     pub app: Entity<AppState>,
+    pub focus_handle: FocusHandle,
     pub sliders: Sliders,
     pub pending: PendingSync,
     pub dragging: Dragging,
@@ -60,6 +61,7 @@ pub struct RootView {
 
 impl RootView {
     pub fn new(app: Entity<AppState>, cx: &mut Context<Self>) -> Self {
+        let focus_handle = cx.focus_handle();
         let initial_volume = app.read(cx).volume;
         let initial_crossfade = app.read(cx).crossfade as f32;
 
@@ -198,6 +200,7 @@ impl RootView {
 
         Self {
             app,
+            focus_handle,
             pending: PendingSync::default(),
             dragging: Dragging::default(),
             sliders: Sliders {
@@ -380,12 +383,138 @@ impl RootView {
             .when(show_eq, |this| this.child(equalizer::view(self, cx)))
             .when(show_queue, |this| this.child(player::queue_panel(self, cx)))
     }
+
+    fn handle_key_down(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let search_focused = {
+            let state = self.app.read(cx);
+            state.search_input.read(cx).focus_handle(cx).is_focused(window)
+        };
+        if search_focused {
+            if event.keystroke.key == "escape" {
+                self.app.update(cx, |state, cx| {
+                    state.set_search(String::new());
+                    state.search_input.update(cx, |input, cx| {
+                        input.set_value(String::new(), window, cx);
+                    });
+                    cx.notify();
+                });
+            }
+            return;
+        }
+
+        match event.keystroke.key.as_str() {
+            "space" => {
+                self.app.update(cx, |state, cx| {
+                    state.toggle_play();
+                    cx.notify();
+                });
+            }
+            "left" => {
+                self.app.update(cx, |state, cx| {
+                    let new_pos = (state.playback.position - 5.0).max(0.0);
+                    state.seek(new_pos);
+                    cx.notify();
+                });
+            }
+            "right" => {
+                self.app.update(cx, |state, cx| {
+                    let new_pos = (state.playback.position + 5.0).min(state.playback.duration);
+                    state.seek(new_pos);
+                    cx.notify();
+                });
+            }
+            "up" => {
+                self.app.update(cx, |state, cx| {
+                    let new_vol = (state.volume + 0.05).min(1.0);
+                    state.set_volume(new_vol);
+                    state.persist_volume();
+                    cx.notify();
+                });
+            }
+            "down" => {
+                self.app.update(cx, |state, cx| {
+                    let new_vol = (state.volume - 0.05).max(0.0);
+                    state.set_volume(new_vol);
+                    state.persist_volume();
+                    cx.notify();
+                });
+            }
+            "m" => {
+                self.app.update(cx, |state, cx| {
+                    if state.volume > 0.0 {
+                        state.set_volume(0.0);
+                    } else {
+                        state.set_volume(0.8);
+                    }
+                    state.persist_volume();
+                    cx.notify();
+                });
+            }
+            "n" | "j" => {
+                self.app.update(cx, |state, cx| {
+                    state.play_next();
+                    cx.notify();
+                });
+            }
+            "p" | "k" => {
+                self.app.update(cx, |state, cx| {
+                    state.play_prev();
+                    cx.notify();
+                });
+            }
+            "s" => {
+                self.app.update(cx, |state, cx| {
+                    state.toggle_shuffle();
+                    cx.notify();
+                });
+            }
+            "r" => {
+                self.app.update(cx, |state, cx| {
+                    state.toggle_repeat();
+                    cx.notify();
+                });
+            }
+            "q" => {
+                self.app.update(cx, |state, cx| {
+                    state.toggle_queue();
+                    cx.notify();
+                });
+            }
+            "e" => {
+                self.app.update(cx, |state, cx| {
+                    state.toggle_equalizer();
+                    cx.notify();
+                });
+            }
+            "escape" => {
+                self.app.update(cx, |state, cx| {
+                    if state.show_equalizer {
+                        state.show_equalizer = false;
+                    } else if state.show_queue {
+                        state.show_queue = false;
+                    }
+                    cx.notify();
+                });
+            }
+            _ => {}
+        }
+    }
 }
 
 impl Render for RootView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.sync_sliders(window, cx);
         v_flex()
+            .id("root-shell")
+            .track_focus(&self.focus_handle)
+            .on_key_down(cx.listener(|this, event: &KeyDownEvent, window, cx| {
+                this.handle_key_down(event, window, cx);
+            }))
             .size_full()
             .bg(cx.theme().background)
             .text_color(cx.theme().foreground)

@@ -322,6 +322,86 @@ impl AppState {
         self.refresh_filter();
     }
 
+    pub fn refresh_playlists(&mut self) {
+        self.playlists = self.library.get_playlists().unwrap_or_default();
+    }
+
+    pub fn create_playlist(&mut self, name: &str) -> bool {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            self.status = "Playlist name cannot be empty".to_string();
+            return false;
+        }
+        match self.library.create_playlist(trimmed) {
+            Ok(_) => {
+                self.refresh_playlists();
+                self.select_playlist(Some(trimmed.to_string()));
+                self.status = format!("Created playlist: {trimmed}");
+                diagnostics::line(&format!("created playlist: {trimmed}"));
+                true
+            }
+            Err(err) => {
+                self.status = format!("Failed to create playlist: {err}");
+                diagnostics::line(&format!("create playlist failed: {err}"));
+                false
+            }
+        }
+    }
+
+    pub fn delete_playlist(&mut self, name: &str) -> bool {
+        match self.library.delete_playlist(name) {
+            Ok(_) => {
+                if self.selected_playlist.as_deref() == Some(name) {
+                    self.selected_playlist = None;
+                }
+                self.refresh_playlists();
+                self.refresh_filter();
+                self.status = format!("Deleted playlist: {name}");
+                diagnostics::line(&format!("deleted playlist: {name}"));
+                true
+            }
+            Err(err) => {
+                self.status = format!("Failed to delete playlist: {err}");
+                diagnostics::line(&format!("delete playlist failed: {err}"));
+                false
+            }
+        }
+    }
+
+    pub fn add_track_to_playlist(&mut self, playlist_name: &str, track_path: &str) -> bool {
+        match self.library.add_track_to_playlist(playlist_name, track_path) {
+            Ok(_) => {
+                self.refresh_playlists();
+                self.refresh_filter();
+                self.status = format!("Added track to {playlist_name}");
+                diagnostics::line(&format!("added track {track_path} to {playlist_name}"));
+                true
+            }
+            Err(err) => {
+                self.status = format!("Failed to add track to playlist: {err}");
+                diagnostics::line(&format!("add track failed: {err}"));
+                false
+            }
+        }
+    }
+
+    pub fn remove_track_from_playlist(&mut self, playlist_name: &str, track_path: &str) -> bool {
+        match self.library.remove_track_from_playlist(playlist_name, track_path) {
+            Ok(_) => {
+                self.refresh_playlists();
+                self.refresh_filter();
+                self.status = format!("Removed track from {playlist_name}");
+                diagnostics::line(&format!("removed track {track_path} from {playlist_name}"));
+                true
+            }
+            Err(err) => {
+                self.status = format!("Failed to remove track from playlist: {err}");
+                diagnostics::line(&format!("remove track failed: {err}"));
+                false
+            }
+        }
+    }
+
     pub fn set_search(&mut self, query: String) {
         self.search = query;
         self.refresh_filter();
@@ -499,7 +579,7 @@ impl AppState {
             waveform: Vec::new(),
         };
         if !self.player.play_track(item) {
-            self.status = format!("Playback failed: {}", track.title);
+            self.status = format!("Playback failed (unreadable or missing file): {}", track.title);
             diagnostics::line(&format!("failed to play track: {}", track.file_path));
             return;
         }
@@ -549,7 +629,7 @@ impl AppState {
             } else {
                 0
             };
-            if let Some(&index) = self.filtered.get(start_slot) {
+            if start_slot < self.filtered.len() {
                 self.play_index(start_slot);
             } else {
                 self.status = "No tracks to play".to_string();
@@ -563,39 +643,53 @@ impl AppState {
     }
 
     pub fn play_next(&mut self) {
-        let next = if let Some(queued) = self.player.pop_next_track() {
-            Some(queued)
-        } else if self.filtered.is_empty() {
-            None
-        } else if self.shuffle {
-            let slot = self.shuffle_deck.next(self.filtered.len());
-            slot.and_then(|i| self.filtered.get(i).copied())
-                .map(|track_idx| self.track_item(track_idx))
-        } else {
-            let current = self.playing_path.as_ref().and_then(|path| {
-                self.filtered
-                    .iter()
-                    .position(|&i| &self.tracks[i].file_path == path)
-            });
-            let slot = current
-                .map(|position| (position + 1) % self.filtered.len())
-                .unwrap_or(0);
-            Some(self.track_item(self.filtered[slot]))
-        };
+        let max_attempts = (self.player.queue.len() + self.filtered.len()).max(1);
+        let mut attempts = 0;
 
-        let Some(item) = next else {
-            self.player.is_playing = false;
-            self.playback.playing = false;
-            return;
-        };
-        if self.player.play_track(item) {
-            self.sync_from_player();
-        } else {
-            // Never leave the ticker thinking a track is still playing after a
-            // failed load: it would re-trigger `play_next` every tick.
-            self.player.is_playing = false;
-            self.playback.playing = false;
+        while attempts < max_attempts {
+            attempts += 1;
+            let next = if let Some(queued) = self.player.pop_next_track() {
+                Some(queued)
+            } else if self.filtered.is_empty() {
+                None
+            } else if self.shuffle {
+                let slot = self.shuffle_deck.next(self.filtered.len());
+                slot.and_then(|i| self.filtered.get(i).copied())
+                    .map(|track_idx| self.track_item(track_idx))
+            } else {
+                let current = self.playing_path.as_ref().and_then(|path| {
+                    self.filtered
+                        .iter()
+                        .position(|&i| &self.tracks[i].file_path == path)
+                });
+                let slot = current
+                    .map(|position| (position + 1) % self.filtered.len())
+                    .unwrap_or(0);
+                Some(self.track_item(self.filtered[slot]))
+            };
+
+            let Some(item) = next else {
+                self.player.is_playing = false;
+                self.playback.playing = false;
+                return;
+            };
+
+            let item_path = item.file_path.clone();
+            let item_title = item.title.clone();
+            if self.player.play_track(item) {
+                self.sync_from_player();
+                return;
+            } else {
+                diagnostics::line(&format!(
+                    "play_next: unreadable or missing file {item_path}, skipping"
+                ));
+                self.status = format!("Skipped unreadable track: {item_title}");
+            }
         }
+
+        self.player.is_playing = false;
+        self.playback.playing = false;
+        self.status = "No playable tracks found".to_string();
     }
 
     pub fn play_prev(&mut self) {
