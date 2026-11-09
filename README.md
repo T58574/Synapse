@@ -1,4 +1,5 @@
 # SYNAPSE // Audio Player & Mixing Workstation
+<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/e5212197-8697-47d2-906f-5a312a9b8900" />
 
 Native desktop music player and DJ mixing workstation built with **Rust**, **GPUI**, and the **Synapse C++ DSP Audio Engine**.
 
