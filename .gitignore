@@ -1,0 +1,44 @@
+# --- RUST BUILD ARTIFACTS ---
+target/
+*.pdb
+
+# --- EXECUTABLES ---
+synapse
+Synapse
+synapse.exe
+Synapse.exe
+
+# --- DATABASE & RUNTIME LOGS ---
+*.db-shm
+*.db-wal
+*.sqlite-journal
+*.log
+logs/
+
+# --- NODE (Scripts helper) ---
+node_modules/
+
+# --- LEGACY WAILS / GO / REACT LEFTOVERS ---
+# Removed from the repo in 0.2.0, but stale copies still sit in old working
+# trees. Never let them back in: build/ alone is ~9000 files of toolchain.
+/build/
+/frontend/
+/backend/
+/cpp/
+/tools/w64devkit/
+/wails.json
+/go.mod
+/go.sum
+/main.go
+/app.go
+
+# --- SYSTEM & OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE & EDITORS ---
+.idea/
+.vscode/
+*.swp
+*~

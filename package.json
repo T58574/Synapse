@@ -1,0 +1,16 @@
+{
+  "name": "synapse-root",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Synapse desktop application build workspace (Rust + GPUI)",
+  "scripts": {
+    "build:menu": "node scripts/build-menu.js",
+    "build": "node scripts/build-menu.js --build",
+    "build:debug": "node scripts/build-menu.js --debug",
+    "start": "node scripts/build-menu.js --run",
+    "test": "node scripts/build-menu.js --test",
+    "doctor": "node scripts/build-menu.js --doctor",
+    "clean": "node scripts/build-menu.js --clean",
+    "check": "node scripts/build-menu.js --check"
+  }
+}
